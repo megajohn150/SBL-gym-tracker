@@ -3553,9 +3553,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '<span class="dext"><span class="nm">' + esc(e.name) + '</span>' +
         '<span class="meta">' + esc(e.muscle || '') + (e.unilateral ? ' &middot; unilateral' : '') +
         '</span></span></div>' +
-        (!detailEdit && e.note
-          ? '<div class="wmore" style="padding:.2rem 0 .3rem">' + esc(e.note) + '</div>'
-          : '') +
+        (detailEdit
+          ? '<div class="notebox' + (e.note ? ' has' : '') + '" style="margin:.35rem 0 .2rem">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"/></svg>' +
+              '<textarea rows="1" data-note-e="' + ei + '" placeholder="Add a note">' +
+              esc(e.note || '') + '</textarea></div>'
+          : (e.note
+            ? '<div class="wmore" style="padding:.2rem 0 .3rem">' + esc(e.note) + '</div>'
+            : '')) +
         (rows.length
           ? '<div class="dhead"><span></span><span>Weight</span><span>Reps</span><span>RIR</span></div>' +
             rows.map(function (st, si) {
@@ -3578,6 +3583,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }).join('');
 
     $('detail-body').innerHTML = head + muscles + body + '<div style="height:1.5rem"></div>';
+    $('detail-body').querySelectorAll('[data-note-e]').forEach(grow);
   }
 
   function detailMenu() {
@@ -3696,6 +3702,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       detailW.seconds = Math.max(60,
         (Number($('d-h').value) || 0) * 3600 + (Number($('d-m').value) || 0) * 60);
     }
+    document.querySelectorAll('#detail-body [data-note-e]').forEach(function (ta) {
+      detailW.exercises[Number(ta.dataset.noteE)].note = ta.value.trim();
+    });
     document.querySelectorAll('#detail-body [data-f]').forEach(function (inp) {
       var e2 = detailW.exercises[Number(inp.dataset.e)];
       var st = e2.sets.filter(logged)[Number(inp.dataset.s)];
@@ -3713,6 +3722,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('detail-body').addEventListener('input', function (e) {
     if (!detailEdit) return;
     if (e.target.dataset && e.target.dataset.f) cleanNumber(e.target);
+    if (e.target.dataset && e.target.dataset.noteE !== undefined) grow(e.target);
     if (e.target.id === 'd-h' || e.target.id === 'd-m') digits(e.target);
     detailDirty = true;
     drawSaveBar();
