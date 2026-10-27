@@ -340,9 +340,10 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .cellwrap{position:relative;min-width:0}
 .delta{
   position:absolute;top:2px;right:4px;pointer-events:none;
-  font-size:.52rem;font-weight:700;font-style:normal;letter-spacing:.02em;color:var(--fg-3);
+  font-size:.62rem;font-weight:700;font-style:normal;letter-spacing:.02em;color:var(--fg-3);
 }
-.delta.on{color:var(--fg-2)}
+.delta.up{color:var(--green)}
+.delta.down{color:var(--red)}
 button.cell.blank{color:var(--fg-3);font-weight:400}
 
 .sfoot{
@@ -807,6 +808,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   --line:#3a3934;--border:1px solid #3a3934;--dash:1px dashed #3a3934;
   --accent:#ece9df;--accent-ink:#141412;--shadow:none;
 }
+
+/* ===========================================================
+   SIGNAL COLOURS
+   Used by danger buttons and by the step a set took.
+   =========================================================== */
+:root{--red:#b4473d;--green:#4c7a46}
+[data-theme="dark"]{--red:#cf6a5f;--green:#7d9f6b}
 </style>
 </head>
 <body>
@@ -1514,7 +1522,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1030';
+  var APP_VERSION = '1.1031';
 
   /* =========================================================
      STORE
@@ -2653,7 +2661,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (cur === '' || cur == null || prev === '' || prev == null) return '';
     var d = (isRir ? rirNum(cur) - rirNum(prev) : num(cur) - num(prev));
     d = Math.round(d * 100) / 100;
-    return '<i class="delta' + (d ? ' on' : '') + '">' + (d > 0 ? '+' : '') + d + '</i>';
+    var cls = d > 0 ? ' up' : d < 0 ? ' down' : '';
+    return '<i class="delta' + cls + '">' + (d > 0 ? '+' : '') + d + '</i>';
   }
 
   // labels come from position, so deleting a set renumbers the rest
