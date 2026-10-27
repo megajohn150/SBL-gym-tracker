@@ -299,10 +299,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   display:block;font-family:var(--display);font-size:1.2rem;font-weight:var(--namew);
   letter-spacing:var(--nametrack);text-transform:var(--namecase);line-height:1.15;
 }
-.extags{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.extags{display:flex;gap:5px;margin-top:7px;flex-wrap:nowrap}
 .extag{
-  font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  padding:3px 7px;border:var(--border);border-radius:calc(var(--radius) - 4px);color:var(--fg-3);
+  flex:none;white-space:nowrap;
+  font-size:.55rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 6px;border:var(--border);border-radius:calc(var(--radius) - 4px);color:var(--fg-3);
 }
 .cue{
   display:flex;align-items:flex-start;gap:9px;
