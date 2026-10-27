@@ -3509,6 +3509,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     pop.style.top = (r.bottom + 6) + 'px';
   });
 
+  // it hangs off a row, so it has no business staying put once that row moves
+  document.addEventListener('scroll', function () { $('pr-pop').hidden = true; }, true);
+
   function drawDetail(w) {
     detailW = w;
     var t = workoutTotals(w), split = muscleSplit(w);
