@@ -664,6 +664,28 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .hmrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.datebtn{
+  width:100%;margin:.6rem 0 14px;padding:11px var(--cardpad);text-align:left;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+  font-size:.9rem;font-weight:600;color:var(--fg);
+}
+.dpick-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem}
+.dpick-head b{
+  font-family:var(--display);font-size:1rem;font-weight:var(--namew);
+  letter-spacing:var(--nametrack);text-transform:var(--namecase);
+}
+.dpick-head button{width:36px;padding:4px 0;font-size:1.2rem;color:var(--fg-2)}
+.dpick-dow{
+  display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:5px;text-align:center;
+  font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3);font-weight:700;
+}
+.dpick-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dpick-grid span{padding:9px 0}
+.dpick-grid button{
+  padding:9px 0;text-align:center;font-size:.85rem;font-weight:600;
+  border-radius:calc(var(--radius) - 4px);color:var(--fg);
+}
+.dpick-grid button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .dcut{
   display:flex;align-items:center;gap:10px;margin:1rem var(--pad) .3rem;
   font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);
@@ -1356,27 +1378,28 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
-<div class="sheet" id="end-sheet" hidden>
-  <div class="sheet-bg" data-end-close></div>
-  <div class="sheet-card">
-    <h3>Workout duration</h3>
-    <div class="hmrow">
-      <span class="field" style="padding:0"><label for="end-h">Hours</label>
-        <input type="text" id="end-h" inputmode="numeric"></span>
-      <span class="field" style="padding:0"><label for="end-m">Minutes</label>
-        <input type="text" id="end-m" inputmode="numeric"></span>
-    </div>
-    <button class="btn btn-primary" id="end-save">End workout</button>
-    <button class="btn btn-ghost" id="end-cancel" style="margin-top:8px">Cancel</button>
-  </div>
-</div>
-
 <div class="sheet" id="rord-sheet" hidden>
   <div class="sheet-bg" data-rord-close></div>
   <div class="sheet-card">
     <h3>Drag to reorder</h3>
     <div id="rord-list"></div>
     <button class="btn btn-primary" id="rord-done" style="margin-top:10px">Done</button>
+  </div>
+</div>
+
+<div class="sheet center" id="date-sheet" hidden>
+  <div class="sheet-bg" data-date-close></div>
+  <div class="sheet-card">
+    <div class="dpick-head">
+      <button id="dp-prev" aria-label="Previous month">&lsaquo;</button>
+      <b id="dp-title">&mdash;</b>
+      <button id="dp-next" aria-label="Next month">&rsaquo;</button>
+    </div>
+    <div class="dpick-dow">
+      <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+    </div>
+    <div class="dpick-grid" id="dp-grid"></div>
+    <button class="btn btn-primary" id="dp-save" style="margin-top:14px">Set date</button>
   </div>
 </div>
 
@@ -3055,21 +3078,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   function digits(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
+  // the clock is taken as it stands; both it and the date are editable later
   $('sess-end').addEventListener('click', function () {
-    var sec = Math.max(60, sessionSeconds());
-    $('end-h').value = Math.floor(sec / 3600);
-    $('end-m').value = Math.round((sec % 3600) / 60);
-    $('end-sheet').hidden = false;
-  });
-  function closeEnd() { $('end-sheet').hidden = true; }
-  $('end-cancel').addEventListener('click', closeEnd);
-  document.querySelector('[data-end-close]').addEventListener('click', closeEnd);
-  $('end-h').addEventListener('input', function () { digits($('end-h')); });
-  $('end-m').addEventListener('input', function () { digits($('end-m')); });
-  $('end-save').addEventListener('click', function () {
-    var sec = (Number($('end-h').value) || 0) * 3600 + (Number($('end-m').value) || 0) * 60;
-    closeEnd();
-    finishSession(Math.max(60, sec));
+    finishSession(Math.max(60, sessionSeconds()));
   });
 
   /* --- the Home feed --- */
@@ -3527,6 +3538,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button></div>' +
       (detailEdit
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
+          '<button class="datebtn" id="d-date">' + fullDate(pendingDate || w.date) + '</button>' +
           '<div class="hmrow">' +
             '<span class="field" style="padding:0"><label for="d-h">Hours</label>' +
             '<input type="text" id="d-h" inputmode="numeric" value="' + Math.floor(w.seconds / 3600) + '"></span>' +
@@ -3619,15 +3631,75 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function drawSaveBar() {
     $('save-bar').hidden = !(detailEdit && detailDirty);
   }
+  /* --- picking a new date for a finished workout --- */
+  var pendingDate = null;                 // only applied when the edit is saved
+  var dp = { y: 0, m: 0, pick: null };
+
+  function drawDatePick() {
+    $('dp-title').textContent = MONTHS[dp.m] + ' ' + dp.y;
+    var days = new Date(dp.y, dp.m + 1, 0).getDate();
+    var lead = (new Date(dp.y, dp.m, 1).getDay() + 6) % 7;   // weeks start Monday
+    var html = '', i, on;
+    for (i = 0; i < lead; i++) html += '<span></span>';
+    for (i = 1; i <= days; i++) {
+      on = dp.pick && dp.pick.getFullYear() === dp.y &&
+        dp.pick.getMonth() === dp.m && dp.pick.getDate() === i;
+      html += '<button data-d="' + i + '" aria-pressed="' + (!!on) + '">' + i + '</button>';
+    }
+    $('dp-grid').innerHTML = html;
+  }
+
+  function openDatePick() {
+    if (!detailW) return;
+    dp.pick = new Date(pendingDate || detailW.date);
+    dp.y = dp.pick.getFullYear();
+    dp.m = dp.pick.getMonth();
+    drawDatePick();
+    $('date-sheet').hidden = false;
+  }
+  function closeDatePick() { $('date-sheet').hidden = true; }
+  document.querySelector('[data-date-close]').addEventListener('click', closeDatePick);
+
+  $('dp-prev').addEventListener('click', function () {
+    if (--dp.m < 0) { dp.m = 11; dp.y--; }
+    drawDatePick();
+  });
+  $('dp-next').addEventListener('click', function () {
+    if (++dp.m > 11) { dp.m = 0; dp.y++; }
+    drawDatePick();
+  });
+  $('dp-grid').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-d]');
+    if (!b) return;
+    dp.pick = new Date(dp.y, dp.m, Number(b.dataset.d));
+    drawDatePick();
+  });
+  $('dp-save').addEventListener('click', function () {
+    if (!detailW || !dp.pick) { closeDatePick(); return; }
+    var was = new Date(pendingDate || detailW.date);
+    pendingDate = new Date(dp.pick.getFullYear(), dp.pick.getMonth(), dp.pick.getDate(),
+      was.getHours(), was.getMinutes(), was.getSeconds()).toISOString();
+    closeDatePick();
+    detailDirty = true;
+    drawSaveBar();
+    drawDetail(detailW);
+  });
+
   function leaveEdit() {
     detailEdit = false;
     detailDirty = false;
+    pendingDate = null;
     drawSaveBar();
     if (detailW) drawDetail(detailW);
   }
   function saveDetail() {
     var name = $('d-name') ? $('d-name').value.trim() : '';
     if (name) detailW.name = name;
+    if (pendingDate) {
+      detailW.date = pendingDate;
+      // the feed and the numbering read the array order, so keep it by date
+      store.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+    }
     if ($('d-h')) {
       detailW.seconds = Math.max(60,
         (Number($('d-h').value) || 0) * 3600 + (Number($('d-m').value) || 0) * 60);
@@ -3657,6 +3729,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('save-drop').addEventListener('click', leaveEdit);
 
   $('detail-body').addEventListener('click', function (e) {
+    if (e.target.closest('#d-date')) { openDatePick(); return; }
     if (e.target.closest('#detail-menu')) { detailMenu(); return; }
     var b = e.target.closest('[data-split]');
     if (!b) return;
