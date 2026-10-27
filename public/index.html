@@ -234,6 +234,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .sw-doc i:nth-child(1){width:60%;height:4px}
 .sw-doc i:nth-child(2){width:95%;opacity:.3}
 .sw-doc i:nth-child(3){width:80%;opacity:.3}
+.sw-doc-dark{background:#191919;border:1px solid #2d2d2d;border-radius:6px}
+.sw-doc-dark i{background:#e9e8e4;opacity:.75}
+.sw-doc-dark i:nth-child(1){width:60%;height:4px}
+.sw-doc-dark i:nth-child(2){width:95%;opacity:.3}
+.sw-doc-dark i:nth-child(3){width:80%;opacity:.3}
 .sw-receipt{background:#fdfcf8;border-top:3px double #1a1a18;border-bottom:3px double #1a1a18}
 .sw-receipt i{background:#1a1a18;margin:0 auto}
 .sw-receipt i:nth-child(1){width:60%;height:4px}
@@ -1215,6 +1220,29 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     <div class="scroll">
     <div class="group">
+      <h2>Presets</h2>
+      <div class="rows" id="preset-list">
+        <button class="opt" data-preset="dark doc">
+          <span class="swatch sw-doc-dark"><i></i><i></i><i></i></span>
+          <span class="txt"><span class="nm">Dark</span>
+            <span class="ds">Document on black. Quiet, text first.</span></span>
+          <span class="tick">&#10003;</span>
+        </button>
+        <button class="opt" data-preset="light receipt">
+          <span class="swatch sw-receipt"><i></i><i></i><i></i></span>
+          <span class="txt"><span class="nm">Light</span>
+            <span class="ds">Receipt on paper. Dashed rules, centred.</span></span>
+          <span class="tick">&#10003;</span>
+        </button>
+      </div>
+    </div>
+
+    <div style="padding:0 var(--pad)">
+      <button class="btn btn-ghost" id="more-themes">More options</button>
+    </div>
+
+    <div id="theme-more" hidden>
+    <div class="group">
       <h2>Mode</h2>
       <div class="seg" id="seg-mode">
         <button data-mode="light">Light</button>
@@ -1240,6 +1268,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
 
     <div class="note">Your choice is kept on this device and applies to every screen.</div>
+    </div>
     </div>
 
   </section>
@@ -1522,7 +1551,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1031';
+  var APP_VERSION = '1.1032';
 
   /* =========================================================
      STORE
@@ -4396,6 +4425,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     document.querySelectorAll('#seg-mode button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
     });
+    paintPresets();
     paintMeta();
   }
   function applySkin(skin) {
@@ -4404,8 +4434,26 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     document.querySelectorAll('[data-pick-theme]').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.pickTheme === skin));
     });
+    paintPresets();
     paintMeta();
   }
+  function paintPresets() {
+    var now = (load('mode') || 'system') + ' ' + (load('skin') || 'receipt');
+    var hit = false;
+    document.querySelectorAll('[data-preset]').forEach(function (b) {
+      var on = b.dataset.preset === now;
+      if (on) hit = true;
+      b.setAttribute('aria-pressed', String(on));
+    });
+    // anything the presets do not cover is worth seeing straight away
+    if (!hit) showMore(true);
+  }
+
+  function showMore(on) {
+    $('theme-more').hidden = !on;
+    $('more-themes').textContent = on ? 'Fewer options' : 'More options';
+  }
+
   function paintMeta() {
     requestAnimationFrame(function () {
       var bg = getComputedStyle(document.body).backgroundColor;
@@ -4418,6 +4466,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
   document.querySelectorAll('[data-pick-theme]').forEach(function (b) {
     b.addEventListener('click', function () { save('skin', b.dataset.pickTheme); applySkin(b.dataset.pickTheme); });
+  });
+  document.querySelectorAll('[data-preset]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = b.dataset.preset.split(' ');
+      save('mode', p[0]);
+      save('skin', p[1]);
+      applyMode(p[0]);
+      applySkin(p[1]);
+    });
+  });
+  $('more-themes').addEventListener('click', function () {
+    showMore($('theme-more').hidden);
   });
   mq.addEventListener('change', function () {
     if ((load('mode') || 'system') === 'system') applyMode('system');
