@@ -1177,6 +1177,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       </div>
     </div>
 
+    <div class="note" id="app-version" style="padding-bottom:.4rem"></div>
+
     <div class="note">Everything lives on this device. Export writes a JSON file you can keep;
       importing one replaces what is here, and erasing cannot be undone &mdash; export first.</div>
     </div>
@@ -1498,6 +1500,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
   var NAMES = { doc: 'Document', receipt: 'Receipt' };
   var $ = function (id) { return document.getElementById(id); };
+
+  // major . minor + patch; the patch bumps itself on every commit
+  var APP_VERSION = '1.1026';
 
   /* =========================================================
      STORE
@@ -3686,7 +3691,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var ART_CX = [232, 616, 998, 1382, 1770], ART_CY = [236, 712, 1276], ART_D = 332;
 
   /* --- profile pictures: both sheets are 980 x 1342 and share this grid --- */
-  var AV_CX = [170, 496, 823], AV_CY = [167, 420, 675, 928, 1182], AV_D = 218, AV_W = 980;
+  var AV_CX = [170, 497, 823], AV_CY = [168, 421, 675, 928, 1182], AV_D = 198, AV_W = 980;
   // [column, row] of every picture; the repeated kettlebell is left out
   var AVATARS = [[0,0],[1,0],[2,0],[0,1],[1,1],[0,2],[1,2],[2,2],
                  [0,3],[1,3],[2,3],[0,4],[1,4],[2,4]];
@@ -4369,6 +4374,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (document.getElementById('s-exercises').classList.contains('on')) drawExercises();
   });
   mo.observe(document.getElementById('s-exercises'), { attributes: true, attributeFilter: ['class'] });
+
+  $('app-version').textContent = 'Current version: ' + APP_VERSION;
 
   initAuth();
 
