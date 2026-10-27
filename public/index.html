@@ -1630,6 +1630,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     document.getElementById('gate').hidden = !!me;
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
     if (!me) { syncState('off'); return; }
+    save('uid', me.id);
     if (me.id !== was) { cloud.rev = 0; cloudPull(); }
   }
 
@@ -1662,6 +1663,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       askConfirm('Sign out?', 'Your training stays in the cloud. This device keeps no copy.',
         'Sign out', function () {
           sb.auth.signOut().then(function () {
+            localStorage.removeItem('tracker-uid');
             localStorage.removeItem('tracker-data');
             localStorage.removeItem('tracker-session');
             location.reload();
@@ -1669,9 +1671,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         });
     });
 
+    // Without a network the token cannot be refreshed, so Supabase hands back
+    // no session. Someone who signed in here before still gets their app —
+    // the data is on this device anyway, and nothing syncs until it returns.
+    function offlineOpen() {
+      document.getElementById('gate').hidden = true;
+      syncState('err');
+    }
+
     sb.auth.getSession().then(function (r) {
-      setUser(r.data.session ? r.data.session.user : null);
-      sb.auth.onAuthStateChange(function (_e, s) { setUser(s ? s.user : null); });
+      var live = r.data && r.data.session;
+      // r.error also means the token could not be refreshed, which offline is
+      if (live) setUser(live.user);
+      else if (load('uid') && (r.error || !navigator.onLine)) offlineOpen();
+      else setUser(null);
+      sb.auth.onAuthStateChange(function (_e, s) { if (s) setUser(s.user); });
+    }).catch(function () {
+      if (load('uid')) offlineOpen(); else setUser(null);
     });
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -4040,6 +4056,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   mo.observe(document.getElementById('s-exercises'), { attributes: true, attributeFilter: ['class'] });
 
   initAuth();
+
+  /* --- offline: the app shell lives in a cache, see sw.js --- */
+  if ('serviceWorker' in navigator) {
+    var hadWorker = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+    if (hadWorker) {
+      var reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (reloaded) return;                 // a new version took over
+        reloaded = true;
+        location.reload();
+      });
+    }
+  }
 })();
 </script>
 </body>
