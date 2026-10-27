@@ -15,6 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 /* ===========================================================
    TOKENS
@@ -668,6 +669,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 }
 .dcut::before,.dcut::after{content:"";flex:1;border-top:var(--dash)}
 .dex.before{opacity:.5}
+.gate{
+  position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:var(--pad);background:var(--bg);
+}
+.gate-card{width:100%;max-width:330px}
+.gate-logo{display:block;width:62px;height:62px;margin:0 auto .9rem;border-radius:15px;overflow:hidden}
+.gate-logo img{display:block;width:100%;height:100%}
+.gate-title{
+  font-family:var(--display);font-size:1.45rem;font-weight:var(--namew);
+  letter-spacing:var(--nametrack);text-transform:var(--namecase);text-align:center;margin:0 0 .35rem;
+}
+.gate-sub{text-align:center;color:var(--fg-3);font-size:.85rem;line-height:1.5;margin:0 0 1.3rem}
+.gate-err{color:var(--red);font-size:.8rem;font-weight:600;text-align:center;margin:0 0 .7rem}
+.gate.busy{opacity:.55;pointer-events:none}
 .formerr{padding:.6rem var(--pad) 0;font-size:.8rem;color:var(--red);font-weight:600}
 .confirm-text{color:var(--fg-2);font-size:.875rem;text-align:center;margin-bottom:14px;line-height:1.5}
 .restbar.done{background:var(--accent);border-color:var(--accent)}
@@ -1129,6 +1144,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
 
     <div class="group">
+      <h2>Account</h2>
+      <div class="rows">
+        <span class="row"><span class="lab">Signed in</span><span class="val" id="set-email">&mdash;</span></span>
+        <span class="row"><span class="lab">Sync</span><span class="val" id="set-sync">&mdash;</span></span>
+        <button class="row" id="set-signout"><span class="lab">Sign out</span><span class="chev">&rsaquo;</span></button>
+      </div>
+    </div>
+
+    <div class="group">
       <h2>Data</h2>
       <div class="rows">
         <button class="row" id="set-export">
@@ -1229,6 +1253,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
 <div class="prpop" id="pr-pop" hidden></div>
 <div class="ptip" id="p-tip" hidden></div>
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <span class="gate-logo"><img src="logo/icon-192.png" alt=""></span>
+    <h1 class="gate-title">Tracker</h1>
+    <p class="gate-sub" id="gate-sub">Sign in and your training follows you to every device.</p>
+    <div class="field" style="padding:0 0 .7rem"><label for="au-email">Email</label>
+      <input type="email" id="au-email" autocomplete="email" autocapitalize="none" spellcheck="false"></div>
+    <div class="field" style="padding:0 0 .9rem"><label for="au-pass">Password</label>
+      <input type="password" id="au-pass" autocomplete="current-password"></div>
+    <p class="gate-err" id="gate-err" hidden></p>
+    <button class="btn btn-primary" id="au-in">Sign in</button>
+    <button class="btn btn-ghost" id="au-up" style="margin-top:8px">Create account</button>
+  </div>
+</div>
 
 <div class="pop" id="per-pop" hidden>
   <div class="pop-bg" data-per-close></div>
@@ -1429,12 +1468,179 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       }
     } catch (e) {}
   }
-  function saveStore() { save('data', JSON.stringify(store)); }
-  function saveSession() {
+  function saveStore() { save('data', JSON.stringify(store)); queuePush(); }
+  function saveLocalSession() {
     try {
       if (session) localStorage.setItem('tracker-session', JSON.stringify(session));
       else localStorage.removeItem('tracker-session');
     } catch (e) {}
+  }
+  function saveSession() { saveLocalSession(); queuePush(); }
+
+  /* =========================================================
+     CLOUD
+     One row per account holds the whole store and the running
+     session. localStorage stays as the local copy, so the app
+     opens instantly and survives a dead connection; the cloud
+     is what every device agrees on.
+     ========================================================= */
+  var SB_URL = 'https://nzagghskfwdosmopiuuk.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56YWdnaHNrZndkb3Ntb3BpdXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMTI3MTUsImV4cCI6MjEwODY4ODcxNX0.9RPmPbHmuZd7aAMM22Qn48kt2KOyoQ6JdpCHOEGnO9Y';
+  // if the library cannot be reached the app still opens, local only
+  var sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+  var me = null;
+  var cloud = { rev: 0, timer: null, dirty: false };
+
+  function syncState(s) {
+    var el = document.getElementById('set-sync');
+    if (el) el.textContent = { busy: 'Saving\u2026', ok: 'Synced', err: 'Offline', off: '\u2014' }[s];
+  }
+
+  // Workouts are joined by id, so two devices writing on their own
+  // can never delete each other's sessions.
+  function mergeStores(local, remote) {
+    var byId = {};
+    (remote.workouts || []).concat(local.workouts || []).forEach(function (w) { byId[w.id] = w; });
+    var workouts = Object.keys(byId).map(function (k) { return byId[k]; })
+      .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+    return {
+      profile: remote.profile || local.profile,
+      exercises: (remote.exercises && remote.exercises.length) ? remote.exercises : local.exercises,
+      routines: (remote.routines && remote.routines.length) ? remote.routines : local.routines,
+      workouts: workouts
+    };
+  }
+
+  function redrawAll() {
+    recomputeRecords();
+    drawExercises();
+    drawRoutines();
+    drawHome();
+    drawProfile();
+    drawDock();
+    if (current() === 's-session') drawSession();
+  }
+
+  function pull() {
+    if (!me) return Promise.resolve();
+    syncState('busy');
+    return sb.from('tracker').select('data,session,rev').eq('user_id', me.id).maybeSingle()
+      .then(function (r) {
+        if (r.error) { syncState('err'); return; }
+        if (!r.data) {                       // no row yet: claim one
+          cloud.rev = 0;
+          return push(true);
+        }
+        cloud.rev = r.data.rev || 0;
+
+        // a fresh account with something already on this device
+        if (!cloud.rev && (store.workouts.length || store.exercises.length)) return push(true);
+
+        store = mergeStores(store, r.data.data || {});
+        save('data', JSON.stringify(store));
+
+        // never drop a workout that is running here; adopt one from elsewhere
+        if (r.data.session && r.data.session.exercises && !session) {
+          session = r.data.session;
+          saveLocalSession();
+        }
+        redrawAll();
+        syncState('ok');
+      });
+  }
+
+  function push(force) {
+    if (!me) return Promise.resolve();
+    clearTimeout(cloud.timer);
+    syncState('busy');
+    var next = cloud.rev + 1;
+    var row = {
+      user_id: me.id, data: store, session: session,
+      rev: next, updated_at: new Date().toISOString()
+    };
+    // upsert also covers the very first write, when no row exists yet
+    var q = force
+      ? sb.from('tracker').upsert(row, { onConflict: 'user_id' })
+      : sb.from('tracker').update(row).eq('user_id', me.id).eq('rev', cloud.rev);
+
+    return q.select('rev').maybeSingle().then(function (r) {
+      if (r.error) { cloud.dirty = true; syncState('err'); return; }
+      if (!r.data) return pull().then(function () { return push(true); });  // someone wrote first
+      cloud.rev = next;
+      cloud.dirty = false;
+      syncState('ok');
+    });
+  }
+
+  // one write per burst of changes, not one per keystroke
+  function queuePush() {
+    if (!me) return;
+    cloud.dirty = true;
+    clearTimeout(cloud.timer);
+    cloud.timer = setTimeout(function () { push(); }, 1500);
+  }
+
+  addEventListener('visibilitychange', function () { if (document.hidden && cloud.dirty) push(); });
+  addEventListener('pagehide', function () { if (cloud.dirty) push(); });
+  addEventListener('online', function () { if (cloud.dirty) push(); });
+
+  /* --- the sign-in gate --- */
+  function gateErr(msg) {
+    var el = document.getElementById('gate-err');
+    el.textContent = msg || '';
+    el.hidden = !msg;
+  }
+  function gateBusy(on) { document.getElementById('gate').classList.toggle('busy', !!on); }
+
+  function setUser(u) {
+    var was = me && me.id;
+    me = u || null;
+    document.getElementById('gate').hidden = !!me;
+    document.getElementById('set-email').textContent = me ? me.email : '\u2014';
+    if (!me) { syncState('off'); return; }
+    if (me.id !== was) { cloud.rev = 0; pull(); }
+  }
+
+  function authGo(kind) {
+    var email = document.getElementById('au-email').value.trim();
+    var pass = document.getElementById('au-pass').value;
+    if (!email || !pass) { gateErr('Email and password, please.'); return; }
+    gateErr('');
+    gateBusy(true);
+    var call = kind === 'up'
+      ? sb.auth.signUp({ email: email, password: pass })
+      : sb.auth.signInWithPassword({ email: email, password: pass });
+    call.then(function (r) {
+      gateBusy(false);
+      if (r.error) { gateErr(r.error.message); return; }
+      if (kind === 'up' && r.data.user && !r.data.session) {
+        gateErr('Check your email to confirm the account, then sign in.');
+      }
+    });
+  }
+
+  function initAuth() {
+    if (!sb) { document.getElementById('gate').hidden = true; syncState('err'); return; }
+    document.getElementById('au-in').addEventListener('click', function () { authGo('in'); });
+    document.getElementById('au-up').addEventListener('click', function () { authGo('up'); });
+    document.getElementById('au-pass').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') authGo('in');
+    });
+    document.getElementById('set-signout').addEventListener('click', function () {
+      askConfirm('Sign out?', 'Your training stays in the cloud. This device keeps no copy.',
+        'Sign out', function () {
+          sb.auth.signOut().then(function () {
+            localStorage.removeItem('tracker-data');
+            localStorage.removeItem('tracker-session');
+            location.reload();
+          });
+        });
+    });
+
+    sb.auth.getSession().then(function (r) {
+      setUser(r.data.session ? r.data.session.user : null);
+      sb.auth.onAuthStateChange(function (_e, s) { setUser(s ? s.user : null); });
+    });
   }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function esc(s) {
@@ -3675,6 +3881,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (document.getElementById('s-exercises').classList.contains('on')) drawExercises();
   });
   mo.observe(document.getElementById('s-exercises'), { attributes: true, attributeFilter: ['class'] });
+
+  initAuth();
 })();
 </script>
 </body>
