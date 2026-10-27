@@ -391,15 +391,21 @@ body.in-session .tabs{display:none}
 .wstats .k{display:block;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
 .wstats .v{display:block;margin-top:3px;font-size:.88rem;font-weight:700;white-space:nowrap}
 /* values copied verbatim from the receipt card in indexTemplate.html */
-.wtop{text-align:center}
+.wtop{display:flex;align-items:center;gap:11px;text-align:right}
+.wtop .who{flex:1;min-width:0;text-align:left}
+.wtop .who .nm{
+  display:block;font-size:.85rem;font-weight:600;color:var(--fg-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.wtop .right{min-width:0}
 .wnum{display:block;font-size:9px;letter-spacing:.12em;color:var(--fg-3);font-weight:600}
 .wdate{display:block;margin-top:2px;font-size:.8rem;color:var(--fg-3)}
 .wname{
-  display:block;margin:.35rem 0 .7rem;line-height:1.08;font-family:var(--display);
+  display:block;margin:.35rem 0 0;line-height:1.08;font-family:var(--display);
   font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
 }
 .wpr{
-  display:block;width:fit-content;margin:.6rem auto 0;padding:3px 8px;
+  display:block;width:fit-content;margin:.7rem auto .8rem;padding:3px 8px;
   font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
   border:1.5px solid var(--fg);border-radius:3px;color:var(--fg);transform:rotate(-4deg);
 }
@@ -1551,7 +1557,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1033';
+  var APP_VERSION = '1.1034';
 
   /* =========================================================
      STORE
@@ -3314,11 +3320,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       var d = new Date(w.date);
       return '<article class="wcard" data-w="' + w.id + '">' +
         '<div class="wtop">' +
-          '<span class="wnum">' + pad2(ordinal) + '</span>' +
-          '<span class="wdate">' + relDate(w.date) + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</span>' +
-          '<span class="wname">' + esc(w.name) + '</span>' +
-          '<span class="wpr">' + (w.records ? w.records + " PR's" : "0 PR's :(") + '</span>' +
+          avatarTag(34) +
+          '<span class="who"><span class="nm">' +
+            esc(store.profile.handle || 'you') + '</span></span>' +
+          '<span class="right">' +
+            '<span class="wnum">' + pad2(ordinal) + '</span>' +
+            '<span class="wdate">' + relDate(w.date) + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</span>' +
+            '<span class="wname">' + esc(w.name) + '</span>' +
+          '</span>' +
         '</div>' +
+        '<span class="wpr">' + (w.records ? w.records + " PR's" : "0 PR's :(") + '</span>' +
         '<div class="wstats3">' +
           '<div><b>' + fmtDuration(w.seconds) + '</b><i>Time</i></div>' +
           '<div><b>' + fmtVolume(t.volume) + '</b><i>Volume</i></div>' +
