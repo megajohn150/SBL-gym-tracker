@@ -1316,6 +1316,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <div class="pop-wrap" style="top:calc(env(safe-area-inset-top) + 56px)">
     <div class="pop-menu">
       <button id="xp-edit">Edit exercise</button>
+      <button id="xp-meta">Edit exercise metadata</button>
       <button id="xp-up">Move up</button>
       <button id="xp-down">Move down</button>
       <button id="xp-drop" class="danger">Remove from workout</button>
@@ -1375,6 +1376,35 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <h3>Drag to reorder</h3>
     <div id="rord-list"></div>
     <button class="btn btn-primary" id="rord-done" style="margin-top:10px">Done</button>
+  </div>
+</div>
+
+<div class="sheet" id="meta-sheet" hidden>
+  <div class="sheet-bg" data-meta-close></div>
+  <div class="sheet-card">
+    <h3 id="meta-title">Exercise</h3>
+    <div class="ctl">
+      <span class="ctl-lab">Sets</span>
+      <span class="stepper">
+        <button data-mstep="-1" aria-label="Fewer sets">&minus;</button>
+        <b id="meta-sets">1</b>
+        <button data-mstep="1" aria-label="More sets">+</button>
+      </span>
+    </div>
+    <div class="ctl">
+      <span class="ctl-lab">Rep range</span>
+      <input class="repsinput" type="text" id="meta-reps" placeholder="8&ndash;12" autocomplete="off">
+    </div>
+    <div class="ctl" id="meta-side-row">
+      <span class="ctl-lab">Starts with</span>
+      <span class="sideseg">
+        <button data-mside="R">Right</button>
+        <button data-mside="L">Left</button>
+      </span>
+    </div>
+    <p class="confirm-text" style="margin:.9rem 0 0">Saved to the routine too, so the next
+      time you run it the numbers are already there.</p>
+    <button class="btn btn-primary" id="meta-save" style="margin-top:12px">Save</button>
   </div>
 </div>
 
@@ -2509,6 +2539,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       startedAt: Date.now(),
       pausedAt: null,
       idx: 0,
+      routineId: routine.id,
       exercises: routine.items.map(function (it) {
         return sessionItem(it.exId, it.sets, it.side, it.note, it.reps);
       })
@@ -3651,6 +3682,75 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('xp-down').hidden = session.idx >= last;
     $('xp-drop').hidden = session.exercises.length < 2;
     $('ex-pop').hidden = false;
+  });
+
+  /* --- the routine's own numbers, changed mid-workout --- */
+  var meta = { sets: 1, side: 'R' };
+
+  // growing adds blanks; shrinking stops at the last set you already logged
+  function setPlannedSets(ex, n) {
+    var want = n * (ex.unilateral ? 2 : 1);
+    while (ex.sets.length < want) ex.sets.push(blankSet(''));
+    while (ex.sets.length > want) {
+      if (logged(ex.sets[ex.sets.length - 1])) break;
+      ex.sets.pop();
+    }
+    relabel(ex);
+  }
+
+  function drawMeta() {
+    $('meta-sets').textContent = meta.sets;
+    document.querySelectorAll('[data-mside]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.mside === meta.side));
+    });
+  }
+
+  $('xp-meta').addEventListener('click', function () {
+    closeExPop();
+    var ex = session.exercises[session.idx];
+    if (!ex) return;
+    meta.sets = Math.max(1, Math.round(ex.unilateral ? ex.sets.length / 2 : ex.sets.length));
+    meta.side = ex.side || 'R';
+    $('meta-title').textContent = ex.name;
+    $('meta-reps').value = ex.reps || '';
+    $('meta-side-row').hidden = !ex.unilateral;
+    drawMeta();
+    $('meta-sheet').hidden = false;
+  });
+
+  function closeMeta() { $('meta-sheet').hidden = true; }
+  document.querySelector('[data-meta-close]').addEventListener('click', closeMeta);
+
+  document.querySelectorAll('[data-mstep]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      meta.sets = Math.min(12, Math.max(1, meta.sets + Number(b.dataset.mstep)));
+      drawMeta();
+    });
+  });
+  document.querySelectorAll('[data-mside]').forEach(function (b) {
+    b.addEventListener('click', function () { meta.side = b.dataset.mside; drawMeta(); });
+  });
+
+  $('meta-save').addEventListener('click', function () {
+    var ex = session.exercises[session.idx];
+    if (!ex) { closeMeta(); return; }
+    ex.reps = $('meta-reps').value.trim();
+    if (ex.unilateral) ex.side = meta.side;
+    setPlannedSets(ex, meta.sets);
+
+    var r = session.routineId ? routineById(session.routineId) : null;
+    if (r) {
+      var it = r.items.filter(function (i) { return i.exId === ex.exId; })[0];
+      if (it) {
+        it.sets = meta.sets;
+        it.reps = ex.reps;
+        if (ex.unilateral) it.side = ex.side;
+        saveStore();
+        drawRoutines();
+      }
+    }
+    closeMeta();
+    drawSession();
   });
 
   $('xp-edit').addEventListener('click', function () {
