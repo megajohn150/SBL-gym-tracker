@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light" data-skin="brutal">
+<html lang="en" data-theme="light" data-skin="receipt">
 <head>
 <meta charset="utf-8">
 <title>Tracker</title>
@@ -229,11 +229,6 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .opt[aria-pressed="true"] .tick{opacity:1}
 .swatch{width:52px;height:42px;flex:none;overflow:hidden;display:flex;flex-direction:column;gap:3px;padding:6px}
 .swatch i{display:block;height:3px;border-radius:1px}
-.sw-brutal{background:#fff;border:2px solid #000;box-shadow:2px 2px 0 #000}
-.sw-brutal i{background:#000}
-.sw-brutal i:nth-child(1){width:70%;height:5px}
-.sw-brutal i:nth-child(2){width:100%}
-.sw-brutal i:nth-child(3){width:55%}
 .sw-doc{background:#fff;border:1px solid #ebebea;border-radius:6px}
 .sw-doc i{background:#37352f;opacity:.75}
 .sw-doc i:nth-child(1){width:60%;height:4px}
@@ -727,40 +722,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .tabs button[aria-current="true"]{color:var(--fg)}
 
 /* ===========================================================
-   THEME 1 — BRUTAL
-   =========================================================== */
-[data-skin="brutal"]{
-  --bg:#fafafa;--surface:#fff;--fg:#000;--fg-2:#333;--fg-3:#767676;
-  --line:#000;--accent:#000;--accent-ink:#fff;
-  --font:"JetBrains Mono",monospace;--display:"JetBrains Mono",monospace;
-  --radius:0;--border:2px solid #000;--shadow:5px 5px 0 #000;--dash:2px dashed #000;
-  --base:13.5px;--pad:16px;--cardpad:13px;
-  --h1:1.6rem;--h1w:700;--h1case:uppercase;--h1track:-.02em;
-  --name:1rem;--namew:700;--namecase:uppercase;--nametrack:.02em;
-  --lab:9px;--labtrack:.16em;
-}
-[data-skin="brutal"] .bar{border-bottom:2px solid #000}
-[data-skin="brutal"] .empty .mark{border-width:2px;box-shadow:3px 3px 0 #000}
-[data-skin="brutal"] .empty .act,[data-skin="brutal"] .btn-primary{border:2px solid #000;box-shadow:3px 3px 0 #000;text-transform:uppercase}
-[data-skin="brutal"] .btn-ghost{box-shadow:3px 3px 0 #000;text-transform:uppercase}
-[data-skin="brutal"] .seg button[aria-pressed="true"]{box-shadow:2px 2px 0 #000}
-[data-skin="brutal"] .tabs{border-top:2px solid #000}
-[data-skin="brutal"] .tag{box-shadow:none}
-[data-theme="dark"][data-skin="brutal"]{
-  --bg:#121212;--surface:#1b1b1b;--fg:#fff;--fg-2:#ccc;--fg-3:#8a8a8a;
-  --line:#fff;--accent:#fff;--accent-ink:#000;
-  --border:2px solid #fff;--shadow:5px 5px 0 #fff;--dash:2px dashed #fff;
-}
-[data-theme="dark"][data-skin="brutal"] .bar{border-bottom-color:#fff}
-[data-theme="dark"][data-skin="brutal"] .empty .mark{box-shadow:3px 3px 0 #fff}
-[data-theme="dark"][data-skin="brutal"] .empty .act,
-[data-theme="dark"][data-skin="brutal"] .btn-primary{border-color:#fff;box-shadow:3px 3px 0 #fff}
-[data-theme="dark"][data-skin="brutal"] .btn-ghost{box-shadow:3px 3px 0 #fff}
-[data-theme="dark"][data-skin="brutal"] .seg button[aria-pressed="true"]{box-shadow:2px 2px 0 #fff}
-[data-theme="dark"][data-skin="brutal"] .tabs{border-top-color:#fff}
-
-/* ===========================================================
-   THEME 2 — DOCUMENT
+   THEME 1 — DOCUMENT
    =========================================================== */
 [data-skin="doc"]{
   --bg:#fff;--surface:#fff;--fg:#37352f;--fg-2:#5f5b53;--fg-3:#9b9a97;
@@ -783,7 +745,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 [data-theme="dark"][data-skin="doc"] .row:hover,[data-theme="dark"][data-skin="doc"] .opt:hover{background:#242424}
 
 /* ===========================================================
-   THEME 3 — RECEIPT
+   THEME 2 — RECEIPT
    =========================================================== */
 [data-skin="receipt"]{
   --bg:#e9e5dc;--surface:#fdfcf8;--fg:#1a1a18;--fg-2:#45443f;--fg-3:#8b8a84;
@@ -1160,7 +1122,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <div class="rows">
         <button class="row" data-push="themes">
           <span class="lab">Themes</span>
-          <span class="val" id="theme-value">Brutal</span>
+          <span class="val" id="theme-value">Receipt</span>
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
@@ -1231,11 +1193,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="group">
       <h2>Theme</h2>
       <div class="rows" id="theme-list">
-        <button class="opt" data-pick-theme="brutal">
-          <span class="swatch sw-brutal"><i></i><i></i><i></i></span>
-          <span class="txt"><span class="nm">Brutal</span><span class="ds">Monospace, hard borders, no softness.</span></span>
-          <span class="tick">&#10003;</span>
-        </button>
         <button class="opt" data-pick-theme="doc">
           <span class="swatch sw-doc"><i></i><i></i><i></i></span>
           <span class="txt"><span class="nm">Document</span><span class="ds">Quiet, text first, gets out of the way.</span></span>
@@ -1497,7 +1454,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var root = document.documentElement;
   var meta = document.getElementById('theme-color');
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  var NAMES = { brutal: 'Brutal', doc: 'Document', receipt: 'Receipt' };
+  var NAMES = { doc: 'Document', receipt: 'Receipt' };
   var $ = function (id) { return document.getElementById(id); };
 
   /* =========================================================
@@ -4135,7 +4092,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   loadStore();
   applyMode(load('mode') || 'system');
-  applySkin(load('skin') || 'brutal');
+  applySkin(load('skin') || 'receipt');
   drawExercises();
   drawRoutines();
   try {
