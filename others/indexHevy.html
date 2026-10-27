@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<title>Hevy Clone</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A layout study reproducing the Hevy workout tracker interface.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<meta name="theme-color" content="#ffffff" id="theme-color">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1d83eb;
+  --blue-soft:#e8f1fd;
+  --lime:#c7fda0;
+  --green:#56bd23;
+  --orange:#e8933a;
+  --red:#e5484d;
+  --gold:#f2b705;
+
+  --bg:#ffffff;
+  --group:#f4f4f5;
+  --card:#ffffff;
+  --field:#f0f0f1;
+  --line:#e7e7e9;
+  --line-2:#f0f0f2;
+  --t1:#121214;
+  --t2:#6e6e76;
+  --t3:#a0a0a8;
+  --row-done:var(--lime);
+  --row-done-ink:#1d2d10;
+  --shadow:0 1px 2px rgba(0,0,0,.05);
+}
+:root[data-theme="dark"]{
+  --blue:#3b95f2;
+  --blue-soft:#17273a;
+  --lime:#2f4a1e;
+  --green:#5ec32a;
+  --orange:#eeab52;
+  --bg:#0e0e0f;
+  --group:#161618;
+  --card:#1a1a1c;
+  --field:#232326;
+  --line:#2a2a2e;
+  --line-2:#232326;
+  --t1:#f2f2f4;
+  --t2:#a1a1aa;
+  --t3:#71717a;
+  --row-done:#2f4a1e;
+  --row-done-ink:#e7f7d9;
+  --shadow:0 1px 2px rgba(0,0,0,.4);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;background:var(--group)}
+body{
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  background:var(--group);
+  color:var(--t1);
+  font-size:15px;
+  line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+  font-variant-numeric:tabular-nums;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+svg{display:block}
+
+/* ---------- phone shell ---------- */
+.phone{
+  max-width:430px;margin:0 auto;min-height:100svh;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  position:relative;
+  box-shadow:0 0 0 1px var(--line);
+}
+.statusbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top) + 8px) 22px 4px;
+  font-size:14px;font-weight:600;letter-spacing:.01em;
+  background:var(--bg);
+}
+.statusbar .icons{display:flex;gap:5px;align-items:center;color:var(--t1)}
+@media (display-mode:standalone){.statusbar{display:none}}
+
+.navbar{
+  display:grid;grid-template-columns:62px 1fr 62px;align-items:center;
+  padding:6px 14px 10px;background:var(--bg);
+  position:sticky;top:0;z-index:5;
+}
+.navbar h1{font-size:17px;font-weight:600;text-align:center;letter-spacing:-.01em}
+.navbar .left{justify-self:start}
+.navbar .right{justify-self:end;display:flex;gap:14px;align-items:center}
+.navbar .ic{color:var(--t1)}
+
+main{flex:1;overflow:visible;padding-bottom:12px}
+.screen{display:none;animation:in .22s ease both}
+.screen.on{display:block}
+@keyframes in{from{opacity:0}to{opacity:1}}
+
+.pad{padding:0 16px}
+.sec{font-size:13px;font-weight:600;color:var(--t2);padding:16px 16px 8px}
+.hair{height:1px;background:var(--line);margin:0 16px}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  width:100%;padding:11px 14px;border-radius:9px;
+  font-size:15px;font-weight:600;letter-spacing:-.01em;
+}
+.btn-fill{background:var(--blue);color:#fff}
+.btn-fill:active{background:var(--blue);filter:brightness(.92)}
+.btn-ghost{background:var(--card);color:var(--blue);border:1px solid var(--line)}
+.btn-grey{background:var(--field);color:var(--t1)}
+.btn-danger{background:var(--field);color:var(--red)}
+.btn-pill{
+  padding:6px 14px;border-radius:8px;font-size:15px;font-weight:600;
+  background:var(--blue);color:#fff;
+}
+.btn-row{display:flex;gap:10px;padding:0 16px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:12px;
+  margin:10px 16px;padding:14px;box-shadow:var(--shadow);
+}
+.card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-h .ttl{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.muted{color:var(--t2);font-size:14px}
+.tiny{color:var(--t3);font-size:13px}
+
+/* ---------- stats strip ---------- */
+.stats{display:flex;gap:26px;padding:10px 16px 12px}
+.stats .k{font-size:12px;color:var(--t2);font-weight:500}
+.stats .v{font-size:15px;font-weight:600;margin-top:1px}
+.stats .v.live{color:var(--blue)}
+
+/* ---------- log workout ---------- */
+.ex-head{display:flex;align-items:center;gap:10px;padding:14px 16px 6px}
+.thumb{
+  width:34px;height:34px;border-radius:50%;background:var(--field);
+  display:grid;place-items:center;flex:none;color:var(--t2);
+}
+.ex-name{flex:1;font-size:16px;font-weight:600;color:var(--blue);letter-spacing:-.01em}
+.note{padding:4px 16px 8px;font-size:15px;color:var(--t1)}
+.rest{display:flex;align-items:center;gap:6px;padding:2px 16px 10px;color:var(--blue);font-size:15px;font-weight:500}
+
+.setgrid{width:100%;border-collapse:collapse}
+.setgrid th{
+  font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.04em;
+  text-transform:uppercase;padding:4px 0 8px;text-align:center;
+}
+.setgrid th:first-child{width:46px}
+.setgrid th:last-child,.setgrid td:last-child{width:52px}
+.setgrid td{padding:9px 0;text-align:center;font-size:15px;font-weight:600}
+.setgrid td.prev{color:var(--t3);font-weight:500;font-size:14px}
+.setgrid td.idx{color:var(--t1);font-weight:600}
+.setgrid tr.todo td{color:var(--t3)}
+.setgrid tr.todo td.idx{color:var(--t2)}
+.setgrid tr.warm td.idx{color:var(--orange)}
+.setgrid tr.done td{background:var(--row-done);color:var(--row-done-ink)}
+.setgrid tr.done td.prev{color:#53684a}
+:root[data-theme="dark"] .setgrid tr.done td.prev{color:#9cba88}
+.setgrid tr.done td:first-child{border-radius:7px 0 0 7px}
+.setgrid tr.done td:last-child{border-radius:0 7px 7px 0}
+.tickbtn{
+  width:28px;height:21px;border-radius:5px;background:var(--field);
+  display:grid;place-items:center;margin:0 auto;color:var(--t3);
+}
+tr.done .tickbtn{background:var(--green);color:#fff}
+.addset{
+  display:block;width:calc(100% - 32px);margin:10px 16px 4px;
+  background:var(--field);border-radius:8px;padding:9px;
+  font-size:15px;font-weight:600;color:var(--t1);text-align:center;
+}
+.blockgap{height:10px;background:var(--group);margin-top:14px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.actions{padding:16px;display:grid;gap:10px}
+
+/* ---------- feed ---------- */
+.searchrow{display:flex;gap:12px;align-items:center;padding:4px 16px 10px}
+.search{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--field);border-radius:10px;padding:8px 11px;color:var(--t3);font-size:15px;
+}
+.post-h{display:flex;align-items:center;gap:10px}
+.av{
+  width:40px;height:40px;border-radius:50%;flex:none;
+  background:linear-gradient(140deg,#cfd6df,#9aa6b4);
+  display:grid;place-items:center;color:#fff;font-weight:600;font-size:14px;
+}
+.av.sm{width:26px;height:26px;font-size:11px}
+.post-h .who{flex:1;min-width:0}
+.post-h .nm{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.post-h .dt{font-size:13px;color:var(--t3)}
+.post-title{font-size:17px;font-weight:600;margin:10px 0 2px;letter-spacing:-.015em}
+.exrow{display:flex;align-items:center;gap:10px;padding:6px 0}
+.exrow .t{font-size:15px}
+.likes{font-size:13px;color:var(--t2);padding-top:10px}
+.postbar{display:flex;border-top:1px solid var(--line-2);margin-top:8px;padding-top:6px}
+.postbar button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--t2);font-size:14px;font-weight:500;padding:5px 0}
+
+/* ---------- list rows ---------- */
+.row{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--card)}
+.row + .row{box-shadow:inset 0 1px 0 var(--line-2)}
+.row .g{flex:1;min-width:0}
+.row .n{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.row .s{font-size:13px;color:var(--t3)}
+.letter{font-size:13px;font-weight:600;color:var(--t2);background:var(--group);padding:5px 16px}
+.chips{display:flex;gap:8px;padding:2px 16px 10px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;padding:6px 12px;border-radius:999px;background:var(--field);
+  font-size:13px;font-weight:500;color:var(--t1);white-space:nowrap;
+}
+.chip.on{background:var(--blue);color:#fff}
+
+/* ---------- profile ---------- */
+.prof{display:flex;align-items:center;gap:14px;padding:6px 16px 14px}
+.prof .av{width:66px;height:66px;font-size:22px}
+.prof .nm{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.prof .un{font-size:14px;color:var(--t2)}
+.triple{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.triple div{flex:1;text-align:center;padding:12px 0}
+.triple .v{font-size:17px;font-weight:700}
+.triple .k{font-size:12px;color:var(--t2);margin-top:1px}
+
+/* ---------- charts ---------- */
+.chart-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.chart-h .v{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.bars{display:flex;align-items:flex-end;gap:4px;height:104px;margin-top:14px}
+.bars .b{
+  flex:1;background:var(--blue);border-radius:3px 3px 0 0;position:relative;
+  min-height:3px;transition:opacity .15s ease;
+}
+.bars .b:hover{opacity:.72}
+.bars .b::after{
+  content:attr(data-v);
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  background:var(--t1);color:var(--bg);font-size:11px;font-weight:600;
+  padding:3px 6px;border-radius:5px;white-space:nowrap;opacity:0;pointer-events:none;
+  transition:opacity .15s ease;
+}
+.bars .b:hover::after{opacity:1}
+.xlab{display:flex;gap:4px;margin-top:6px}
+.xlab span{flex:1;text-align:center;font-size:10px;color:var(--t3);white-space:nowrap;overflow:visible}
+.linewrap{position:relative;margin-top:12px}
+.linewrap svg{width:100%;height:auto;overflow:visible}
+.pr-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:var(--gold);color:#3a2c00;font-size:11px;font-weight:700;
+  padding:2px 7px;border-radius:999px;
+}
+
+/* ---------- tab bar ---------- */
+.tabbar{
+  position:sticky;bottom:0;z-index:6;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  background:var(--bg);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar button{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 0 7px;color:var(--t3);font-size:10px;font-weight:500;
+}
+.tabbar button[aria-current="true"]{color:var(--blue)}
+
+/* ---------- theme toggle (not part of Hevy) ---------- */
+.themer{
+  position:fixed;right:max(14px,calc(50vw - 215px + 14px));
+  bottom:calc(env(safe-area-inset-bottom) + 70px);
+  width:38px;height:38px;border-radius:50%;z-index:10;
+  background:var(--card);border:1px solid var(--line);
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+  display:grid;place-items:center;font-size:15px;color:var(--t2);
+}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="icons">
+      <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M8 10.5 5.9 8.3a3 3 0 0 1 4.2 0L8 10.5Zm-4.1-4.3a8 8 0 0 1 8.2 0l1.4-1.5a10 10 0 0 0-11 0l1.4 1.5ZM8 1.2c2.6 0 5 .9 6.9 2.4l1.1-1.2A12 12 0 0 0 0 2.4l1.1 1.2A10.9 10.9 0 0 1 8 1.2Z"/></svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="1.8" fill="currentColor"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="currentColor" opacity=".4"/></svg>
+    </span>
+  </div>
+
+  <main>
+
+  <!-- ================= WORKOUT ================= -->
+  <section class="screen on" id="sc-workout">
+    <div class="navbar"><span class="left"></span><h1>Workout</h1><span class="right"></span></div>
+
+    <div class="sec">Quick Start</div>
+    <div class="pad">
+      <button class="btn btn-ghost" data-go="log">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Start Empty Workout
+      </button>
+    </div>
+
+    <div class="sec">Routines</div>
+    <div class="btn-row">
+      <button class="btn btn-ghost">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+        New Routine
+      </button>
+      <button class="btn btn-ghost">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        Explore
+      </button>
+    </div>
+
+    <div class="sec" style="display:flex;align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      My Routines (3)
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <span class="ttl">Chest &amp; Triceps day</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3);flex:none"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </div>
+      <p class="muted" style="margin:6px 0 12px">Bench Press (Barbell), Pec Deck, Cable Crossovers (Cable), Triceps Dip, Triceps Pushdown, Skullcrusher (Dumbbell)</p>
+      <button class="btn btn-fill" data-go="log">Start Routine</button>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <span class="ttl">Back &amp; Biceps day</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3);flex:none"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </div>
+      <p class="muted" style="margin:6px 0 12px">Rowing Machine, Seated Cable Row, Bent Over Row (Pendlay Row) (Barbell), Back Extension (Weighted Hyperextension), Bicep Curl (Dumbbell)</p>
+      <button class="btn btn-fill" data-go="log">Start Routine</button>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <span class="ttl">Leg day</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3);flex:none"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </div>
+      <p class="muted" style="margin:6px 0 12px">Squat (Barbell), Leg Press (Machine), Romanian Deadlift (Barbell), Seated Leg Curl, Standing Calf Raise</p>
+      <button class="btn btn-fill" data-go="log">Start Routine</button>
+    </div>
+  </section>
+
+  <!-- ================= LOG WORKOUT ================= -->
+  <section class="screen" id="sc-log">
+    <div class="navbar">
+      <button class="left ic" data-go="workout">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <h1>Log Workout</h1>
+      <span class="right">
+        <svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.2 1.6M5 4.5 7.5 2.6M19 4.5 16.5 2.6"/></svg>
+        <button class="btn-pill" data-go="workout">Finish</button>
+      </span>
+    </div>
+
+    <div class="stats">
+      <div><div class="k">Time</div><div class="v live">1h 15min</div></div>
+      <div><div class="k">Volume</div><div class="v">6 800 kg</div></div>
+      <div><div class="k">Sets</div><div class="v">18</div></div>
+    </div>
+    <div class="hair" style="margin:0"></div>
+
+    <div class="ex-head">
+      <span class="thumb">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+      </span>
+      <span class="ex-name">Bench Press (Barbell)</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3)"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+    </div>
+    <p class="note">Feeling strong today! Next session increase the weights for the last two sets.</p>
+    <div class="rest">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.5 1.8M9 2h6"/></svg>
+      Rest Timer: 1min 30s
+    </div>
+
+    <table class="setgrid">
+      <thead><tr><th>Sets</th><th>Previous</th><th>&#8644; kg</th><th>Reps</th><th>&#10003;</th></tr></thead>
+      <tbody>
+        <tr class="done warm"><td class="idx">W</td><td class="prev">40kg &times; 7</td><td>40</td><td>8</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+        <tr class="done"><td class="idx">1</td><td class="prev">62kg &times; 7</td><td>65</td><td>8</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+        <tr class="todo"><td class="idx">2</td><td class="prev">65kg &times; 8</td><td>65</td><td>8</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+        <tr class="todo"><td class="idx">3</td><td class="prev">70kg &times; 6</td><td>70</td><td>6</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+      </tbody>
+    </table>
+    <button class="addset">+ Add Set</button>
+
+    <div class="blockgap"></div>
+
+    <div class="ex-head">
+      <span class="thumb">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>
+      </span>
+      <span class="ex-name">Overhead Press (Barbell)</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3)"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+    </div>
+
+    <table class="setgrid">
+      <thead><tr><th>Sets</th><th>Previous</th><th>&#8644; kg</th><th>Reps</th><th>&#10003;</th></tr></thead>
+      <tbody>
+        <tr class="todo warm"><td class="idx">W</td><td class="prev">20kg &times; 6</td><td>20</td><td>6</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+        <tr class="todo"><td class="idx">1</td><td class="prev">40kg &times; 6</td><td>40</td><td>8</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+        <tr class="todo"><td class="idx">2</td><td class="prev">40kg &times; 6</td><td>40</td><td>8</td><td><span class="tickbtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4.5 4.5L19 7"/></svg></span></td></tr>
+      </tbody>
+    </table>
+    <button class="addset">+ Add Set</button>
+
+    <div class="actions">
+      <button class="btn btn-ghost">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add Exercise
+      </button>
+      <button class="btn btn-danger">Discard Workout</button>
+    </div>
+  </section>
+
+  <!-- ================= FEED ================= -->
+  <section class="screen" id="sc-feed">
+    <div class="navbar"><span class="left"></span><h1>Home</h1><span class="right"></span></div>
+    <div class="searchrow">
+      <span class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        Search user
+      </span>
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t1)"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 0 1-3.4 0"/></svg>
+    </div>
+
+    <div class="card">
+      <div class="post-h">
+        <span class="av">SD</span>
+        <span class="who"><div class="nm">strongdavid</div><div class="dt">24 Oct 2026, 18:22</div></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3)"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </div>
+      <div class="post-title">Chest Day &#128170;</div>
+      <div class="stats" style="padding:8px 0 10px">
+        <div><div class="k">Time</div><div class="v">44 min</div></div>
+        <div><div class="k">Volume</div><div class="v">1 247 kg</div></div>
+        <div><div class="k">Sets</div><div class="v">15</div></div>
+      </div>
+      <div class="tiny" style="margin-bottom:2px">Workout</div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">3 sets Bench Press (Barbell)</span></div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">4 sets Arnold Press (Dumbbell)</span></div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">5 sets Chest Press (Machine)</span></div>
+      <div class="muted" style="padding:4px 0 0;color:var(--t3)">See 1 more exercise</div>
+      <div class="likes">1 like</div>
+      <div class="postbar">
+        <button><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm0 0 4.5-8a2.5 2.5 0 0 1 3.3 3.2L13.5 10H19a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17.7 20H7"/></svg>Like</button>
+        <button><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12Z"/></svg>Comment</button>
+        <button><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>Share</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="post-h">
+        <span class="av" style="background:linear-gradient(140deg,#e3d2c3,#b9947a)">JA</span>
+        <span class="who"><div class="nm">jaumeros</div><div class="dt">23 Oct 2026, 07:05</div></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3)"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </div>
+      <div class="post-title">Early leg session</div>
+      <div class="stats" style="padding:8px 0 10px">
+        <div><div class="k">Time</div><div class="v">1h 02min</div></div>
+        <div><div class="k">Volume</div><div class="v">9 980 kg</div></div>
+        <div><div class="k">Sets</div><div class="v">19</div></div>
+      </div>
+      <div class="tiny" style="margin-bottom:2px">Workout</div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">5 sets Squat (Barbell)</span></div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">4 sets Leg Press (Machine)</span></div>
+      <div class="likes">3 likes &middot; 1 comment</div>
+      <div class="postbar">
+        <button><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3Zm0 0 4.5-8a2.5 2.5 0 0 1 3.3 3.2L13.5 10H19a2 2 0 0 1 2 2.4l-1.3 6A2 2 0 0 1 17.7 20H7"/></svg>Like</button>
+        <button><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12Z"/></svg>Comment</button>
+        <button><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>Share</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= EXERCISES ================= -->
+  <section class="screen" id="sc-exercises">
+    <div class="navbar">
+      <span class="left"></span><h1>Exercises</h1>
+      <span class="right"><svg class="ic" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+    </div>
+    <div class="searchrow">
+      <span class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        Search exercise
+      </span>
+    </div>
+    <div class="chips">
+      <span class="chip on">All Equipment</span>
+      <span class="chip">All Muscles</span>
+      <span class="chip">Recent</span>
+    </div>
+
+    <div class="card" style="padding:14px">
+      <div class="chart-h">
+        <div>
+          <div style="font-size:15px;font-weight:600;letter-spacing:-.01em">Bench Press (Barbell)</div>
+          <div class="tiny">Heaviest weight &middot; last 6 months</div>
+        </div>
+        <span class="pr-badge">&#9733; PR</span>
+      </div>
+      <div class="linewrap">
+        <svg viewBox="0 0 320 140" role="img" aria-label="Heaviest weight per month, rising from 72.5 to 95 kg">
+          <g stroke="var(--line)" stroke-width="1">
+            <line x1="34" y1="16" x2="316" y2="16"/>
+            <line x1="34" y1="62" x2="316" y2="62"/>
+            <line x1="34" y1="108" x2="316" y2="108"/>
+          </g>
+          <g fill="var(--t3)" font-size="10" font-family="Inter,sans-serif" text-anchor="end">
+            <text x="27" y="19">95</text>
+            <text x="27" y="65">85</text>
+            <text x="27" y="111">75</text>
+          </g>
+          <polyline fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            points="46,119 90,101 134,96 178,78 222,71 266,48 306,16"/>
+          <g fill="var(--blue)">
+            <circle cx="46" cy="119" r="3.6"/><circle cx="90" cy="101" r="3.6"/><circle cx="134" cy="96" r="3.6"/>
+            <circle cx="178" cy="78" r="3.6"/><circle cx="222" cy="71" r="3.6"/><circle cx="266" cy="48" r="3.6"/>
+            <circle cx="306" cy="16" r="5" stroke="var(--card)" stroke-width="2"/>
+          </g>
+          <text x="306" y="6" text-anchor="end" font-size="11" font-weight="700" font-family="Inter,sans-serif" fill="var(--t1)">95 kg</text>
+          <g fill="var(--t3)" font-size="10" font-family="Inter,sans-serif" text-anchor="middle">
+            <text x="46" y="134">May</text><text x="134" y="134">Jul</text><text x="222" y="134">Sep</text><text x="306" y="134">Oct</text>
+          </g>
+        </svg>
+      </div>
+      <div class="chips" style="padding:12px 0 0">
+        <span class="chip on">Heaviest Weight</span>
+        <span class="chip">One Rep Max</span>
+        <span class="chip">Best Volume</span>
+      </div>
+    </div>
+
+    <div class="letter">B</div>
+    <div class="row"><span class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Bench Press (Barbell)</div><div class="s">Chest</div></span><span class="tiny">8</span></div>
+    <div class="row"><span class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Bent Over Row (Barbell)</div><div class="s">Upper Back</div></span><span class="tiny">5</span></div>
+    <div class="row"><span class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Bicep Curl (Dumbbell)</div><div class="s">Biceps</div></span><span class="tiny">12</span></div>
+
+    <div class="letter">C</div>
+    <div class="row"><span class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Cable Crossover</div><div class="s">Chest</div></span><span class="tiny">3</span></div>
+    <div class="row"><span class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Chest Press (Machine)</div><div class="s">Chest</div></span><span class="tiny">7</span></div>
+
+    <div class="letter">D</div>
+    <div class="row"><span class="thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Deadlift (Barbell)</div><div class="s">Hamstrings</div></span><span class="tiny">9</span></div>
+  </section>
+
+  <!-- ================= PROFILE ================= -->
+  <section class="screen" id="sc-profile">
+    <div class="navbar">
+      <span class="left"></span><h1>Profile</h1>
+      <span class="right">
+        <svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>
+        <svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3.2"/><path d="M20 12a8 8 0 0 0-.2-1.7l2-1.5-2-3.4-2.3 1a8 8 0 0 0-3-1.7L14 2h-4l-.5 2.7a8 8 0 0 0-3 1.7l-2.3-1-2 3.4 2 1.5a8 8 0 0 0 0 3.4l-2 1.5 2 3.4 2.3-1a8 8 0 0 0 3 1.7L10 22h4l.5-2.7a8 8 0 0 0 3-1.7l2.3 1 2-3.4-2-1.5c.1-.6.2-1.1.2-1.7Z"/></svg>
+      </span>
+    </div>
+
+    <div class="prof">
+      <span class="av">AK</span>
+      <span>
+        <div class="nm">Adam Kowalczyk</div>
+        <div class="un">@adamk &middot; Kraków</div>
+      </span>
+    </div>
+    <div class="pad" style="padding-bottom:14px">
+      <button class="btn btn-ghost" style="color:var(--t1)">Edit Profile</button>
+    </div>
+
+    <div class="triple">
+      <div><div class="v">56</div><div class="k">Workouts</div></div>
+      <div><div class="v">72</div><div class="k">Followers</div></div>
+      <div><div class="v">55</div><div class="k">Following</div></div>
+    </div>
+
+    <div class="card">
+      <div class="chart-h">
+        <span style="font-size:15px;font-weight:600">Workouts per week</span>
+        <span class="v">3 h <span style="color:var(--t3);font-weight:500;font-size:13px">this week</span></span>
+      </div>
+      <div class="bars">
+        <span class="b" style="height:38%" data-v="1h 10m"></span>
+        <span class="b" style="height:52%" data-v="1h 36m"></span>
+        <span class="b" style="height:30%" data-v="55m"></span>
+        <span class="b" style="height:64%" data-v="1h 58m"></span>
+        <span class="b" style="height:71%" data-v="2h 12m"></span>
+        <span class="b" style="height:48%" data-v="1h 28m"></span>
+        <span class="b" style="height:83%" data-v="2h 34m"></span>
+        <span class="b" style="height:76%" data-v="2h 20m"></span>
+        <span class="b" style="height:92%" data-v="2h 50m"></span>
+        <span class="b" style="height:68%" data-v="2h 05m"></span>
+        <span class="b" style="height:88%" data-v="2h 42m"></span>
+        <span class="b" style="height:100%" data-v="3h 04m"></span>
+      </div>
+      <div class="xlab">
+        <span>4 Aug</span><span></span><span></span><span>25 Aug</span><span></span><span></span>
+        <span>15 Sep</span><span></span><span></span><span>6 Oct</span><span></span><span>20 Oct</span>
+      </div>
+    </div>
+
+    <div class="sec">Dashboard</div>
+    <div class="row"><span class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span><span class="g"><div class="n">Statistics</div></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></div>
+    <div class="row"><span class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="g"><div class="n">Exercises</div></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></div>
+    <div class="row"><span class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg></span><span class="g"><div class="n">Measures</div></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></div>
+    <div class="row"><span class="thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span><span class="g"><div class="n">Calendar</div></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></div>
+
+    <div class="sec">Workouts</div>
+    <div class="card" style="margin-top:0">
+      <div class="post-h">
+        <span class="av sm">AK</span>
+        <span class="who"><div class="nm">Push A</div><div class="dt">Today, 08:12</div></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:var(--t3)"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+      </div>
+      <div class="stats" style="padding:10px 0 8px">
+        <div><div class="k">Time</div><div class="v">1h 15min</div></div>
+        <div><div class="k">Volume</div><div class="v">6 800 kg</div></div>
+        <div><div class="k">PRs</div><div class="v">2</div></div>
+      </div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">4 sets Bench Press (Barbell)</span></div>
+      <div class="exrow"><span class="thumb" style="width:28px;height:28px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span><span class="t">3 sets Overhead Press (Barbell)</span></div>
+    </div>
+  </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button data-tab="feed">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2v-9Z"/></svg>
+      Home
+    </button>
+    <button data-tab="exercises">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 9v6M7 6v12M17 6v12M20 9v6M7 12h10"/></svg>
+      Exercises
+    </button>
+    <button data-tab="workout" aria-current="true">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      Workout
+    </button>
+    <button data-tab="profile">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+      Profile
+    </button>
+  </nav>
+
+  <button class="themer" id="themer" aria-label="Switch colour theme">&#9790;</button>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var meta = document.getElementById('theme-color');
+  var COLORS = { light: '#ffffff', dark: '#0e0e0f' };
+  var themer = document.getElementById('themer');
+
+  function stored() { try { return localStorage.getItem('hevy-theme'); } catch (e) { return null; } }
+
+  function setTheme(t, remember) {
+    root.setAttribute('data-theme', t);
+    meta.setAttribute('content', COLORS[t]);
+    themer.innerHTML = t === 'dark' ? '&#9728;' : '&#9790;';
+    if (remember) { try { localStorage.setItem('hevy-theme', t); } catch (e) {} }
+  }
+
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  setTheme(stored() || (mq.matches ? 'dark' : 'light'), false);
+  mq.addEventListener('change', function (e) {
+    if (!stored()) setTheme(e.matches ? 'dark' : 'light', false);
+  });
+  themer.addEventListener('click', function () {
+    setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+  });
+
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tabbar button'));
+  function show(id, tab) {
+    document.querySelectorAll('.screen').forEach(function (s) {
+      s.classList.toggle('on', s.id === 'sc-' + id);
+    });
+    tabs.forEach(function (b) {
+      b.setAttribute('aria-current', String(b.dataset.tab === (tab || id)));
+    });
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(function (b) {
+    b.addEventListener('click', function () { show(b.dataset.tab); });
+  });
+  document.querySelectorAll('[data-go]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var t = el.dataset.go;
+      show(t, t === 'log' ? 'workout' : t);
+    });
+  });
+})();
+</script>
+</body>
+</html>
