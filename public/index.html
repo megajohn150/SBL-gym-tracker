@@ -2144,9 +2144,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     return r;
   }
+  // a cue already written for this exercise elsewhere is the sensible default,
+  // and it stays editable like any other
+  function cueFor(exId) {
+    var found = '';
+    store.routines.forEach(function (r) {
+      r.items.forEach(function (it) { if (it.exId === exId && it.note) found = it.note; });
+    });
+    return found;
+  }
+
   function newItem(exId) {
     var x = byId(exId);
-    return { exId: exId, sets: 1, reps: '', note: '', side: (x && x.unilateral) ? 'R' : null };
+    return { exId: exId, sets: 1, reps: '', note: cueFor(exId), side: (x && x.unilateral) ? 'R' : null };
   }
   function addToDraft(exId) { draft.items.push(newItem(exId)); }
 
