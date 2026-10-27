@@ -519,6 +519,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .pop-menu button.danger{color:var(--red)}
 .pop-menu button[aria-pressed="true"]{color:var(--fg)}
 .pop-menu button[aria-pressed="true"]::after{content:"\2713";float:right}
+#wf-more{color:var(--fg-3);font-size:.8rem}
+#wf-more::after{content:"\25BE";float:right;font-size:.7rem}
 
 /* --- bottom sheet --- */
 .sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
@@ -1575,7 +1577,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1038';
+  var APP_VERSION = '1.1039';
 
   /* =========================================================
      STORE
@@ -3631,15 +3633,31 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('p-range').addEventListener('click', function () { openPeriod(this, 'profile'); });
 
   /* --- showing one routine's workouts only --- */
-  $('p-filter').addEventListener('click', function () {
-    var names = [];
+  // All, then the routines in the order the Workout tab lists them, then the
+  // names whose routine is gone, folded away behind More
+  var wfMore = false;
+
+  function drawWfMenu() {
+    var used = [];
     store.workouts.forEach(function (w) {
-      if (names.indexOf(w.name) < 0) names.push(w.name);
+      if (used.indexOf(w.name) < 0) used.push(w.name);
     });
-    $('wf-menu').innerHTML = ['', ].concat(names).map(function (n) {
+    var live = store.routines.map(function (r) { return r.name; })
+      .filter(function (n) { return used.indexOf(n) > -1; });
+    var gone = used.filter(function (n) { return live.indexOf(n) < 0; });
+    if (gone.indexOf(pFilter) > -1) wfMore = true;      // never hide the active one
+
+    var rows = [''].concat(live).concat(wfMore ? gone : []);
+    $('wf-menu').innerHTML = rows.map(function (n) {
       return '<button data-wf="' + esc(n) + '" aria-pressed="' + (n === pFilter) + '">' +
         (n ? esc(n) : 'All') + '</button>';
-    }).join('');
+    }).join('') +
+      (!wfMore && gone.length ? '<button id="wf-more">More</button>' : '');
+  }
+
+  $('p-filter').addEventListener('click', function () {
+    wfMore = false;
+    drawWfMenu();
     var r = this.getBoundingClientRect();
     $('wf-wrap').style.top = (r.bottom + 6) + 'px';
     $('wf-pop').hidden = false;
@@ -3647,6 +3665,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function closeWf() { $('wf-pop').hidden = true; }
   document.querySelector('[data-wf-close]').addEventListener('click', closeWf);
   $('wf-menu').addEventListener('click', function (e) {
+    if (e.target.closest('#wf-more')) { wfMore = true; drawWfMenu(); return; }
     var b = e.target.closest('[data-wf]');
     if (!b) return;
     pFilter = b.dataset.wf;
