@@ -448,7 +448,8 @@ body.in-session .tabs{display:none}
 .dex{padding:0 var(--pad) 1.5rem}
 .dex + .dex{border-top:var(--dash);padding-top:1.5rem}
 :root[data-theme="light"] .dav{background-image:url("imgs/muscles-light.jpg")}
-.dexhead{display:flex;align-items:center;gap:12px;margin-bottom:.2rem}
+.dexhead{display:flex;align-items:center;gap:12px;margin-bottom:.2rem;width:100%;text-align:left}
+button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .dav{
   display:block;width:42px;height:42px;flex:none;border-radius:50%;
   background-image:url("imgs/muscles.jpg");background-repeat:no-repeat;
@@ -1574,7 +1575,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1037';
+  var APP_VERSION = '1.1038';
 
   /* =========================================================
      STORE
@@ -3927,10 +3928,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     var body = '<div class="dsec">Workout</div>' + w.exercises.map(function (e, ei) {
       var rows = e.sets.filter(logged);
-      return '<div class="dex"><div class="dexhead">' + muscleArt(e.muscle) +
+      // the head opens that exercise's own page, unless it is one of the old
+      // movements that no longer lives in the library
+      var known = !detailEdit && e.exId && byId(e.exId);
+      var tag = known ? 'button' : 'div';
+      return '<div class="dex"><' + tag + ' class="dexhead"' +
+        (known ? ' data-ex-open="' + esc(e.exId) + '"' : '') + '>' + muscleArt(e.muscle) +
         '<span class="dext"><span class="nm">' + esc(e.name) + '</span>' +
         '<span class="meta">' + esc(e.muscle || '') + (e.unilateral ? ' &middot; unilateral' : '') +
-        '</span></span></div>' +
+        '</span></span></' + tag + '>' +
         (detailEdit
           ? '<div class="notebox' + (e.note ? ' has' : '') + '" style="margin:.35rem 0 .2rem">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"/></svg>' +
@@ -4109,6 +4115,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('save-drop').addEventListener('click', leaveEdit);
 
   $('detail-body').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-ex-open]');
+    if (x) { openHistory(x.dataset.exOpen); return; }
     if (e.target.closest('#d-date')) { openDatePick(); return; }
     if (e.target.closest('#detail-menu')) { detailMenu(); return; }
     var b = e.target.closest('[data-split]');
@@ -4180,7 +4188,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   /* --- the routine's own numbers, changed mid-workout --- */
-  var meta = { sets: 1, side: 'R' };
+  var mset = { sets: 1, side: 'R' };
 
   // growing adds blanks; shrinking stops at the last set you already logged
   function setPlannedSets(ex, n) {
@@ -4194,9 +4202,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   function drawMeta() {
-    $('meta-sets').textContent = meta.sets;
+    $('meta-sets').textContent = mset.sets;
     document.querySelectorAll('[data-mside]').forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.mside === meta.side));
+      b.setAttribute('aria-pressed', String(b.dataset.mside === mset.side));
     });
   }
 
@@ -4204,8 +4212,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     closeExPop();
     var ex = session.exercises[session.idx];
     if (!ex) return;
-    meta.sets = Math.max(1, Math.round(ex.unilateral ? ex.sets.length / 2 : ex.sets.length));
-    meta.side = ex.side || 'R';
+    mset.sets = Math.max(1, Math.round(ex.unilateral ? ex.sets.length / 2 : ex.sets.length));
+    mset.side = ex.side || 'R';
     $('meta-title').textContent = ex.name;
     $('meta-reps').value = ex.reps || '';
     $('meta-side-row').hidden = !ex.unilateral;
@@ -4218,26 +4226,26 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   document.querySelectorAll('[data-mstep]').forEach(function (b) {
     b.addEventListener('click', function () {
-      meta.sets = Math.min(12, Math.max(1, meta.sets + Number(b.dataset.mstep)));
+      mset.sets = Math.min(12, Math.max(1, mset.sets + Number(b.dataset.mstep)));
       drawMeta();
     });
   });
   document.querySelectorAll('[data-mside]').forEach(function (b) {
-    b.addEventListener('click', function () { meta.side = b.dataset.mside; drawMeta(); });
+    b.addEventListener('click', function () { mset.side = b.dataset.mside; drawMeta(); });
   });
 
   $('meta-save').addEventListener('click', function () {
     var ex = session.exercises[session.idx];
     if (!ex) { closeMeta(); return; }
     ex.reps = $('meta-reps').value.trim();
-    if (ex.unilateral) ex.side = meta.side;
-    setPlannedSets(ex, meta.sets);
+    if (ex.unilateral) ex.side = mset.side;
+    setPlannedSets(ex, mset.sets);
 
     var r = session.routineId ? routineById(session.routineId) : null;
     if (r) {
       var it = r.items.filter(function (i) { return i.exId === ex.exId; })[0];
       if (it) {
-        it.sets = meta.sets;
+        it.sets = mset.sets;
         it.reps = ex.reps;
         if (ex.unilateral) it.side = ex.side;
         saveStore();
