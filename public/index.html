@@ -442,7 +442,7 @@ body.in-session .tabs{display:none}
 :root[data-theme="light"] .avatar.pic{background-image:url("imgs/avatars-light.jpg")}
 .avagrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:0 0 1.1rem}
 .avagrid button{display:grid;place-items:center}
-.avagrid .avatar{width:50px;height:50px;font-size:.6rem}
+.avagrid .avatar{width:50px;height:50px}
 .avagrid button[aria-pressed="true"] .avatar{outline:2px solid var(--accent);outline-offset:2px}
 .dext{min-width:0}
 .dex .nm{
@@ -1076,7 +1076,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     <div class="scroll">
       <div class="ptop">
-        <span class="avatar" id="p-avatar" style="width:66px;height:66px;font-size:.8rem">YOU</span>
+        <span class="avatar" id="p-avatar" style="width:66px;height:66px;font-size:25px">YOU</span>
         <span class="pid">
           <span class="pname" id="p-name">your name</span>
           <span class="pstats">
@@ -1505,7 +1505,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1027';
+  var APP_VERSION = '1.1028';
 
   /* =========================================================
      STORE
@@ -3420,7 +3420,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       av.style.cssText = 'width:66px;height:66px;' + avatarArt(pf.pic, 66);
     } else {
       av.className = 'avatar';
-      av.style.cssText = 'width:66px;height:66px;font-size:.8rem';
+      av.style.cssText = 'width:66px;height:66px;font-size:25px';
       av.textContent = initials(pf.name || pf.handle || 'you');
     }
     $('p-workouts').textContent = store.workouts.length;
@@ -3470,7 +3470,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '"></span></button>';
     }).join('') +
       '<button data-pic="" aria-pressed="' + (pfPic === null) + '">' +
-      '<span class="avatar" style="width:50px;height:50px">' +
+      '<span class="avatar" style="width:50px;height:50px;font-size:19px">' +
       esc(initials(store.profile.name || store.profile.handle || 'you')) + '</span></button>';
   }
 
@@ -3728,7 +3728,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return '<span class="avatar pic' + (cls ? ' ' + cls : '') + '" style="' + box +
         avatarArt(store.profile.pic, w) + '"></span>';
     }
-    return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="' + box + '">' +
+    return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="' + box +
+      'font-size:' + Math.round(w * 0.38) + 'px">' +
       esc(initials(store.profile.name || store.profile.handle || 'you')) + '</span>';
   }
 
