@@ -196,7 +196,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   display:block;font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;
   color:var(--fg-3);font-weight:600;margin-bottom:.5rem;
 }
-.field input[type="text"],.field select{
+.field input,.field select{
   width:100%;padding:12px var(--cardpad);background:var(--surface);
   border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
   font-size:1rem;appearance:none;-webkit-appearance:none;
@@ -404,6 +404,9 @@ body.in-session .tabs{display:none}
 .wex{padding-top:.5rem}
 .wex li{display:flex;justify-content:space-between;gap:1rem;padding:.26rem 0;font-size:.76rem;color:var(--fg-2)}
 .wex em{font-style:normal;color:var(--fg-3);white-space:nowrap}
+/* the list marker from the old Brutal template */
+.wex li > span:first-child::before,
+.rtline > span:first-child::before{content:">";margin-right:.5em;color:var(--fg-3)}
 .wmore{font-size:.76rem;color:var(--fg-3);padding-top:.26rem}
 
 /* --- one finished workout --- */
@@ -725,9 +728,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
    THEME 1 — DOCUMENT
    =========================================================== */
 [data-skin="doc"]{
-  --bg:#fff;--surface:#fff;--fg:#37352f;--fg-2:#5f5b53;--fg-3:#9b9a97;
-  --line:#ebebea;--accent:#37352f;--accent-ink:#fff;
-  --radius:7px;--border:1px solid #ebebea;--shadow:none;--dash:1px solid #ebebea;
+  --bg:#f6f5f3;--surface:#fff;--fg:#37352f;--fg-2:#5f5b53;--fg-3:#9b9a97;
+  --line:#e3e1dc;--accent:#37352f;--accent-ink:#fff;
+  --radius:7px;--border:1px solid #e3e1dc;--shadow:none;--dash:1px solid #e3e1dc;
   --base:15px;--pad:20px;--cardpad:14px;
   --h1:1.7rem;--h1w:700;--h1track:-.02em;
   --name:1rem;--namew:600;--nametrack:-.01em;
