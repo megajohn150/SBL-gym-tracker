@@ -1399,7 +1399,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
     </div>
     <div class="dpick-grid" id="dp-grid"></div>
-    <button class="btn btn-primary" id="dp-save" style="margin-top:14px">Set date</button>
+    <div class="hmrow" style="margin:1rem 0 0">
+      <span class="field" style="padding:0"><label for="dp-h">Hour</label>
+        <input type="text" id="dp-h" inputmode="numeric"></span>
+      <span class="field" style="padding:0"><label for="dp-m">Minute</label>
+        <input type="text" id="dp-m" inputmode="numeric"></span>
+    </div>
+    <button class="btn btn-primary" id="dp-save">Save</button>
   </div>
 </div>
 
@@ -3671,6 +3677,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     dp.pick = new Date(pendingDate || detailW.date);
     dp.y = dp.pick.getFullYear();
     dp.m = dp.pick.getMonth();
+    $('dp-h').value = pad2(dp.pick.getHours());
+    $('dp-m').value = pad2(dp.pick.getMinutes());
     drawDatePick();
     $('date-sheet').hidden = false;
   }
@@ -3691,11 +3699,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     dp.pick = new Date(dp.y, dp.m, Number(b.dataset.d));
     drawDatePick();
   });
+  $('dp-h').addEventListener('input', function () { digits(this); });
+  $('dp-m').addEventListener('input', function () { digits(this); });
+
   $('dp-save').addEventListener('click', function () {
     if (!detailW || !dp.pick) { closeDatePick(); return; }
-    var was = new Date(pendingDate || detailW.date);
+    var h = Math.min(23, Number($('dp-h').value) || 0);
+    var mi = Math.min(59, Number($('dp-m').value) || 0);
     pendingDate = new Date(dp.pick.getFullYear(), dp.pick.getMonth(), dp.pick.getDate(),
-      was.getHours(), was.getMinutes(), was.getSeconds()).toISOString();
+      h, mi, 0).toISOString();
     closeDatePick();
     detailDirty = true;
     drawSaveBar();
