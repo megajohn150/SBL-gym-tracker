@@ -1521,7 +1521,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (current() === 's-session') drawSession();
   }
 
-  function pull() {
+  function cloudPull() {
     if (!me) return Promise.resolve();
     syncState('busy');
     return sb.from('tracker').select('data,session,rev').eq('user_id', me.id).maybeSingle()
@@ -1529,12 +1529,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (r.error) { syncState('err'); return; }
         if (!r.data) {                       // no row yet: claim one
           cloud.rev = 0;
-          return push(true);
+          return cloudPush(true);
         }
         cloud.rev = r.data.rev || 0;
 
         // a fresh account with something already on this device
-        if (!cloud.rev && (store.workouts.length || store.exercises.length)) return push(true);
+        if (!cloud.rev && (store.workouts.length || store.exercises.length)) return cloudPush(true);
 
         store = mergeStores(store, r.data.data || {});
         save('data', JSON.stringify(store));
@@ -1549,7 +1549,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       });
   }
 
-  function push(force) {
+  function cloudPush(force) {
     if (!me) return Promise.resolve();
     clearTimeout(cloud.timer);
     syncState('busy');
@@ -1565,7 +1565,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     return q.select('rev').maybeSingle().then(function (r) {
       if (r.error) { cloud.dirty = true; syncState('err'); return; }
-      if (!r.data) return pull().then(function () { return push(true); });  // someone wrote first
+      if (!r.data) return cloudPull().then(function () { return cloudPush(true); });  // someone wrote first
       cloud.rev = next;
       cloud.dirty = false;
       syncState('ok');
@@ -1577,12 +1577,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!me) return;
     cloud.dirty = true;
     clearTimeout(cloud.timer);
-    cloud.timer = setTimeout(function () { push(); }, 1500);
+    cloud.timer = setTimeout(function () { cloudPush(); }, 1500);
   }
 
-  addEventListener('visibilitychange', function () { if (document.hidden && cloud.dirty) push(); });
-  addEventListener('pagehide', function () { if (cloud.dirty) push(); });
-  addEventListener('online', function () { if (cloud.dirty) push(); });
+  addEventListener('visibilitychange', function () { if (document.hidden && cloud.dirty) cloudPush(); });
+  addEventListener('pagehide', function () { if (cloud.dirty) cloudPush(); });
+  addEventListener('online', function () { if (cloud.dirty) cloudPush(); });
 
   /* --- the sign-in gate --- */
   function gateErr(msg) {
@@ -1598,7 +1598,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     document.getElementById('gate').hidden = !!me;
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
     if (!me) { syncState('off'); return; }
-    if (me.id !== was) { cloud.rev = 0; pull(); }
+    if (me.id !== was) { cloud.rev = 0; cloudPull(); }
   }
 
   function authGo(kind) {
@@ -1661,8 +1661,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function current() { return stack[stack.length - 1]; }
 
   function render(id) {
+    var screen = document.getElementById(id);
+    if (!screen) return;                       // never blank the app over a bad id
     document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
-    var tab = document.getElementById(id).dataset.tab;
+    var tab = screen.dataset.tab;
     document.querySelectorAll('.tabs button').forEach(function (b) {
       b.setAttribute('aria-current', String(b.dataset.tab === tab));
     });
