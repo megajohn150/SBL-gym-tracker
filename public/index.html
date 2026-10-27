@@ -415,6 +415,7 @@ body.in-session .tabs{display:none}
   color:var(--fg-3);font-weight:600;padding:1.9rem var(--pad) .9rem;
   border-top:var(--dash);margin-top:1.6rem;
 }
+.dsec.row2{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .split{padding:0 var(--pad)}
 .splitrow{margin-bottom:.9rem}
 .splitrow.extra{display:none}
@@ -1088,7 +1089,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button class="dashbtn" data-push="calendar">Calendar</button>
       </div>
 
-      <div class="dsec">Workouts</div>
+      <div class="dsec row2">
+        <span>Workouts</span>
+        <button class="prange" id="p-filter">All</button>
+      </div>
       <div class="feed" id="p-feed"></div>
       <div class="note" id="p-empty" hidden>Nothing logged yet.</div>
     </div>
@@ -1247,6 +1251,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <p class="gate-err" id="gate-err" hidden></p>
     <button class="btn btn-primary" id="au-in">Sign in</button>
     <button class="btn btn-ghost" id="au-up" style="margin-top:8px">Create account</button>
+  </div>
+</div>
+
+<div class="pop" id="wf-pop" hidden>
+  <div class="pop-bg" data-wf-close></div>
+  <div class="pop-wrap" id="wf-wrap">
+    <div class="pop-menu" id="wf-menu"></div>
   </div>
 </div>
 
@@ -3105,7 +3116,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   /* --- profile --- */
-  var pMetric = 'reps', pPeriod = '3m';
+  var pMetric = 'reps', pPeriod = '3m', pFilter = '';
   var xMetric = 'weight', xPeriod = '3m';
 
   // short spans are read day by day, long ones month by month
@@ -3282,10 +3293,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return '<span>' + (p.unit === 'month' ? MONTHS[d.getMonth()] : dayLab(d)) + '</span>';
     }).join('');
 
+    // the number on a card is its place in the whole log, filter or not
     var total = store.workouts.length;
+    var shown = store.workouts.map(function (w, i) { return { w: w, no: total - i }; })
+      .filter(function (x) { return !pFilter || x.w.name === pFilter; });
+
+    $('p-filter').textContent = pFilter || 'All';
+    $('p-filter').hidden = total === 0;
     $('p-empty').hidden = total > 0;
-    $('p-feed').innerHTML = store.workouts.map(function (w, i) {
-      return workoutCard(w, total - i);
+    $('p-feed').innerHTML = shown.map(function (x) {
+      return workoutCard(x.w, x.no);
     }).join('');
   }
 
@@ -3331,6 +3348,30 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('p-range').addEventListener('click', function () { openPeriod(this, 'profile'); });
+
+  /* --- showing one routine's workouts only --- */
+  $('p-filter').addEventListener('click', function () {
+    var names = [];
+    store.workouts.forEach(function (w) {
+      if (names.indexOf(w.name) < 0) names.push(w.name);
+    });
+    $('wf-menu').innerHTML = ['', ].concat(names).map(function (n) {
+      return '<button data-wf="' + esc(n) + '" aria-pressed="' + (n === pFilter) + '">' +
+        (n ? esc(n) : 'All') + '</button>';
+    }).join('');
+    var r = this.getBoundingClientRect();
+    $('wf-wrap').style.top = (r.bottom + 6) + 'px';
+    $('wf-pop').hidden = false;
+  });
+  function closeWf() { $('wf-pop').hidden = true; }
+  document.querySelector('[data-wf-close]').addEventListener('click', closeWf);
+  $('wf-menu').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-wf]');
+    if (!b) return;
+    pFilter = b.dataset.wf;
+    closeWf();
+    drawProfile();
+  });
   function closePer() { $('per-pop').hidden = true; }
   document.querySelector('[data-per-close]').addEventListener('click', closePer);
   document.querySelectorAll('[data-period]').forEach(function (b) {
