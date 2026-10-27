@@ -440,6 +440,8 @@ body.in-session .tabs{display:none}
   background-origin:border-box;            /* positions are measured from the outer edge */
 }
 :root[data-theme="light"] .avatar.pic{background-image:url("imgs/avatars-light.jpg")}
+.avatar.pic.s-arm{background-image:url("imgs/arm.jpg")}
+:root[data-theme="light"] .avatar.pic.s-arm{background-image:url("imgs/arm-light.jpg")}
 .avagrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:0 0 1.1rem}
 .avagrid button{display:grid;place-items:center}
 .avagrid .avatar{width:50px;height:50px}
@@ -1505,7 +1507,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1028';
+  var APP_VERSION = '1.1029';
 
   /* =========================================================
      STORE
@@ -1536,7 +1538,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         ['handle', 'name', 'bio'].forEach(function (k) {
           if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
         });
-        if (typeof raw.profile.pic === 'number') store.profile.pic = raw.profile.pic;
+        if (typeof raw.profile.pic === 'number' || typeof raw.profile.pic === 'string') {
+          store.profile.pic = raw.profile.pic;
+        }
       }
     } catch (e) {}
   }
@@ -3148,7 +3152,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           ['handle', 'name', 'bio'].forEach(function (k) {
             if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
           });
-          if (typeof raw.profile.pic === 'number') store.profile.pic = raw.profile.pic;
+          if (typeof raw.profile.pic === 'number' || typeof raw.profile.pic === 'string') {
+            store.profile.pic = raw.profile.pic;
+          }
         }
         recomputeRecords();
         saveStore();
@@ -3413,11 +3419,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('p-name').hidden = !pf.name;
     $('p-bio').textContent = pf.bio || '';
     $('p-bio').hidden = !pf.bio;
-    var av = $('p-avatar');
-    if (hasPic()) {
-      av.className = 'avatar pic';
+    var av = $('p-avatar'), pa = picEntry(pf.pic);
+    if (pa) {
+      av.className = picClass(pa);
       av.textContent = '';
-      av.style.cssText = 'width:66px;height:66px;' + avatarArt(pf.pic, 66);
+      av.style.cssText = 'width:66px;height:66px;' + avatarArt(pa, 66);
     } else {
       av.className = 'avatar';
       av.style.cssText = 'width:66px;height:66px;font-size:25px';
@@ -3464,9 +3470,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var pfPic = null;
 
   function drawPicker() {
-    $('pf-pics').innerHTML = AVATARS.map(function (_c, i) {
-      return '<button data-pic="' + i + '" aria-pressed="' + (pfPic === i) + '">' +
-        '<span class="avatar pic" style="width:50px;height:50px;' + avatarArt(i, 50) +
+    $('pf-pics').innerHTML = AVATARS.map(function (a) {
+      return '<button data-pic="' + a.id + '" aria-pressed="' + (pfPic === a.id) + '">' +
+        '<span class="' + picClass(a) + '" style="width:50px;height:50px;' + avatarArt(a, 50) +
         '"></span></button>';
     }).join('') +
       '<button data-pic="" aria-pressed="' + (pfPic === null) + '">' +
@@ -3477,12 +3483,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('pf-pics').addEventListener('click', function (e) {
     var b = e.target.closest('[data-pic]');
     if (!b) return;
-    pfPic = b.dataset.pic === '' ? null : Number(b.dataset.pic);
+    pfPic = b.dataset.pic || null;
     drawPicker();
   });
 
   $('prof-edit').addEventListener('click', function () {
-    pfPic = hasPic() ? store.profile.pic : null;
+    var cur = picEntry(store.profile.pic);
+    pfPic = cur ? cur.id : null;
     drawPicker();
     $('pf-handle').value = store.profile.handle;
     $('pf-name').value = store.profile.name;
@@ -3694,39 +3701,58 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var ART_CX = [232, 616, 998, 1382, 1770], ART_CY = [236, 712, 1276], ART_D = 332;
 
   /* --- profile pictures: both sheets are 980 x 1342 and share this grid --- */
-  // Centre of every picture's artwork, measured in both sheets (they agree to
-  // a pixel or two). The silhouette sits on its circle's centre instead,
-  // because it is drawn standing on the bottom edge. The repeated kettlebell
-  // is left out. Both sheets are 980 x 1340; AV_D is a crop just inside the
-  // 218 px circles, so their rim never shows.
-  var AV_D = 198, AV_W = 980;
+  // Where every picture's artwork is centred, measured in its own sheet; the
+  // silhouette sits on its circle's centre because it stands on the bottom
+  // edge. A sheet's d is a crop just inside its circles so their rim never
+  // shows. Pictures are stored by id, so the list can change order freely.
+  var AV_SHEETS = {
+    main: { w: 980, d: 198, cls: '' },          // the 3 x 5 sheet, 218 px circles
+    arm: { w: 300, d: 254, cls: ' s-arm' }      // one picture, 280 px circle
+  };
   var AVATARS = [
-    [174, 168.5], [497, 167.5], [824, 168.5], [170.5, 421.5], [497, 421],
-    [170.5, 676], [497, 675], [823, 675.5], [170.5, 930], [497.5, 932.5],
-    [823.5, 929.5], [171, 1186], [497, 1182], [823.5, 1184]
+    { id: 'headphones', x: 497, y: 167.5 },
+    { id: 'shaker', x: 824, y: 168.5 },
+    { id: 'dumbbell', x: 170.5, y: 421.5 },
+    { id: 'kettlebell', x: 497, y: 421 },
+    { id: 'fruit', x: 170.5, y: 676 },
+    { id: 'person', x: 497, y: 675 },
+    { id: 'biceps', x: 823, y: 675.5 },
+    { id: 'arm', x: 148, y: 150, sheet: 'arm' },
+    { id: 'torso', x: 170.5, y: 930 },
+    { id: 'torso2', x: 497.5, y: 932.5 },
+    { id: 'bike', x: 823.5, y: 929.5 },
+    { id: 'gloves', x: 171, y: 1186 },
+    { id: 'belt', x: 497, y: 1182 },
+    { id: 'treadmill', x: 823.5, y: 1184 }
   ];
+  // the order pictures had while they were saved as a number
+  var OLD_PICS = ['chocolate', 'headphones', 'shaker', 'dumbbell', 'kettlebell', 'fruit',
+    'person', 'biceps', 'torso', 'torso2', 'bike', 'gloves', 'belt', 'treadmill'];
 
-  function avatarArt(i, size) {
-    var w = size || 34, c = AVATARS[i];
-    if (!c) return '';
-    var k = w / AV_D;
-    return 'background-size:' + (AV_W * k).toFixed(2) + 'px auto;background-position:' +
-      (w / 2 - c[0] * k).toFixed(2) + 'px ' +
-      (w / 2 - c[1] * k).toFixed(2) + 'px';
+  function picEntry(p) {
+    var id = typeof p === 'number' ? OLD_PICS[p] : p;
+    for (var i = 0; i < AVATARS.length; i++) if (AVATARS[i].id === id) return AVATARS[i];
+    return null;
   }
 
-  function hasPic() {
-    var i = store.profile.pic;
-    return typeof i === 'number' && !!AVATARS[i];
+  function avatarArt(a, size) {
+    var w = size || 34, sh = AV_SHEETS[a.sheet || 'main'], k = w / sh.d;
+    return 'background-size:' + (sh.w * k).toFixed(2) + 'px auto;background-position:' +
+      (w / 2 - a.x * k).toFixed(2) + 'px ' +
+      (w / 2 - a.y * k).toFixed(2) + 'px';
   }
+  function picClass(a) { return 'avatar pic' + AV_SHEETS[a.sheet || 'main'].cls; }
+
+  function hasPic() { return !!picEntry(store.profile.pic); }
 
   // one avatar as markup, picture or initials
   function avatarTag(size, cls) {
     var w = size || 34;
     var box = 'width:' + w + 'px;height:' + w + 'px;';
-    if (hasPic()) {
-      return '<span class="avatar pic' + (cls ? ' ' + cls : '') + '" style="' + box +
-        avatarArt(store.profile.pic, w) + '"></span>';
+    var a = picEntry(store.profile.pic);
+    if (a) {
+      return '<span class="' + picClass(a) + (cls ? ' ' + cls : '') + '" style="' + box +
+        avatarArt(a, w) + '"></span>';
     }
     return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="' + box +
       'font-size:' + Math.round(w * 0.38) + 'px">' +

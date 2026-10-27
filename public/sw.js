@@ -3,7 +3,7 @@
    basement with no signal. The Supabase API is never cached — stale
    training data would be worse than none. */
 
-var V = 'tracker-v3';
+var V = 'tracker-v4';
 
 var CORE = [
   './',
@@ -16,6 +16,8 @@ var CORE = [
   './imgs/muscles-light.jpg',
   './imgs/avatars.jpg',
   './imgs/avatars-light.jpg',
+  './imgs/arm.jpg',
+  './imgs/arm-light.jpg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap'
 ];
