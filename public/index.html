@@ -2808,7 +2808,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function fmtDuration(sec) {
     var h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
     if (m === 60) { h += 1; m = 0; }
-    return h ? h + 'h ' + pad2(m) + ' min' : m + ' min';
+    return h ? h + 'h ' + pad2(m) + 'm' : m + 'm';
   }
   function fmtVolume(kg) {
     var r = Math.round(kg * 10) / 10;
