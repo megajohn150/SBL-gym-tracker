@@ -434,6 +434,13 @@ body.in-session .tabs{display:none}
   display:block;width:42px;height:42px;flex:none;border-radius:50%;
   background-image:url("imgs/muscles.jpg");background-repeat:no-repeat;
 }
+/* a chosen profile picture, cropped out of the sheet for the current theme */
+.avatar.pic{background-image:url("imgs/avatars.jpg");background-repeat:no-repeat;color:transparent}
+:root[data-theme="light"] .avatar.pic{background-image:url("imgs/avatars-light.jpg")}
+.avagrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:0 0 1.1rem}
+.avagrid button{display:grid;place-items:center}
+.avagrid .avatar{width:50px;height:50px;font-size:.6rem}
+.avagrid button[aria-pressed="true"] .avatar{outline:2px solid var(--accent);outline-offset:2px}
 .dext{min-width:0}
 .dex .nm{
   display:block;font-family:var(--display);font-size:1.05rem;font-weight:var(--namew);
@@ -1343,6 +1350,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <div class="sheet-bg" data-prof-close></div>
   <div class="sheet-card">
     <h3>Your profile</h3>
+    <div class="field" style="padding:0 0 .55rem"><label>Profile picture</label></div>
+    <div class="avagrid" id="pf-pics"></div>
     <div class="field" style="padding:0 0 .7rem"><label for="pf-handle">Username</label>
       <input type="text" id="pf-handle" autocomplete="off" spellcheck="false"></div>
     <div class="field" style="padding:0 0 .7rem"><label for="pf-name">Name</label>
@@ -1493,7 +1502,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   /* =========================================================
      STORE
      ========================================================= */
-  var store = { exercises: [], routines: [], workouts: [], profile: { handle: 'you', name: 'your name', bio: '' } };
+  var store = {
+    exercises: [], routines: [], workouts: [],
+    profile: { handle: 'you', name: 'your name', bio: '', pic: null }
+  };
 
   function save(k, v) { try { localStorage.setItem('tracker-' + k, v); } catch (e) {} }
   function load(k) { try { return localStorage.getItem('tracker-' + k); } catch (e) { return null; } }
@@ -1516,6 +1528,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         ['handle', 'name', 'bio'].forEach(function (k) {
           if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
         });
+        if (typeof raw.profile.pic === 'number') store.profile.pic = raw.profile.pic;
       }
     } catch (e) {}
   }
@@ -3127,6 +3140,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           ['handle', 'name', 'bio'].forEach(function (k) {
             if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
           });
+          if (typeof raw.profile.pic === 'number') store.profile.pic = raw.profile.pic;
         }
         recomputeRecords();
         saveStore();
@@ -3391,7 +3405,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('p-name').hidden = !pf.name;
     $('p-bio').textContent = pf.bio || '';
     $('p-bio').hidden = !pf.bio;
-    $('p-avatar').textContent = initials(pf.name || pf.handle || 'you');
+    var av = $('p-avatar');
+    if (hasPic()) {
+      av.className = 'avatar pic';
+      av.textContent = '';
+      av.style.cssText = 'width:66px;height:66px;' + avatarArt(pf.pic, 66);
+    } else {
+      av.className = 'avatar';
+      av.style.cssText = 'width:66px;height:66px;font-size:.8rem';
+      av.textContent = initials(pf.name || pf.handle || 'you');
+    }
     $('p-workouts').textContent = store.workouts.length;
 
     hideTip();
@@ -3430,7 +3453,29 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }).join('');
   }
 
+  var pfPic = null;
+
+  function drawPicker() {
+    $('pf-pics').innerHTML = AVATARS.map(function (_c, i) {
+      return '<button data-pic="' + i + '" aria-pressed="' + (pfPic === i) + '">' +
+        '<span class="avatar pic" style="width:50px;height:50px;' + avatarArt(i, 50) +
+        '"></span></button>';
+    }).join('') +
+      '<button data-pic="" aria-pressed="' + (pfPic === null) + '">' +
+      '<span class="avatar" style="width:50px;height:50px">' +
+      esc(initials(store.profile.name || store.profile.handle || 'you')) + '</span></button>';
+  }
+
+  $('pf-pics').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pic]');
+    if (!b) return;
+    pfPic = b.dataset.pic === '' ? null : Number(b.dataset.pic);
+    drawPicker();
+  });
+
   $('prof-edit').addEventListener('click', function () {
+    pfPic = hasPic() ? store.profile.pic : null;
+    drawPicker();
     $('pf-handle').value = store.profile.handle;
     $('pf-name').value = store.profile.name;
     $('pf-bio').value = store.profile.bio;
@@ -3442,6 +3487,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     store.profile.handle = $('pf-handle').value.trim() || 'you';
     store.profile.name = $('pf-name').value.trim();
     store.profile.bio = $('pf-bio').value.trim();
+    store.profile.pic = pfPic;
     saveStore();
     closeProf();
     drawProfile();
@@ -3639,6 +3685,38 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // not evenly spaced, so each one is cropped by its own coordinates.
   var ART_CX = [232, 616, 998, 1382, 1770], ART_CY = [236, 712, 1276], ART_D = 332;
 
+  /* --- profile pictures: both sheets are 980 x 1342 and share this grid --- */
+  var AV_CX = [170, 496, 823], AV_CY = [167, 420, 675, 928, 1182], AV_D = 218, AV_W = 980;
+  // [column, row] of every picture; the repeated kettlebell is left out
+  var AVATARS = [[0,0],[1,0],[2,0],[0,1],[1,1],[0,2],[1,2],[2,2],
+                 [0,3],[1,3],[2,3],[0,4],[1,4],[2,4]];
+
+  function avatarArt(i, size) {
+    var w = size || 34, c = AVATARS[i];
+    if (!c) return '';
+    var k = w / AV_D;
+    return 'background-size:' + (AV_W * k).toFixed(1) + 'px auto;background-position:' +
+      (w / 2 - AV_CX[c[0]] * k).toFixed(1) + 'px ' +
+      (w / 2 - AV_CY[c[1]] * k).toFixed(1) + 'px';
+  }
+
+  function hasPic() {
+    var i = store.profile.pic;
+    return typeof i === 'number' && !!AVATARS[i];
+  }
+
+  // one avatar as markup, picture or initials
+  function avatarTag(size, cls) {
+    var w = size || 34;
+    var box = 'width:' + w + 'px;height:' + w + 'px;';
+    if (hasPic()) {
+      return '<span class="avatar pic' + (cls ? ' ' + cls : '') + '" style="' + box +
+        avatarArt(store.profile.pic, w) + '"></span>';
+    }
+    return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="' + box + '">' +
+      esc(initials(store.profile.name || store.profile.handle || 'you')) + '</span>';
+  }
+
   function muscleArt(m, size) {
     var w = size || 42;
     var box = 'width:' + w + 'px;height:' + w + 'px;';
@@ -3680,8 +3758,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var t = workoutTotals(w), split = muscleSplit(w);
 
     var head = '<div style="padding:1.2rem var(--pad) 0">' +
-      '<div class="whead"><span class="avatar">' +
-      esc(initials(store.profile.name || store.profile.handle)) + '</span>' +
+      '<div class="whead">' + avatarTag(34) +
       '<span class="who"><span class="nm">' + esc(store.profile.handle) + '</span>' +
       '<span class="dt">' + fullDate(w.date) + '</span></span>' +
       '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button></div>' +
