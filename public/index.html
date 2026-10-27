@@ -270,7 +270,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .exchips{display:flex;gap:8px;overflow-x:auto;padding:12px var(--pad);scrollbar-width:none;border-bottom:var(--dash)}
 .exchips::-webkit-scrollbar{display:none}
 .exchip{
-  flex:none;width:74px;padding:8px 8px 16px;position:relative;
+  flex:none;min-width:74px;max-width:132px;padding:8px 10px 16px;position:relative;
   border:var(--border);border-radius:var(--radius);background:var(--surface);opacity:.5;
 }
 .exchip[aria-current="true"]{opacity:1}
