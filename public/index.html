@@ -1317,6 +1317,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="pop-menu">
       <button id="xp-edit">Edit exercise</button>
       <button id="xp-meta">Edit exercise metadata</button>
+      <button id="xp-swap">Swap exercise</button>
       <button id="xp-up">Move up</button>
       <button id="xp-down">Move down</button>
       <button id="xp-drop" class="danger">Remove from workout</button>
@@ -1704,6 +1705,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     else document.querySelector('.tabs').parentNode.insertBefore(dock, document.querySelector('.tabs'));
 
     document.body.classList.toggle('in-session', id === 's-session');
+    if (id === 's-exercise-form') {
+      var mus = $('ex-muscle');
+      mus.disabled = !!pickMuscle;
+      if (pickMuscle && !exEditId) mus.value = pickMuscle;
+    }
+    if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
     if (id === 's-session') drawSession();
     if (id === 's-profile') drawProfile();
     if (id === 's-calendar') drawCalendar();
@@ -1748,7 +1755,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   /* =========================================================
      EXERCISES
      ========================================================= */
-  var pickFor = null;   // non-null when the list is being used as a picker
+  var pickFor = null;     // non-null when the list is being used as a picker
+  var pickMuscle = null;  // when set, the picker shows that muscle only
 
   function drawExercises() {
     var list = $('ex-list'), has = store.exercises.length > 0;
@@ -1757,14 +1765,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('ex-footbar').hidden = !has;
     $('ex-count').textContent = store.exercises.length;
     $('pick-hint').hidden = !(pickFor && has);
-    $('pick-hint').textContent = 'Tap an exercise to add it to the ' +
-      (pickFor === 'session' ? 'workout.' : 'routine.');
+    $('pick-hint').textContent = pickFor === 'swap'
+      ? 'Pick what you are doing instead \u2014 same muscle, this workout only.'
+      : 'Tap an exercise to add it to the ' + (pickFor === 'session' ? 'workout.' : 'routine.');
     $('ex-bar-title').textContent = pickFor ? 'Choose exercise' : 'Exercises';
 
     $('ex-search-wrap').hidden = !has;
 
     var q = $('ex-search').value.trim().toLowerCase();
     var hits = store.exercises.filter(function (x) {
+      if (pickMuscle && x.muscle !== pickMuscle) return false;
       return !q || (x.name + ' ' + x.muscle).toLowerCase().indexOf(q) > -1;
     });
 
@@ -1799,6 +1809,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       addToSession(row.dataset.ex);
       popTo('session');
       drawSession();
+      return;
+    }
+    if (pickFor === 'swap') {
+      var swapTo = row.dataset.ex;
+      pickFor = null;
+      pickMuscle = null;
+      popTo('session');
+      swapSessionExercise(swapTo);
       return;
     }
     addToDraft(row.dataset.ex);
@@ -2025,11 +2043,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     saveStore();
     syncSessionExercise(ex);
 
-    var wasPicking = pickFor && !editing;
+    var mode = editing ? null : pickFor;
     resetExForm();
-    if (wasPicking) {
+    pickFor = null;
+    pickMuscle = null;
+    if (mode === 'swap') {
+      popTo('session');
+      swapSessionExercise(ex.id);
+    } else if (mode === 'session') {
+      addToSession(ex.id);
+      popTo('session');
+      drawSession();
+    } else if (mode) {
       addToDraft(ex.id);
-      pickFor = null;
       popTo('routine-form');
       drawRoutineForm();
     } else {
@@ -3751,6 +3777,34 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     closeMeta();
     drawSession();
+  });
+
+  // Only this workout changes; the routine keeps the exercise it had.
+  function swapSessionExercise(exId) {
+    var ex = session && session.exercises[session.idx], x = byId(exId);
+    if (!ex || !x) return;
+    var planned = Math.max(1, Math.round(ex.unilateral ? ex.sets.length / 2 : ex.sets.length));
+    var go = function () {
+      session.exercises[session.idx] =
+        sessionItem(x.id, planned, x.unilateral ? (ex.side || 'R') : null, '', ex.reps);
+      drawSession();
+    };
+    if (ex.sets.some(logged)) {
+      askConfirm('Swap in ' + x.name + '?',
+        'What you logged for ' + ex.name + ' in this workout goes with it. ' +
+        'The routine keeps ' + ex.name + '.', 'Swap', go);
+    } else {
+      go();
+    }
+  }
+
+  $('xp-swap').addEventListener('click', function () {
+    closeExPop();
+    var ex = session && session.exercises[session.idx];
+    if (!ex) return;
+    pickFor = 'swap';
+    pickMuscle = ex.muscle || null;
+    push('exercises');
   });
 
   $('xp-edit').addEventListener('click', function () {
