@@ -2144,19 +2144,26 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     return r;
   }
-  // a cue already written for this exercise elsewhere is the sensible default,
-  // and it stays editable like any other
-  function cueFor(exId) {
-    var found = '';
+  // What this exercise is already set to in another routine — the cue, the rep
+  // range and the side it starts on — is the sensible default here, and all of
+  // it stays editable. The newest routine wins.
+  function lastSetupFor(exId) {
+    var found = null;
     store.routines.forEach(function (r) {
-      r.items.forEach(function (it) { if (it.exId === exId && it.note) found = it.note; });
+      r.items.forEach(function (it) { if (it.exId === exId) found = it; });
     });
     return found;
   }
 
   function newItem(exId) {
-    var x = byId(exId);
-    return { exId: exId, sets: 1, reps: '', note: cueFor(exId), side: (x && x.unilateral) ? 'R' : null };
+    var x = byId(exId), was = lastSetupFor(exId), uni = !!(x && x.unilateral);
+    return {
+      exId: exId,
+      sets: 1,
+      reps: (was && was.reps) || '',
+      note: (was && was.note) || '',
+      side: uni ? ((was && was.side) || 'R') : null
+    };
   }
   function addToDraft(exId) { draft.items.push(newItem(exId)); }
 
