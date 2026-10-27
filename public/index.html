@@ -704,6 +704,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 }
 .gate-sub{text-align:center;color:var(--fg-3);font-size:.85rem;line-height:1.5;margin:0 0 1.3rem}
 .gate-err{color:var(--red);font-size:.8rem;font-weight:600;text-align:center;margin:0 0 .7rem}
+.gate-ok{color:var(--fg-2);font-size:.8rem;text-align:center;line-height:1.5;margin:0 0 .7rem}
+.gate .seg{margin-bottom:1.2rem}
+.gate-link{
+  display:block;width:100%;margin-top:15px;text-align:center;
+  font-size:.78rem;color:var(--fg-3);text-decoration:underline;text-underline-offset:3px;
+}
 .gate.busy{opacity:.55;pointer-events:none}
 .formerr{padding:.6rem var(--pad) 0;font-size:.8rem;color:var(--red);font-weight:600}
 .confirm-text{color:var(--fg-2);font-size:.875rem;text-align:center;margin-bottom:14px;line-height:1.5}
@@ -1243,14 +1249,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <div class="gate-card">
     <span class="gate-logo"><img src="logo/icon-192.png" alt=""></span>
     <h1 class="gate-title">Tracker</h1>
-    <p class="gate-sub" id="gate-sub">Sign in and your training follows you to every device.</p>
-    <div class="field" style="padding:0 0 .7rem"><label for="au-email">Email</label>
+    <p class="gate-sub" id="gate-sub">Every set, on every device.</p>
+
+    <div class="seg two" id="au-mode">
+      <button data-au="in" aria-pressed="true">Sign in</button>
+      <button data-au="up" aria-pressed="false">Create account</button>
+    </div>
+
+    <div class="field" id="au-emailrow" style="padding:0 0 .7rem"><label for="au-email">Email</label>
       <input type="email" id="au-email" autocomplete="email" autocapitalize="none" spellcheck="false"></div>
-    <div class="field" style="padding:0 0 .9rem"><label for="au-pass">Password</label>
+    <div class="field" id="au-passrow" style="padding:0 0 .9rem"><label for="au-pass" id="au-passlab">Password</label>
       <input type="password" id="au-pass" autocomplete="current-password"></div>
     <p class="gate-err" id="gate-err" hidden></p>
-    <button class="btn btn-primary" id="au-in">Sign in</button>
-    <button class="btn btn-ghost" id="au-up" style="margin-top:8px">Create account</button>
+    <p class="gate-ok" id="gate-ok" hidden></p>
+    <button class="btn btn-primary" id="au-go">Sign in</button>
+    <button class="gate-link" id="au-forgot">Forgot your password?</button>
   </div>
 </div>
 
@@ -1353,6 +1366,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <h3>Drag to reorder</h3>
     <div id="rord-list"></div>
     <button class="btn btn-primary" id="rord-done" style="margin-top:10px">Done</button>
+  </div>
+</div>
+
+<div class="sheet center" id="erase-sheet" hidden>
+  <div class="sheet-bg" data-erase-close></div>
+  <div class="sheet-card">
+    <h3>Erase everything</h3>
+    <p class="confirm-text">Every exercise, routine and workout on this device and in the cloud
+      is deleted. There is no undo.</p>
+    <div class="field" style="padding:.3rem 0 .9rem">
+      <label for="erase-in">Type <b id="erase-word">your email</b> to confirm</label>
+      <input type="text" id="erase-in" autocomplete="off" autocapitalize="none" spellcheck="false">
+    </div>
+    <button class="btn btn-danger" id="erase-go" disabled>Erase everything</button>
+    <button class="btn btn-ghost" id="erase-cancel" style="margin-top:8px">Cancel</button>
   </div>
 </div>
 
@@ -1622,41 +1650,115 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
   function gateBusy(on) { document.getElementById('gate').classList.toggle('busy', !!on); }
 
+  var recovering = false;
+
   function setUser(u) {
     var was = me && me.id;
     me = u || null;
-    document.getElementById('gate').hidden = !!me;
+    document.getElementById('gate').hidden = !!me && !recovering;
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
     if (!me) { syncState('off'); return; }
     save('uid', me.id);
     if (me.id !== was) { cloud.rev = 0; cloudPull(); }
   }
 
-  function authGo(kind) {
+  function gateOk(msg) {
+    var el = document.getElementById('gate-ok');
+    el.textContent = msg || '';
+    el.hidden = !msg;
+  }
+
+  // in = sign in, up = new account, forgot = send a reset link,
+  // recover = arrived from that link and picking a new password
+  var auMode = 'in';
+
+  function setAuMode(m) {
+    auMode = m;
+    gateErr('');
+    gateOk('');
+    var recover = m === 'recover', forgot = m === 'forgot';
+    document.getElementById('au-mode').hidden = recover || forgot;
+    document.getElementById('au-emailrow').hidden = recover;
+    document.getElementById('au-passrow').hidden = forgot;
+    document.getElementById('au-forgot').hidden = recover;
+    document.getElementById('au-forgot').textContent =
+      forgot ? 'Back to sign in' : 'Forgot your password?';
+    document.getElementById('au-passlab').textContent =
+      recover ? 'New password' : 'Password';
+    document.getElementById('au-pass').setAttribute('autocomplete',
+      m === 'in' ? 'current-password' : 'new-password');
+    document.getElementById('gate-sub').textContent =
+      recover ? 'Pick a new password and you are back in.'
+      : forgot ? 'We will send a link to get back in.'
+      : 'Every set, on every device.';
+    document.getElementById('au-go').textContent =
+      recover ? 'Save password' : forgot ? 'Send reset link'
+      : m === 'up' ? 'Create account' : 'Sign in';
+    document.querySelectorAll('[data-au]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.au === m));
+    });
+  }
+
+  function authGo() {
     var email = document.getElementById('au-email').value.trim();
     var pass = document.getElementById('au-pass').value;
-    if (!email || !pass) { gateErr('Email and password, please.'); return; }
     gateErr('');
+    gateOk('');
+
+    if (auMode === 'forgot') {
+      if (!email) { gateErr('Your email, please.'); return; }
+      gateBusy(true);
+      sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin }).then(function (r) {
+        gateBusy(false);
+        if (r.error) { gateErr(r.error.message); return; }
+        gateOk('Link sent. Open it on this device and you can set a new password.');
+      });
+      return;
+    }
+
+    if (auMode === 'recover') {
+      if (pass.length < 6) { gateErr('At least six characters.'); return; }
+      gateBusy(true);
+      sb.auth.updateUser({ password: pass }).then(function (r) {
+        gateBusy(false);
+        if (r.error) { gateErr(r.error.message); return; }
+        recovering = false;
+        document.getElementById('au-pass').value = '';
+        setAuMode('in');
+        if (r.data && r.data.user) setUser(r.data.user);
+      });
+      return;
+    }
+
+    if (!email || !pass) { gateErr('Email and password, please.'); return; }
     gateBusy(true);
-    var call = kind === 'up'
+    var call = auMode === 'up'
       ? sb.auth.signUp({ email: email, password: pass })
       : sb.auth.signInWithPassword({ email: email, password: pass });
     call.then(function (r) {
       gateBusy(false);
       if (r.error) { gateErr(r.error.message); return; }
-      if (kind === 'up' && r.data.user && !r.data.session) {
-        gateErr('Check your email to confirm the account, then sign in.');
+      if (auMode === 'up' && r.data.user && !r.data.session) {
+        gateOk('Check your email to confirm the account, then sign in.');
       }
     });
   }
 
   function initAuth() {
     if (!sb) { document.getElementById('gate').hidden = true; syncState('err'); return; }
-    document.getElementById('au-in').addEventListener('click', function () { authGo('in'); });
-    document.getElementById('au-up').addEventListener('click', function () { authGo('up'); });
-    document.getElementById('au-pass').addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') authGo('in');
+    document.getElementById('au-go').addEventListener('click', authGo);
+    document.querySelectorAll('[data-au]').forEach(function (b) {
+      b.addEventListener('click', function () { setAuMode(b.dataset.au); });
     });
+    document.getElementById('au-forgot').addEventListener('click', function () {
+      setAuMode(auMode === 'forgot' ? 'in' : 'forgot');
+    });
+    ['au-email', 'au-pass'].forEach(function (id) {
+      document.getElementById(id).addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') authGo();
+      });
+    });
+    setAuMode('in');
     document.getElementById('set-signout').addEventListener('click', function () {
       askConfirm('Sign out?', 'Your training stays in the cloud. This device keeps no copy.',
         'Sign out', function () {
@@ -1683,7 +1785,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (live) setUser(live.user);
       else if (load('uid') && (r.error || !navigator.onLine)) offlineOpen();
       else setUser(null);
-      sb.auth.onAuthStateChange(function (_e, s) { if (s) setUser(s.user); });
+      sb.auth.onAuthStateChange(function (ev, s) {
+        if (ev === 'PASSWORD_RECOVERY') {        // opened the link from the email
+          recovering = true;
+          document.getElementById('gate').hidden = false;
+          setAuMode('recover');
+          return;
+        }
+        if (s && !recovering) setUser(s.user);
+      });
     }).catch(function () {
       if (load('uid')) offlineOpen(); else setUser(null);
     });
@@ -3035,28 +3145,49 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   function resetEverything() {
-    askConfirm('Erase everything?',
-      'Every exercise, routine and workout on this device is deleted. Your profile and theme stay. ' +
-      'There is no undo, so export a backup first if you might want this back.',
-      'Erase', function () {
-        store.exercises = [];
-        store.routines = [];
-        store.workouts = [];
-        session = null;
-        saveSession();
-        stopRest();
-        saveStore();
-        newRoutine();
-        drawHome();
-        drawRoutines();
-        drawExercises();
-        drawProfile();
-        drawDock();
-        goTab('home');
-      });
+    store.exercises = [];
+    store.routines = [];
+    store.workouts = [];
+    session = null;
+    saveSession();
+    stopRest();
+    saveStore();
+    newRoutine();
+    drawHome();
+    drawRoutines();
+    drawExercises();
+    drawProfile();
+    drawDock();
+    goTab('home');
   }
 
-  $('set-reset').addEventListener('click', resetEverything);
+  // three gates: a warning, your own email typed out, and a last word
+  function eraseWord() { return me && me.email ? me.email : 'ERASE'; }
+
+  $('set-reset').addEventListener('click', function () {
+    askConfirm('Erase everything?',
+      'Every exercise, routine and workout goes, on this device and in the cloud. ' +
+      'Export a backup first if there is any doubt.',
+      'Continue', function () {
+        $('erase-word').textContent = eraseWord();
+        $('erase-in').value = '';
+        $('erase-go').disabled = true;
+        $('erase-sheet').hidden = false;
+      });
+  });
+
+  function closeErase() { $('erase-sheet').hidden = true; }
+  $('erase-cancel').addEventListener('click', closeErase);
+  document.querySelector('[data-erase-close]').addEventListener('click', closeErase);
+  $('erase-in').addEventListener('input', function () {
+    $('erase-go').disabled = this.value.trim().toLowerCase() !== eraseWord().toLowerCase();
+  });
+  $('erase-go').addEventListener('click', function () {
+    closeErase();
+    askConfirm('Last chance',
+      'This cannot be undone and there is no backup unless you made one yourself.',
+      'Erase it all', resetEverything);
+  });
   $('set-export').addEventListener('click', exportData);
   $('set-import').addEventListener('click', function () { $('set-file').click(); });
   $('set-file').addEventListener('change', function () {
