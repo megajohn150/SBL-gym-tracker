@@ -1310,11 +1310,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       </div>
     </div>
 
-    <div style="padding:0 var(--pad)">
-      <button class="btn btn-ghost" id="more-themes">More options</button>
-    </div>
+    <div class="dsec" style="border-top:none;margin-top:.4rem">More options</div>
 
-    <div id="theme-more" hidden>
     <div class="group">
       <h2>Mode</h2>
       <div class="seg" id="seg-mode">
@@ -1346,7 +1343,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
 
     <div class="note">Your choice is kept on this device and applies to every screen.</div>
-    </div>
     </div>
 
   </section>
@@ -1638,7 +1634,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1048';
+  var APP_VERSION = '1.1049';
 
   /* =========================================================
      STORE
@@ -4649,19 +4645,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
   function paintPresets() {
     var now = (load('mode') || 'system') + ' ' + (load('skin') || 'receipt');
-    var hit = false;
     document.querySelectorAll('[data-preset]').forEach(function (b) {
-      var on = b.dataset.preset === now;
-      if (on) hit = true;
-      b.setAttribute('aria-pressed', String(on));
+      b.setAttribute('aria-pressed', String(b.dataset.preset === now));
     });
-    // anything the presets do not cover is worth seeing straight away
-    if (!hit) showMore(true);
-  }
-
-  function showMore(on) {
-    $('theme-more').hidden = !on;
-    $('more-themes').textContent = on ? 'Fewer options' : 'More options';
   }
 
   function paintMeta() {
@@ -4686,10 +4672,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       applySkin(p[1]);
     });
   });
-  $('more-themes').addEventListener('click', function () {
-    showMore($('theme-more').hidden);
-  });
-
   /* --- sun and moon: a tap flips light and dark, a hold opens the screen --- */
   function togglePreset() {
     // the theme stays as it is; only the mode turns over
