@@ -1577,7 +1577,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1040';
+  var APP_VERSION = '1.1041';
 
   /* =========================================================
      STORE
@@ -1935,6 +1935,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (lab) lab.textContent = below ? document.getElementById(below).dataset.title : 'Back';
     window.scrollTo(0, 0);
     screen.querySelectorAll('.scroll,.sscroll').forEach(function (pane) { pane.scrollTop = 0; });
+    // the calendar runs oldest to newest, so it opens on the month you are in
+    if (id === 's-calendar') $('cal-body').scrollTop = $('cal-body').scrollHeight;
   }
 
   function push(id) { stack.push('s-' + id); render(current()); }
