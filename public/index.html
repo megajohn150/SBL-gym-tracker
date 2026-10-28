@@ -1577,7 +1577,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var $ = function (id) { return document.getElementById(id); };
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1039';
+  var APP_VERSION = '1.1040';
 
   /* =========================================================
      STORE
@@ -1934,6 +1934,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var lab = document.querySelector('#' + id + ' .backlab');
     if (lab) lab.textContent = below ? document.getElementById(below).dataset.title : 'Back';
     window.scrollTo(0, 0);
+    screen.querySelectorAll('.scroll,.sscroll').forEach(function (pane) { pane.scrollTop = 0; });
   }
 
   function push(id) { stack.push('s-' + id); render(current()); }
@@ -3603,6 +3604,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     store.profile.pic = pfPic;
     saveStore();
     closeProf();
+    drawHome();                       // the cards carry the picture and the handle
     drawProfile();
     if (detailW) drawDetail(detailW);
   });
@@ -4337,6 +4339,47 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (session) push('session');
   });
   $('sess-discard').addEventListener('click', discardSession);
+
+  /* --- drag in from the left edge to go back --- */
+  var edge = { on: false, x: 0, y: 0, el: null };
+
+  function edgeReset(done) {
+    var el = edge.el;
+    edge.on = false;
+    edge.el = null;
+    if (!el) return;
+    el.style.transition = 'transform .18s ease-out';
+    el.style.transform = '';
+    setTimeout(function () { el.style.transition = ''; el.style.transform = ''; }, 200);
+    if (done) pop();
+  }
+
+  document.addEventListener('pointerdown', function (e) {
+    if (edge.on || e.clientX > 22 || stack.length < 2) return;
+    // a sheet or popover handles its own dismissal
+    if (document.querySelector('.sheet:not([hidden]),.pop:not([hidden])')) return;
+    // these have gestures of their own
+    if (e.target.closest('.swipe,.ordrow,.exchips,input,textarea')) return;
+    edge.on = true;
+    edge.x = e.clientX;
+    edge.y = e.clientY;
+    edge.el = document.querySelector('.screen.on');
+  });
+
+  document.addEventListener('pointermove', function (e) {
+    if (!edge.on) return;
+    var dx = e.clientX - edge.x;
+    if (Math.abs(e.clientY - edge.y) > 55) { edgeReset(false); return; }
+    edge.el.style.transition = 'none';
+    edge.el.style.transform = 'translateX(' + Math.max(0, Math.min(dx, 110)) + 'px)';
+  });
+
+  document.addEventListener('pointerup', function (e) {
+    if (edge.on) edgeReset(e.clientX - edge.x > 70);
+  });
+  document.addEventListener('pointercancel', function () {
+    if (edge.on) edgeReset(false);
+  });
 
   /* --- swipe a set away --- */
   var swipe = { row: null, wrap: null, x: 0, y: 0, dx: 0, live: false, open: null };
