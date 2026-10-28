@@ -1092,7 +1092,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="endpage" id="sess-endpage" hidden>
       <div class="endwrap">
         <div class="notebox" id="sess-wnotebox">
-          <textarea id="sess-wnote" rows="1" placeholder="Note for the whole workout"
+          <textarea id="sess-wnote" rows="1" placeholder="Session note"
                     autocomplete="off"></textarea>
         </div>
         <button class="btn btn-primary" id="sess-end">End workout</button>
@@ -1600,7 +1600,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1043';
+  var APP_VERSION = '1.1044';
 
   /* =========================================================
      STORE
@@ -3993,7 +3993,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       statsRow(w, t) + '</div>' +
       (detailEdit
         ? '<div style="padding:.9rem var(--pad) 0"><div class="notebox' + (w.note ? ' has' : '') + '">' +
-            NOTE_SVG + '<textarea rows="1" id="d-wnote" placeholder="Note for the whole workout">' +
+            NOTE_SVG + '<textarea rows="1" id="d-wnote" placeholder="Session note">' +
             esc(w.note || '') + '</textarea></div></div>'
         : (w.note
           ? '<div class="wmore noteline" style="padding:.8rem var(--pad) 0">' + NOTE_SVG +
