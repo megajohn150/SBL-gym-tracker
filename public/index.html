@@ -1600,7 +1600,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1044';
+  var APP_VERSION = '1.1045';
 
   /* =========================================================
      STORE
@@ -2796,17 +2796,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   // the note written during the last session that included this exercise
+  // Only the last time this exercise was done counts. If there was no note
+  // then, there is none to show — an older one would be stale advice.
   function lastNoteFor(key) {
-    var found = '', cut = cutoffFor(key);
-    store.workouts.some(function (w) {
-      if (!afterCut(w, cut)) return false;
-      return w.exercises.some(function (e) {
-        if (exKey(e) !== key || !e.note) return false;
-        found = e.note;
-        return true;
+    var cut = cutoffFor(key), last = null, when = -Infinity;
+    store.workouts.forEach(function (w) {
+      if (!afterCut(w, cut)) return;
+      var t = new Date(w.date).getTime();
+      if (t < when) return;
+      w.exercises.forEach(function (e) {
+        if (exKey(e) === key) { last = e; when = t; }
       });
     });
-    return found;
+    return (last && last.note) || '';
   }
 
   function sessionItem(exId, sets, side, cue, reps) {
