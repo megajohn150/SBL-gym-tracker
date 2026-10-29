@@ -878,6 +878,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
    SIGNAL COLOURS
    Used by danger buttons and by the step a set took.
    =========================================================== */
+/* a set you have ticked off */
+.swipe .setrow.done{background:var(--surface);border-radius:calc(var(--radius) - 2px)}
+.setrow.done .setno{color:var(--fg-2);font-size:.8rem;line-height:1}
+.setrow.done .setno b{text-decoration:none;margin-top:1px}
+.setrow.done .cell{border-color:var(--fg-3);opacity:.85}
+
 :root{--red:#b4473d;--green:#4c7a46}
 [data-theme="dark"]{--red:#cf6a5f;--green:#7d9f6b}
 </style>
@@ -1634,7 +1640,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1049';
+  var APP_VERSION = '1.1050';
 
   /* =========================================================
      STORE
@@ -2768,6 +2774,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   function blankSet(label) { return { label: label, weight: '', reps: '', rir: '' }; }
 
+  function setFull(st) { return st.weight !== '' && st.reps !== '' && st.rir !== ''; }
+
   // F means no reps left in the tank, so it counts as zero
   function rirNum(v) { return String(v).toUpperCase() === 'F' ? 0 : num(v); }
 
@@ -2970,9 +2978,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
       return '<div class="swipe">' +
         '<div class="swipe-bg"><button data-del="' + i + '">Delete</button></div>' +
-        '<div class="setrow" data-row="' + i + '">' +
+        '<div class="setrow' + (st.done ? ' done' : '') + '" data-row="' + i + '">' +
         '<button class="setno' + (pv.weight || pv.reps ? ' hasprev' : '') +
-          '" data-fill="' + i + '">Set<b>' + esc(st.label) + '</b></button>' +
+          '" data-fill="' + i + '">' + (st.done ? '&#10003;' : 'Set') +
+          '<b>' + esc(st.label) + '</b></button>' +
         '<span class="cellwrap">' +
           '<input class="cell" type="text" inputmode="decimal" data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
@@ -3051,11 +3060,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return v;
   }
 
+  // tapping a value selects it, so the first digit replaces what was there
+  $('sess-sets').addEventListener('focusin', function (e) {
+    var f = e.target.closest('[data-f]');
+    if (f) requestAnimationFrame(function () { f.select(); });
+  });
+
   $('sess-sets').addEventListener('input', function (e) {
     var f = e.target.closest('[data-f]');
     if (!f) return;
     var ex = session.exercises[session.idx], i = Number(f.dataset.i);
     ex.sets[i][f.dataset.f] = cleanNumber(f);
+    if (!setFull(ex.sets[i])) ex.sets[i].done = false;
     var pv = (ex.prev && ex.prev[i]) || {};
     var old = f.parentNode.querySelector('.delta');
     if (old) old.parentNode.removeChild(old);
@@ -3067,6 +3083,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var fill = e.target.closest('[data-fill]');
     if (fill) {
       var ex2 = session.exercises[session.idx], j = Number(fill.dataset.fill);
+      // nothing left to fill in, so the tap means the set is behind you
+      if (setFull(ex2.sets[j])) {
+        ex2.sets[j].done = !ex2.sets[j].done;
+        saveSession();
+        drawSession();
+        return;
+      }
       var p = (ex2.prev && ex2.prev[j]) || null;
       if (p && (p.weight || p.reps || p.rir)) {
         if (!ex2.sets[j].weight) ex2.sets[j].weight = p.weight;
@@ -3092,6 +3115,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!b || rirTarget < 0) return;
     var st = session.exercises[session.idx].sets[rirTarget];
     st.rir = st.rir === b.dataset.rir ? '' : b.dataset.rir;
+    if (!setFull(st)) st.done = false;
     $('rir-sheet').hidden = true;
     rirTarget = -1;
     drawSession();
@@ -3412,7 +3436,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   // the clock is taken as it stands; both it and the date are editable later
   $('sess-end').addEventListener('click', function () {
-    finishSession(Math.max(60, sessionSeconds()));
+    var open = 0;
+    session.exercises.forEach(function (e) {
+      e.sets.forEach(function (st) { if (!st.done) open++; });
+    });
+    if (!open) { finishSession(Math.max(60, sessionSeconds())); return; }
+    askConfirm('End the workout?',
+      open + ' set' + (open === 1 ? ' is' : 's are') + ' not ticked off yet. ' +
+      'Everything you logged is kept either way.',
+      'End workout', function () { finishSession(Math.max(60, sessionSeconds())); });
   });
 
   /* --- the Home feed --- */
