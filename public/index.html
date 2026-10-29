@@ -1648,7 +1648,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1051';
+  var APP_VERSION = '1.1052';
 
   /* =========================================================
      STORE
@@ -3254,7 +3254,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var order = store.workouts.slice().sort(function (a, b) {
       return new Date(a.date) - new Date(b.date);
     });
-    var bests = {}, cuts = cutMap();
+    var bests = {}, cuts = cutMap(), seen = {};
 
     order.forEach(function (w) {
       w.records = 0;
@@ -3262,15 +3262,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         var k = exKey(e);
         var b = bests[k] || (bests[k] = { weight: 0, orm: 0, vol: 0 });
         var live = afterCut(w, cuts[k] || 0);
+        // The first time an exercise is done it only sets the bar; you cannot
+        // beat a record that did not exist yet. A reset starts this over.
+        var first = live && !seen[k];
+        if (live) seen[k] = true;
         var hit = {};
         e.sets.forEach(function (st) {
           var prs = [];
           if (live && logged(st)) {
             var kg = num(st.weight), reps = num(st.reps), orm = epley(kg, reps), vol = kg * reps;
             if (kg > 0) {
-              if (kg > b.weight) { prs.push('Weight'); b.weight = kg; }
-              if (orm > b.orm) { prs.push('1RM'); b.orm = orm; }
-              if (vol > b.vol) { prs.push('Volume'); b.vol = vol; }
+              if (kg > b.weight) { if (!first) prs.push('Weight'); b.weight = kg; }
+              if (orm > b.orm) { if (!first) prs.push('1RM'); b.orm = orm; }
+              if (vol > b.vol) { if (!first) prs.push('Volume'); b.vol = vol; }
             }
           }
           st.prs = prs;
