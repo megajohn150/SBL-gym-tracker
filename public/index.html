@@ -879,13 +879,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
    Used by danger buttons and by the step a set took.
    =========================================================== */
 /* a set you have ticked off */
-.swipe .setrow.done{background:var(--surface);border-radius:calc(var(--radius) - 2px)}
+/* darker than the page in light, lighter in dark — always a step away from it.
+   The tint sits on an opaque base so the delete action cannot show through. */
+.swipe .setrow.done{
+  background:linear-gradient(var(--done),var(--done)),var(--bg);
+  border-radius:calc(var(--radius) - 2px);
+}
 .setrow.done .setno{color:var(--fg-2);font-size:.8rem;line-height:1}
 .setrow.done .setno b{text-decoration:none;margin-top:1px}
 .setrow.done .cell{border-color:var(--fg-3);opacity:.85}
 
-:root{--red:#b4473d;--green:#4c7a46}
-[data-theme="dark"]{--red:#cf6a5f;--green:#7d9f6b}
+:root{--red:#b4473d;--green:#4c7a46;--done:rgba(0,0,0,.07)}
+[data-theme="dark"]{--red:#cf6a5f;--green:#7d9f6b;--done:rgba(255,255,255,.065)}
 </style>
 </head>
 <body>
@@ -1155,7 +1160,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <div class="phead">
         <h1 class="title" style="margin:0" id="p-handle">you</h1>
         <span class="picons">
-          <button class="iconbtn daynight" id="daynight" aria-label="Switch theme, hold for options">
+          <button class="iconbtn daynight" id="daynight" aria-label="Light or dark">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
               <g class="dn-sun">
@@ -1164,6 +1169,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
               </g>
               <path class="dn-moon" d="M20.8 13.4A8.6 8.6 0 1 1 10.6 3.2a6.7 6.7 0 0 0 10.2 10.2Z"/>
             </svg>
+          </button>
+          <button class="iconbtn" data-push="themes" aria-label="Themes">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z"/></svg>
           </button>
           <button class="iconbtn" id="prof-edit" aria-label="Your account">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20c.6-3.7 3.3-5.7 6.5-5.7s5.9 2 6.5 5.7"/></svg>
@@ -1640,7 +1648,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1050';
+  var APP_VERSION = '1.1051';
 
   /* =========================================================
      STORE
@@ -4704,35 +4712,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       applySkin(p[1]);
     });
   });
-  /* --- sun and moon: a tap flips light and dark, a hold opens the screen --- */
-  function togglePreset() {
-    // the theme stays as it is; only the mode turns over
+  /* --- sun and moon: the theme stays, only the lights change --- */
+  $('daynight').addEventListener('click', function () {
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     save('mode', next);
     applyMode(next);
-  }
-
-  var hold = { timer: null, fired: false };
-
-  function holdStart() {
-    hold.fired = false;
-    clearTimeout(hold.timer);
-    hold.timer = setTimeout(function () {
-      hold.fired = true;
-      push('themes');
-    }, 450);
-  }
-  function holdEnd(ok) {
-    clearTimeout(hold.timer);
-    if (ok && !hold.fired) togglePreset();
-    hold.fired = false;
-  }
-
-  $('daynight').addEventListener('pointerdown', function (e) { e.preventDefault(); holdStart(); });
-  $('daynight').addEventListener('pointerup', function () { holdEnd(true); });
-  $('daynight').addEventListener('pointerleave', function () { holdEnd(false); });
-  $('daynight').addEventListener('pointercancel', function () { holdEnd(false); });
-  $('daynight').addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
   mq.addEventListener('change', function () {
     if ((load('mode') || 'system') === 'system') applyMode('system');
   });
