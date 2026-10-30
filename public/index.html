@@ -357,6 +357,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   position:absolute;top:2px;right:4px;pointer-events:none;
   font-size:.62rem;font-weight:700;font-style:normal;letter-spacing:.02em;color:var(--fg-3);
 }
+.plate{position:absolute;right:4px;bottom:3px;line-height:0;color:var(--fg-3);pointer-events:none}
 .delta.up{color:var(--green)}
 .delta.down{color:var(--red)}
 button.cell.blank{color:var(--fg-3);font-weight:400}
@@ -1651,10 +1652,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     + '<path d="M7.6 8.2h8.8M7.6 11.8h8.8M7.6 15.4h3.4"/>'
     + '<path d="M18.2 14.4v5.8M15.3 17.3h5.8"/></svg>';
 
+  var PLATE_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 3.04C7.95 3.35 6.5 4.14 6.5 5.25c0 1.3 2.46 2.35 5.5 2.35s5.5-1.05 5.5-2.35c0-1.11-1.45-1.9-3.6-2.21"/><path d="m10.1 3.04.5 1.62M13.9 3.04l-.5 1.62"/><path d="M6.5 5.25v12.8c0 1.3 2.46 2.35 5.5 2.35s5.5-1.05 5.5-2.35V5.25"/><rect x="8.15" y="11.8" width="7.7" height="4.15" rx=".45"/></svg>';
+
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1054';
+  var APP_VERSION = '1.1055';
 
   /* =========================================================
      STORE
@@ -2999,7 +3002,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '<span class="cellwrap">' +
           '<input class="cell" type="text" inputmode="decimal" data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
-          delta(st.weight, pv.weight) + '</span>' +
+          delta(st.weight, pv.weight) +
+          (st.plate ? '<i class="plate">' + PLATE_SVG + '</i>' : '') + '</span>' +
         '<span class="cellwrap">' +
           '<input class="cell" type="text" inputmode="numeric" data-f="reps" data-i="' + i +
             '" value="' + esc(st.reps) + '" placeholder="' + (pv.reps ? esc(pv.reps) : '&ndash;') + '" autocomplete="off">' +
@@ -3093,9 +3097,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   // tapping a value selects it, so the first digit replaces what was there
+  var lastWeight = { idx: -1, i: -1 };
+
   $('sess-sets').addEventListener('focusin', function (e) {
     var f = e.target.closest('[data-f]');
-    if (f) requestAnimationFrame(function () { f.select(); });
+    if (!f) return;
+    if (f.dataset.f === 'weight') lastWeight = { idx: session.idx, i: Number(f.dataset.i) };
+    requestAnimationFrame(function () { f.select(); });
+  });
+
+  // one plate on, one plate off
+  $('sess-plates').addEventListener('click', function () {
+    if (!session || lastWeight.idx !== session.idx) return;
+    var st = session.exercises[session.idx].sets[lastWeight.i];
+    if (!st) return;
+    var kg = num(st.weight) + (st.plate ? -2.3 : 2.3);
+    st.weight = String(Math.round(kg * 10) / 10);
+    st.plate = !st.plate;
+    saveSession();
+    drawSession();
   });
 
   $('sess-sets').addEventListener('input', function (e) {
