@@ -568,7 +568,16 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 }
 .rir-grid button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
-/* --- our own number pad --- */
+/* --- our own number pad, sliding up from under the page --- */
+.pad{
+  flex:none;z-index:7;background:var(--bg);border-top:var(--border);
+  padding:10px var(--pad) calc(env(safe-area-inset-bottom) + 10px);
+  animation:padup .18s ease both;
+}
+@keyframes padup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+/* with the pad under it the footer needs no room for the home bar */
+#s-session.padon .sfoot{padding-bottom:12px}
+.pad,.pad-grid button,.sfoot button,.cell{touch-action:manipulation}
 .pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .pad-grid.w{grid-template-columns:repeat(4,1fr)}
 .pad-grid button{
@@ -581,12 +590,6 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .pad-grid button.off{opacity:.25}
 .pad-grid button b{font-style:normal;font-weight:700;font-size:.84rem}
 .pad-grid button svg{display:block}
-#pad-title{display:flex;align-items:center;justify-content:center;gap:9px}
-.padval{
-  font-family:var(--display);font-size:1rem;font-weight:700;color:var(--fg);
-  letter-spacing:0;text-transform:none;padding:1px 7px;border:var(--border);border-radius:4px;
-}
-.padval.fresh{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .cell[readonly]{cursor:pointer;-webkit-user-select:none;user-select:none}
 .cell.on{outline:2px solid var(--accent);outline-offset:1px}
 
@@ -1189,6 +1192,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       </span>
       <button class="next" id="sess-next">Next &rarr;</button>
     </div>
+
+    <div class="pad" id="pad-sheet" hidden>
+      <div class="pad-grid" id="pad-grid"></div>
+    </div>
   </section>
 
   <!-- ===================== PROFILE ===================== -->
@@ -1632,14 +1639,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
-<div class="sheet" id="pad-sheet" hidden>
-  <div class="sheet-bg" data-pad-close></div>
-  <div class="sheet-card">
-    <h3 id="pad-title"></h3>
-    <div class="pad-grid" id="pad-grid"></div>
-  </div>
-</div>
-
 <div class="sheet" id="rest-sheet" hidden>
   <div class="sheet-bg" data-rest-close></div>
   <div class="sheet-card">
@@ -1709,7 +1708,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1062';
+  var APP_VERSION = '1.1063';
 
   /* =========================================================
      STORE
@@ -3221,31 +3220,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
     $('pad-grid').className = 'pad-grid' + (w ? ' w' : '');
     $('pad-grid').innerHTML = g;
-    $('pad-title').innerHTML = (w ? 'Weight' : 'Reps') + '<span class="padval" id="pad-val"></span>';
     $('pad-sheet').hidden = false;
+    $('s-session').classList.add('padon');
     el.blur();
     padMark();
-    padShow();
 
-    // the sheet must not sit on top of the row you just tapped
+    // the shorter list must not leave the row you tapped out of sight
     var pane = el.closest('.sscroll');
-    var over = pane && el.getBoundingClientRect().bottom + 12 -
-      $('pad-sheet').querySelector('.sheet-card').getBoundingClientRect().top;
+    var over = pane && el.getBoundingClientRect().bottom + 10 -
+      pane.getBoundingClientRect().bottom;
     if (over > 0) pane.scrollTop += over;
   }
 
   function closePad() {
     padTarget = null;
     $('pad-sheet').hidden = true;
+    $('s-session').classList.remove('padon');
     padMark();
-  }
-
-  function padShow() {
-    var box = $('pad-val');
-    if (!box || !padTarget) return;
-    var v = session.exercises[session.idx].sets[padTarget.i][padTarget.f];
-    box.textContent = v === '' || v == null ? '\u2013' : v;
-    box.className = 'padval' + (padFresh && v !== '' && v != null ? ' fresh' : '');
   }
 
   function padSet(v) {
@@ -3261,7 +3252,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       el.parentNode.insertAdjacentHTML('beforeend', delta(v, pv[padTarget.f]));
     }
     saveSession();
-    padShow();
   }
 
   function padHit(k) {
@@ -3274,7 +3264,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       padFresh = false;
       setPlates(st, plateCount(st) === n ? 0 : n);   // redraws the row
       padMark();
-      padShow();
       return;
     }
 
@@ -3302,7 +3291,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var b = e.target.closest('[data-k]');
     if (b && !b.classList.contains('off')) padHit(b.dataset.k);
   });
-  document.querySelector('[data-pad-close]').addEventListener('click', closePad);
+  // no backdrop any more, so anything else you touch puts the pad away
+  document.addEventListener('click', function (e) {
+    if (!padTarget || e.target.closest('#pad-sheet, input[data-f]')) return;
+    closePad();
+  });
 
   $('sess-sets').addEventListener('click', function (e) {
     var cell = e.target.closest('input[data-f]');
