@@ -1705,7 +1705,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1064';
+  var APP_VERSION = '1.1065';
 
   /* =========================================================
      STORE
@@ -3039,7 +3039,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('sess-note').value = ex.snote || '';
     grow($('sess-note'));
 
-    if (padTarget && padTarget.idx !== session.idx) closePad();
+    // stepping to another exercise keeps the keypad up, on the same box
+    if (padTarget && padTarget.idx !== session.idx) {
+      if (done || !ex.sets.length) closePad();
+      else {
+        padTarget = { idx: session.idx, i: Math.min(padTarget.i, ex.sets.length - 1), f: padTarget.f };
+        padFresh = true;
+      }
+    }
 
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
@@ -3068,6 +3075,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('sess-prev').disabled = session.idx === 0;
     $('sess-next').disabled = done;
     showChip();
+    padReveal();
   }
 
   // The strip follows you from exercise to exercise, but leaves your own
@@ -3207,12 +3215,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('s-session').classList.add('padon');
     el.blur();
     padMark();
+    padReveal();
+  }
 
-    // the shorter list must not leave the row you tapped out of sight
-    var pane = el.closest('.sscroll');
-    var over = pane && el.getBoundingClientRect().bottom + 10 -
-      pane.getBoundingClientRect().bottom;
-    if (over > 0) pane.scrollTop += over;
+  // the shorter list must not leave the box you are typing in out of sight
+  function padReveal() {
+    var el = padCell(), pane = el && el.closest('.sscroll');
+    if (!pane) return;
+    var box = el.getBoundingClientRect(), frame = pane.getBoundingClientRect();
+    var over = box.bottom + 10 - frame.bottom;
+    if (over <= 0) over = Math.min(0, box.top - 10 - frame.top);
+    if (over) pane.scrollTop += over;
   }
 
   function closePad() {
@@ -3276,7 +3289,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
   // no backdrop any more, so anything else you touch puts the pad away
   document.addEventListener('click', function (e) {
-    if (!padTarget || e.target.closest('#pad-sheet, input[data-f]')) return;
+    if (!padTarget ||
+      e.target.closest('#pad-sheet, input[data-f], #sess-prev, #sess-next')) return;
     closePad();
   });
 
