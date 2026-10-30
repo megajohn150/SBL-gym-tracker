@@ -572,14 +572,15 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .pad-grid.w{grid-template-columns:repeat(4,1fr)}
 .pad-grid button{
-  padding:15px 0;text-align:center;font-weight:700;background:var(--surface);
-  font-family:var(--display);font-size:1.15rem;line-height:1;
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  padding:15px 0;font-weight:700;background:var(--surface);
+  font-family:var(--display);font-size:1.3rem;line-height:1;
   border:var(--border);border-radius:calc(var(--radius) - 2px);
 }
-.pad-grid button.ghost{font-family:var(--font);font-size:.92rem;color:var(--fg-2)}
+.pad-grid button.ghost{font-family:var(--font);font-size:1rem;color:var(--fg-2)}
 .pad-grid button.off{opacity:.25}
-.pad-grid button b{font-style:normal;font-weight:700;font-size:10px;vertical-align:2px;margin-right:2px}
-.pad-grid button svg{vertical-align:-3px}
+.pad-grid button b{font-style:normal;font-weight:700;font-size:.84rem}
+.pad-grid button svg{display:block}
 #pad-title{display:flex;align-items:center;justify-content:center;gap:9px}
 .padval{
   font-family:var(--display);font-size:1rem;font-weight:700;color:var(--fg);
@@ -1708,7 +1709,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1061';
+  var APP_VERSION = '1.1062';
 
   /* =========================================================
      STORE
@@ -3176,7 +3177,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      room for a plate; this one sits in a sheet and knows the lifts. */
   var padTarget = null, padFresh = false;
 
-  var BK_SVG = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5H20v14H9.5L3 12Z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/></svg>';
+  var BK_SVG = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.6 4.6H9.3a1.7 1.7 0 0 0-1.24.53l-5.4 5.7a1.7 1.7 0 0 0 0 2.34l5.4 5.7a1.7 1.7 0 0 0 1.24.53h10.3a1.6 1.6 0 0 0 1.6-1.6V6.2a1.6 1.6 0 0 0-1.6-1.6Z"/><path d="m13 9.9 4.3 4.2M17.3 9.9 13 14.1"/></svg>';
 
   function padOn(f, i) {
     return padTarget && padTarget.idx === session.idx &&
@@ -3207,7 +3208,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var w = f === 'weight';
     var rows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], ['.', 0, 'bk']];
     var side = ['-1', '+1', 'p1', 'p2'];
-    var sideLab = ['&minus;1', '+1', '<b>1</b>' + PLATE_SVG, '<b>2</b>' + PLATE_SVG];
+    var PLATE_BIG = PLATE_SVG.replace('width="15" height="15"', 'width="21" height="21"');
+    var sideLab = ['&minus;1', '+1', '<b>1</b>' + PLATE_BIG, '<b>2</b>' + PLATE_BIG];
     var g = '';
     rows.forEach(function (row, r) {
       row.forEach(function (k) {
