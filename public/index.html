@@ -1705,7 +1705,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1065';
+  var APP_VERSION = '1.1066';
 
   /* =========================================================
      STORE
@@ -3039,14 +3039,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('sess-note').value = ex.snote || '';
     grow($('sess-note'));
 
-    // stepping to another exercise keeps the keypad up, on the same box
-    if (padTarget && padTarget.idx !== session.idx) {
-      if (done || !ex.sets.length) closePad();
-      else {
-        padTarget = { idx: session.idx, i: Math.min(padTarget.i, ex.sets.length - 1), f: padTarget.f };
-        padFresh = true;
-      }
-    }
+    if (padTarget && padTarget.idx !== session.idx) closePad();
 
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
@@ -3289,8 +3282,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
   // no backdrop any more, so anything else you touch puts the pad away
   document.addEventListener('click', function (e) {
-    if (!padTarget ||
-      e.target.closest('#pad-sheet, input[data-f], #sess-prev, #sess-next')) return;
+    if (!padTarget || e.target.closest('#pad-sheet, input[data-f], [data-fill]')) return;
     closePad();
   });
 
@@ -3316,6 +3308,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         }
         if (!ex2.sets[j].reps) ex2.sets[j].reps = p.reps;
         if (ex2.sets[j].rir === '' && p.rir != null) ex2.sets[j].rir = p.rir;
+        padFresh = true;
         drawSession();
       }
       return;
