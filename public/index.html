@@ -357,6 +357,10 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   position:absolute;top:2px;right:4px;pointer-events:none;
   font-size:.62rem;font-weight:700;font-style:normal;letter-spacing:.02em;color:var(--fg-3);
 }
+.platetog{
+  position:absolute;right:3px;bottom:2px;line-height:0;color:var(--fg-3);opacity:.3;
+}
+.platetog[aria-pressed="true"]{opacity:1;color:var(--fg-2)}
 .platec{display:inline-block;line-height:0;margin-left:5px;color:var(--fg-3);vertical-align:-1px}
 .plate{position:absolute;right:4px;bottom:3px;line-height:0;color:var(--fg-3);pointer-events:none}
 .delta.up{color:var(--green)}
@@ -1660,7 +1664,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1058';
+  var APP_VERSION = '1.1059';
 
   /* =========================================================
      STORE
@@ -4177,7 +4181,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
               }
               var at = ' data-e="' + ei + '" data-s="' + si + '"';
               return '<div class="drow"><span class="no">' + esc(st.label) + '</span>' +
-                '<input class="cell" inputmode="decimal" data-f="weight"' + at + ' value="' + esc(st.weight) + '">' +
+                '<span class="cellwrap">' +
+                  '<input class="cell" inputmode="decimal" data-f="weight"' + at + ' value="' + esc(st.weight) + '">' +
+                  '<button class="platetog" data-plate="' + ei + '-' + si + '" aria-pressed="' +
+                    (!!st.plate) + '" aria-label="Plate">' + PLATE_SM + '</button>' +
+                '</span>' +
                 '<input class="cell" inputmode="numeric" data-f="reps"' + at + ' value="' + esc(st.reps) + '">' +
                 '<input class="cell" data-f="rir"' + at + ' value="' + esc(st.rir) + '">' +
                 '</div>';
@@ -4318,6 +4326,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       var st = e2.sets.filter(logged)[Number(inp.dataset.s)];
       if (st) st[inp.dataset.f] = inp.value.trim();
     });
+    document.querySelectorAll('#detail-body [data-plate]').forEach(function (b) {
+      var at = b.dataset.plate.split('-');
+      var st = detailW.exercises[Number(at[0])].sets.filter(logged)[Number(at[1])];
+      if (!st) return;
+      if (b.getAttribute('aria-pressed') === 'true') st.plate = true;
+      else delete st.plate;
+    });
     detailW.exercises = detailW.exercises
       .map(function (x) { x.sets = x.sets.filter(logged); return x; })
       .filter(function (x) { return x.sets.length; });
@@ -4340,6 +4355,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('save-drop').addEventListener('click', leaveEdit);
 
   $('detail-body').addEventListener('click', function (e) {
+    var pl = e.target.closest('[data-plate]');
+    if (pl) {
+      pl.setAttribute('aria-pressed', pl.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      detailDirty = true;
+      drawSaveBar();
+      return;
+    }
     var x = e.target.closest('[data-ex-open]');
     if (x) { openHistory(x.dataset.exOpen); return; }
     if (e.target.closest('#d-date')) { openDatePick(); return; }
