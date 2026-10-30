@@ -360,7 +360,10 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .platetog{
   position:absolute;right:3px;bottom:2px;line-height:0;color:var(--fg-3);opacity:.3;
 }
-.platetog[aria-pressed="true"]{opacity:1;color:var(--fg-2)}
+.platetog[data-n="1"],.platetog[data-n="2"]{opacity:1;color:var(--fg-2)}
+.plate b,.platec b,.platetog b{
+  font-style:normal;font-weight:700;font-size:9px;vertical-align:2px;margin-right:1px;
+}
 .platec{display:inline-block;line-height:0;margin-left:5px;color:var(--fg-3);vertical-align:-1px}
 .plate{position:absolute;right:4px;bottom:3px;line-height:0;color:var(--fg-3);pointer-events:none}
 .delta.up{color:var(--green)}
@@ -1607,6 +1610,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="sheet center" id="plate-sheet" hidden>
+  <div class="sheet-bg" data-plate-close></div>
+  <div class="sheet-card">
+    <h3>How many plates?</h3>
+    <div class="seg two">
+      <button data-plates="1">1</button>
+      <button data-plates="2">2</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="rest-sheet" hidden>
   <div class="sheet-bg" data-rest-close></div>
   <div class="sheet-card">
@@ -1659,12 +1673,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   var PLATE_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 3.04C7.95 3.35 6.5 4.14 6.5 5.25c0 1.3 2.46 2.35 5.5 2.35s5.5-1.05 5.5-2.35c0-1.11-1.45-1.9-3.6-2.21"/><path d="m10.1 3.04.5 1.62M13.9 3.04l-.5 1.62"/><path d="M6.5 5.25v12.8c0 1.3 2.46 2.35 5.5 2.35s5.5-1.05 5.5-2.35V5.25"/><rect x="8.15" y="11.8" width="7.7" height="4.15" rx=".45"/></svg>';
 
+  // how many plates are on this set; older data stored a plain true
+  function plateCount(st) {
+    if (!st || !st.plate) return 0;
+    return typeof st.plate === 'number' ? st.plate : 1;
+  }
+  function plateMark(st, cls) {
+    var n = plateCount(st);
+    if (!n) return '';
+    return '<i class="' + cls + '">' + (n > 1 ? '<b>' + n + '</b>' : '') +
+      (cls === 'plate' ? PLATE_SVG : PLATE_SM) + '</i>';
+  }
+
   var PLATE_SM = PLATE_SVG.replace('width="15" height="15"', 'width="12" height="12"');
 
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1059';
+  var APP_VERSION = '1.1060';
 
   /* =========================================================
      STORE
@@ -2854,7 +2880,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (exKey(e) !== key) return;
         e.sets.forEach(function (st, j) {
           if (out[j] || !logged(st)) return;
-          out[j] = { weight: st.weight, reps: st.reps, rir: st.rir, plate: !!st.plate };
+          out[j] = { weight: st.weight, reps: st.reps, rir: st.rir, plate: plateCount(st) };
         });
       });
     });
@@ -3010,7 +3036,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           '<input class="cell" type="text" inputmode="decimal" data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
           delta(st.weight, pv.weight) +
-          (st.plate ? '<i class="plate">' + PLATE_SVG + '</i>' : '') + '</span>' +
+          plateMark(st, 'plate') + '</span>' +
         '<span class="cellwrap">' +
           '<input class="cell" type="text" inputmode="numeric" data-f="reps" data-i="' + i +
             '" value="' + esc(st.reps) + '" placeholder="' + (pv.reps ? esc(pv.reps) : '&ndash;') + '" autocomplete="off">' +
@@ -3113,16 +3139,52 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     requestAnimationFrame(function () { f.select(); });
   });
 
-  // one plate on, one plate off
-  $('sess-plates').addEventListener('click', function () {
-    if (!session || lastWeight.idx !== session.idx) return;
-    var st = session.exercises[session.idx].sets[lastWeight.i];
-    if (!st) return;
-    var kg = num(st.weight) + (st.plate ? -2.3 : 2.3);
-    st.weight = String(Math.round(kg * 10) / 10);
-    st.plate = !st.plate;
+  // the weight follows the plates on and off the bar
+  function setPlates(st, n) {
+    var cur = plateCount(st);
+    if (n === cur) return;
+    st.weight = String(Math.round((num(st.weight) + (n - cur) * 2.3) * 10) / 10);
+    if (n) st.plate = n; else delete st.plate;
     saveSession();
     drawSession();
+  }
+
+  function pickedSet() {
+    if (!session || lastWeight.idx !== session.idx) return null;
+    return session.exercises[session.idx].sets[lastWeight.i] || null;
+  }
+
+  // a tap puts one on, or takes off whatever is there; a hold asks how many
+  var pHold = { timer: null, fired: false };
+
+  $('sess-plates').addEventListener('pointerdown', function (e) {
+    e.preventDefault();
+    pHold.fired = false;
+    clearTimeout(pHold.timer);
+    pHold.timer = setTimeout(function () {
+      pHold.fired = true;
+      if (pickedSet()) $('plate-sheet').hidden = false;
+    }, 450);
+  });
+  $('sess-plates').addEventListener('pointerup', function () {
+    clearTimeout(pHold.timer);
+    if (pHold.fired) return;
+    var st = pickedSet();
+    if (st) setPlates(st, plateCount(st) ? 0 : 1);
+  });
+  $('sess-plates').addEventListener('pointerleave', function () { clearTimeout(pHold.timer); });
+  $('sess-plates').addEventListener('pointercancel', function () { clearTimeout(pHold.timer); });
+  $('sess-plates').addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  document.querySelector('[data-plate-close]').addEventListener('click', function () {
+    $('plate-sheet').hidden = true;
+  });
+  document.querySelectorAll('[data-plates]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $('plate-sheet').hidden = true;
+      var st = pickedSet();
+      if (st) setPlates(st, Number(b.dataset.plates));
+    });
   });
 
   $('sess-sets').addEventListener('input', function (e) {
@@ -3153,7 +3215,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (p && (p.weight || p.reps || p.rir)) {
         if (!ex2.sets[j].weight) {
           ex2.sets[j].weight = p.weight;
-          if (p.plate) ex2.sets[j].plate = true;   // the plate came with that weight
+          if (p.plate) ex2.sets[j].plate = p.plate;   // the plates came with that weight
         }
         if (!ex2.sets[j].reps) ex2.sets[j].reps = p.reps;
         if (ex2.sets[j].rir === '' && p.rir != null) ex2.sets[j].rir = p.rir;
@@ -3372,7 +3434,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           note: (e.snote || '').trim(),
           sets: e.sets.filter(logged).map(function (st) {
             var out = { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir };
-            if (st.plate) out.plate = true;
+            if (st.plate) out.plate = plateCount(st);
             return out;
           })
         };
@@ -4174,7 +4236,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
               if (!detailEdit) {
                 return '<div class="drow"><span class="no">' + esc(st.label) + medal(st) + '</span>' +
                   '<span class="c">' + (st.weight === '' ? '&ndash;' : esc(st.weight)) +
-                  (st.plate ? '<i class="platec">' + PLATE_SM + '</i>' : '') + '</span>' +
+                  plateMark(st, 'platec') + '</span>' +
                   '<span class="c">' + esc(st.reps) + '</span>' +
                   '<span class="c' + (st.rir === '' ? ' dim' : '') + '">' +
                   (st.rir === '' ? '&ndash;' : esc(st.rir)) + '</span></div>';
@@ -4183,8 +4245,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
               return '<div class="drow"><span class="no">' + esc(st.label) + '</span>' +
                 '<span class="cellwrap">' +
                   '<input class="cell" inputmode="decimal" data-f="weight"' + at + ' value="' + esc(st.weight) + '">' +
-                  '<button class="platetog" data-plate="' + ei + '-' + si + '" aria-pressed="' +
-                    (!!st.plate) + '" aria-label="Plate">' + PLATE_SM + '</button>' +
+                  '<button class="platetog" data-plate="' + ei + '-' + si + '" data-n="' +
+                    plateCount(st) + '" aria-label="Plates">' +
+                    (plateCount(st) > 1 ? '<b>2</b>' : '') + PLATE_SM + '</button>' +
                 '</span>' +
                 '<input class="cell" inputmode="numeric" data-f="reps"' + at + ' value="' + esc(st.reps) + '">' +
                 '<input class="cell" data-f="rir"' + at + ' value="' + esc(st.rir) + '">' +
@@ -4330,8 +4393,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       var at = b.dataset.plate.split('-');
       var st = detailW.exercises[Number(at[0])].sets.filter(logged)[Number(at[1])];
       if (!st) return;
-      if (b.getAttribute('aria-pressed') === 'true') st.plate = true;
-      else delete st.plate;
+      var n = Number(b.dataset.n);
+      if (n) st.plate = n; else delete st.plate;
     });
     detailW.exercises = detailW.exercises
       .map(function (x) { x.sets = x.sets.filter(logged); return x; })
@@ -4357,7 +4420,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('detail-body').addEventListener('click', function (e) {
     var pl = e.target.closest('[data-plate]');
     if (pl) {
-      pl.setAttribute('aria-pressed', pl.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+      var n = (Number(pl.dataset.n) + 1) % 3;
+      pl.dataset.n = n;
+      pl.innerHTML = (n > 1 ? '<b>2</b>' : '') + PLATE_SM;
       detailDirty = true;
       drawSaveBar();
       return;
