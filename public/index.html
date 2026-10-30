@@ -568,6 +568,27 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 }
 .rir-grid button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
+/* --- our own number pad --- */
+.pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pad-grid.w{grid-template-columns:repeat(4,1fr)}
+.pad-grid button{
+  padding:15px 0;text-align:center;font-weight:700;background:var(--surface);
+  font-family:var(--display);font-size:1.15rem;line-height:1;
+  border:var(--border);border-radius:calc(var(--radius) - 2px);
+}
+.pad-grid button.ghost{font-family:var(--font);font-size:.92rem;color:var(--fg-2)}
+.pad-grid button.off{opacity:.25}
+.pad-grid button b{font-style:normal;font-weight:700;font-size:10px;vertical-align:2px;margin-right:2px}
+.pad-grid button svg{vertical-align:-3px}
+#pad-title{display:flex;align-items:center;justify-content:center;gap:9px}
+.padval{
+  font-family:var(--display);font-size:1rem;font-weight:700;color:var(--fg);
+  letter-spacing:0;text-transform:none;padding:1px 7px;border:var(--border);border-radius:4px;
+}
+.padval.fresh{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cell[readonly]{cursor:pointer;-webkit-user-select:none;user-select:none}
+.cell.on{outline:2px solid var(--accent);outline-offset:1px}
+
 /* --- rest timer --- */
 .rest-pick{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:14px}
 .rest-pick button{
@@ -1610,14 +1631,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
-<div class="sheet center" id="plate-sheet" hidden>
-  <div class="sheet-bg" data-plate-close></div>
+<div class="sheet" id="pad-sheet" hidden>
+  <div class="sheet-bg" data-pad-close></div>
   <div class="sheet-card">
-    <h3>How many plates?</h3>
-    <div class="seg two">
-      <button data-plates="1">1</button>
-      <button data-plates="2">2</button>
-    </div>
+    <h3 id="pad-title"></h3>
+    <div class="pad-grid" id="pad-grid"></div>
   </div>
 </div>
 
@@ -1690,7 +1708,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1060';
+  var APP_VERSION = '1.1061';
 
   /* =========================================================
      STORE
@@ -3024,6 +3042,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('sess-note').value = ex.snote || '';
     grow($('sess-note'));
 
+    if (padTarget && padTarget.idx !== session.idx) closePad();
+
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
       return '<div class="swipe">' +
@@ -3033,12 +3053,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           '" data-fill="' + i + '">' + (st.done ? '&#10003;' : 'Set') +
           '<b>' + esc(st.label) + '</b></button>' +
         '<span class="cellwrap">' +
-          '<input class="cell" type="text" inputmode="decimal" data-f="weight" data-i="' + i +
+          '<input class="cell' + padOn('weight', i) + '" type="text" inputmode="none" readonly data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
           delta(st.weight, pv.weight) +
           plateMark(st, 'plate') + '</span>' +
         '<span class="cellwrap">' +
-          '<input class="cell" type="text" inputmode="numeric" data-f="reps" data-i="' + i +
+          '<input class="cell' + padOn('reps', i) + '" type="text" inputmode="none" readonly data-f="reps" data-i="' + i +
             '" value="' + esc(st.reps) + '" placeholder="' + (pv.reps ? esc(pv.reps) : '&ndash;') + '" autocomplete="off">' +
           delta(st.reps, pv.reps) + '</span>' +
         '<span class="cellwrap">' +
@@ -3129,15 +3149,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return v;
   }
 
-  // tapping a value selects it, so the first digit replaces what was there
   var lastWeight = { idx: -1, i: -1 };
-
-  $('sess-sets').addEventListener('focusin', function (e) {
-    var f = e.target.closest('[data-f]');
-    if (!f) return;
-    if (f.dataset.f === 'weight') lastWeight = { idx: session.idx, i: Number(f.dataset.i) };
-    requestAnimationFrame(function () { f.select(); });
-  });
 
   // the weight follows the plates on and off the bar
   function setPlates(st, n) {
@@ -3154,53 +3166,146 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return session.exercises[session.idx].sets[lastWeight.i] || null;
   }
 
-  // a tap puts one on, or takes off whatever is there; a hold asks how many
-  var pHold = { timer: null, fired: false };
-
-  $('sess-plates').addEventListener('pointerdown', function (e) {
-    e.preventDefault();
-    pHold.fired = false;
-    clearTimeout(pHold.timer);
-    pHold.timer = setTimeout(function () {
-      pHold.fired = true;
-      if (pickedSet()) $('plate-sheet').hidden = false;
-    }, 450);
-  });
-  $('sess-plates').addEventListener('pointerup', function () {
-    clearTimeout(pHold.timer);
-    if (pHold.fired) return;
+  // one plate on, or whatever is on back off
+  $('sess-plates').addEventListener('click', function () {
     var st = pickedSet();
     if (st) setPlates(st, plateCount(st) ? 0 : 1);
   });
-  $('sess-plates').addEventListener('pointerleave', function () { clearTimeout(pHold.timer); });
-  $('sess-plates').addEventListener('pointercancel', function () { clearTimeout(pHold.timer); });
-  $('sess-plates').addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
-  document.querySelector('[data-plate-close]').addEventListener('click', function () {
-    $('plate-sheet').hidden = true;
-  });
-  document.querySelectorAll('[data-plates]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      $('plate-sheet').hidden = true;
-      var st = pickedSet();
-      if (st) setPlates(st, Number(b.dataset.plates));
+  /* Our own keypad. The iOS one buries the row you are editing and has no
+     room for a plate; this one sits in a sheet and knows the lifts. */
+  var padTarget = null, padFresh = false;
+
+  var BK_SVG = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5H20v14H9.5L3 12Z"/><path d="m12.5 9.5 5 5M17.5 9.5l-5 5"/></svg>';
+
+  function padOn(f, i) {
+    return padTarget && padTarget.idx === session.idx &&
+      padTarget.i === i && padTarget.f === f ? ' on' : '';
+  }
+
+  function padCell() {
+    return padTarget && $('sess-sets').querySelector(
+      '[data-f="' + padTarget.f + '"][data-i="' + padTarget.i + '"]');
+  }
+
+  function padMark() {
+    $('sess-sets').querySelectorAll('.cell.on').forEach(function (n) { n.classList.remove('on'); });
+    var el = padCell();
+    if (el) el.classList.add('on');
+  }
+
+  function padKey(k, lab, cls) {
+    return '<button data-k="' + k + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + lab + '</button>';
+  }
+
+  function openPad(el) {
+    var f = el.dataset.f, i = Number(el.dataset.i);
+    padTarget = { idx: session.idx, i: i, f: f };
+    padFresh = true;
+    if (f === 'weight') lastWeight = { idx: session.idx, i: i };
+
+    var w = f === 'weight';
+    var rows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], ['.', 0, 'bk']];
+    var side = ['-1', '+1', 'p1', 'p2'];
+    var sideLab = ['&minus;1', '+1', '<b>1</b>' + PLATE_SVG, '<b>2</b>' + PLATE_SVG];
+    var g = '';
+    rows.forEach(function (row, r) {
+      row.forEach(function (k) {
+        g += k === 'bk' ? padKey('bk', BK_SVG, 'ghost')
+          : k === '.' ? padKey('.', '.', w ? '' : 'off')
+          : padKey(k, k);
+      });
+      if (w) g += padKey(side[r], sideLab[r], 'ghost');
     });
-  });
+    $('pad-grid').className = 'pad-grid' + (w ? ' w' : '');
+    $('pad-grid').innerHTML = g;
+    $('pad-title').innerHTML = (w ? 'Weight' : 'Reps') + '<span class="padval" id="pad-val"></span>';
+    $('pad-sheet').hidden = false;
+    el.blur();
+    padMark();
+    padShow();
 
-  $('sess-sets').addEventListener('input', function (e) {
-    var f = e.target.closest('[data-f]');
-    if (!f) return;
-    var ex = session.exercises[session.idx], i = Number(f.dataset.i);
-    ex.sets[i][f.dataset.f] = cleanNumber(f);
-    if (!setFull(ex.sets[i])) ex.sets[i].done = false;
-    var pv = (ex.prev && ex.prev[i]) || {};
-    var old = f.parentNode.querySelector('.delta');
-    if (old) old.parentNode.removeChild(old);
-    f.parentNode.insertAdjacentHTML('beforeend', delta(f.value, pv[f.dataset.f]));
+    // the sheet must not sit on top of the row you just tapped
+    var pane = el.closest('.sscroll');
+    var over = pane && el.getBoundingClientRect().bottom + 12 -
+      $('pad-sheet').querySelector('.sheet-card').getBoundingClientRect().top;
+    if (over > 0) pane.scrollTop += over;
+  }
+
+  function closePad() {
+    padTarget = null;
+    $('pad-sheet').hidden = true;
+    padMark();
+  }
+
+  function padShow() {
+    var box = $('pad-val');
+    if (!box || !padTarget) return;
+    var v = session.exercises[session.idx].sets[padTarget.i][padTarget.f];
+    box.textContent = v === '' || v == null ? '\u2013' : v;
+    box.className = 'padval' + (padFresh && v !== '' && v != null ? ' fresh' : '');
+  }
+
+  function padSet(v) {
+    var ex = session.exercises[session.idx], st = ex.sets[padTarget.i];
+    st[padTarget.f] = v;
+    if (!setFull(st)) st.done = false;
+    var el = padCell();
+    if (el) {
+      el.value = v;
+      var pv = (ex.prev && ex.prev[padTarget.i]) || {};
+      var old = el.parentNode.querySelector('.delta');
+      if (old) old.parentNode.removeChild(old);
+      el.parentNode.insertAdjacentHTML('beforeend', delta(v, pv[padTarget.f]));
+    }
     saveSession();
+    padShow();
+  }
+
+  function padHit(k) {
+    if (!session || !padTarget) return;
+    var st = session.exercises[session.idx].sets[padTarget.i];
+    if (!st) return;
+
+    if (k === 'p1' || k === 'p2') {
+      var n = k === 'p1' ? 1 : 2;
+      padFresh = false;
+      setPlates(st, plateCount(st) === n ? 0 : n);   // redraws the row
+      padMark();
+      padShow();
+      return;
+    }
+
+    var cur = st[padTarget.f] == null ? '' : String(st[padTarget.f]);
+
+    if (k === '-1' || k === '+1') {
+      padFresh = false;
+      var kg = Math.round((num(cur) + (k === '+1' ? 1 : -1)) * 10) / 10;
+      return padSet(String(kg < 0 ? 0 : kg));
+    }
+    if (k === 'bk') { padFresh = false; return padSet(cur.slice(0, -1)); }
+
+    // the first digit after opening replaces what was there, as a tap used to
+    if (padFresh) { cur = ''; padFresh = false; }
+
+    if (k === '.') {
+      if (padTarget.f !== 'weight' || cur.indexOf('.') > -1) return;
+      return padSet((cur || '0') + '.');
+    }
+    if (cur.replace('.', '').length >= 5) return;
+    padSet(cur === '0' ? String(k) : cur + k);
+  }
+
+  $('pad-grid').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-k]');
+    if (b && !b.classList.contains('off')) padHit(b.dataset.k);
   });
+  document.querySelector('[data-pad-close]').addEventListener('click', closePad);
 
   $('sess-sets').addEventListener('click', function (e) {
+    var cell = e.target.closest('input[data-f]');
+    if (cell) { openPad(cell); return; }
+
     var fill = e.target.closest('[data-fill]');
     if (fill) {
       var ex2 = session.exercises[session.idx], j = Number(fill.dataset.fill);
