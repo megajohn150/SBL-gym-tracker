@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Tracker</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="A gym training tracker.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -37,7 +37,8 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
-html{-webkit-text-size-adjust:100%;background:var(--bg)}
+/* no zoom anywhere: no pinch, and no double tap on a button you hit twice */
+html{-webkit-text-size-adjust:100%;background:var(--bg);touch-action:pan-x pan-y}
 body{
   background:var(--bg); color:var(--fg);
   font-family:var(--font); font-size:var(--base); line-height:1.45;
@@ -577,7 +578,6 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 @keyframes padup{from{transform:translateY(100%)}to{transform:translateY(0)}}
 /* with the pad under it the footer needs no room for the home bar */
 #s-session.padon .sfoot{padding-bottom:12px}
-.pad,.pad-grid button,.sfoot button,.cell{touch-action:manipulation}
 .pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .pad-grid.w{grid-template-columns:repeat(4,1fr)}
 .pad-grid button{
@@ -1183,9 +1183,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="sfoot">
       <button class="prev" id="sess-prev">&larr; Prev</button>
       <span class="mids">
-      <button class="mid" id="sess-plates" aria-label="Plates">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 3.04C7.95 3.35 6.5 4.14 6.5 5.25c0 1.3 2.46 2.35 5.5 2.35s5.5-1.05 5.5-2.35c0-1.11-1.45-1.9-3.6-2.21"/><path d="m10.1 3.04.5 1.62M13.9 3.04l-.5 1.62"/><path d="M10.6 4.66c-.16.16-.25.37-.25.59 0 .39.74.7 1.65.7s1.65-.31 1.65-.7c0-.22-.09-.43-.25-.59"/><path d="M6.5 5.25v12.8c0 1.3 2.46 2.35 5.5 2.35s5.5-1.05 5.5-2.35V5.25"/><rect x="8.15" y="11.8" width="7.7" height="4.15" rx=".45"/></svg>
-      </button>
       <button class="mid" id="sess-timer" aria-label="Timer">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13M9 2h6"/></svg>
       </button>
@@ -1708,7 +1705,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1063';
+  var APP_VERSION = '1.1064';
 
   /* =========================================================
      STORE
@@ -3149,8 +3146,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return v;
   }
 
-  var lastWeight = { idx: -1, i: -1 };
-
   // the weight follows the plates on and off the bar
   function setPlates(st, n) {
     var cur = plateCount(st);
@@ -3160,17 +3155,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     saveSession();
     drawSession();
   }
-
-  function pickedSet() {
-    if (!session || lastWeight.idx !== session.idx) return null;
-    return session.exercises[session.idx].sets[lastWeight.i] || null;
-  }
-
-  // one plate on, or whatever is on back off
-  $('sess-plates').addEventListener('click', function () {
-    var st = pickedSet();
-    if (st) setPlates(st, plateCount(st) ? 0 : 1);
-  });
 
   /* Our own keypad. The iOS one buries the row you are editing and has no
      room for a plate; this one sits in a sheet and knows the lifts. */
@@ -3202,7 +3186,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var f = el.dataset.f, i = Number(el.dataset.i);
     padTarget = { idx: session.idx, i: i, f: f };
     padFresh = true;
-    if (f === 'weight') lastWeight = { idx: session.idx, i: i };
 
     var w = f === 'weight';
     var rows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], ['.', 0, 'bk']];
