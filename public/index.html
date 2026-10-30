@@ -1648,7 +1648,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1052';
+  var APP_VERSION = '1.1053';
 
   /* =========================================================
      STORE
@@ -1994,7 +1994,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (pickMuscle && !exEditId) mus.value = pickMuscle;
     }
     if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
-    if (id === 's-session') drawSession();
+    if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
     if (id === 's-calendar') drawCalendar();
     if (id !== 's-detail' && detailEdit) { detailEdit = false; detailDirty = false; }
@@ -3007,6 +3007,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     $('sess-prev').disabled = session.idx === 0;
     $('sess-next').disabled = done;
+    showChip();
+  }
+
+  // The strip follows you from exercise to exercise, but leaves your own
+  // scrolling alone until you move on; coming back to the session re-centres it.
+  var chipAt = -1, chipJump = false;
+
+  function showChip() {
+    var strip = $('sess-chips');
+    var el = strip.children[Math.min(session.idx, strip.children.length - 1)];
+    if (!el) return;
+    if (!chipJump && chipAt === session.idx) return;
+    var left = el.offsetLeft - (strip.clientWidth - el.offsetWidth) / 2;
+    left = Math.max(0, Math.min(left, strip.scrollWidth - strip.clientWidth));
+    if (strip.scrollTo) strip.scrollTo({ left: left, behavior: chipJump ? 'auto' : 'smooth' });
+    else strip.scrollLeft = left;
+    chipAt = session.idx;
+    chipJump = false;
   }
 
   // the box is the input — it grows with the text and saves as you type
