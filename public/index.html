@@ -1657,7 +1657,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.1056';
+  var APP_VERSION = '1.1057';
 
   /* =========================================================
      STORE
@@ -2847,7 +2847,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (exKey(e) !== key) return;
         e.sets.forEach(function (st, j) {
           if (out[j] || !logged(st)) return;
-          out[j] = { weight: st.weight, reps: st.reps, rir: st.rir };
+          out[j] = { weight: st.weight, reps: st.reps, rir: st.rir, plate: !!st.plate };
         });
       });
     });
@@ -3144,7 +3144,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       }
       var p = (ex2.prev && ex2.prev[j]) || null;
       if (p && (p.weight || p.reps || p.rir)) {
-        if (!ex2.sets[j].weight) ex2.sets[j].weight = p.weight;
+        if (!ex2.sets[j].weight) {
+          ex2.sets[j].weight = p.weight;
+          if (p.plate) ex2.sets[j].plate = true;   // the plate came with that weight
+        }
         if (!ex2.sets[j].reps) ex2.sets[j].reps = p.reps;
         if (ex2.sets[j].rir === '' && p.rir != null) ex2.sets[j].rir = p.rir;
         drawSession();
@@ -3361,7 +3364,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           exId: e.exId, name: e.name, muscle: e.muscle, unilateral: e.unilateral,
           note: (e.snote || '').trim(),
           sets: e.sets.filter(logged).map(function (st) {
-            return { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir };
+            var out = { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir };
+            if (st.plate) out.plate = true;
+            return out;
           })
         };
       }).filter(function (e) { return e.sets.length > 0; })
