@@ -441,6 +441,8 @@ body.in-session .tabs{display:none}
   font-style:normal;letter-spacing:0;color:var(--fg-3);
 }
 .wstats .v i.up{color:var(--green)}
+.wstats.big .v{white-space:normal}
+.wstats.big .v i{display:block;margin:4px 0 0}
 .wstats .v i.down{color:var(--red)}
 /* records are one number, so they ride along with the name instead of
    taking a box of their own */
@@ -1902,7 +1904,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3085';
+  var APP_VERSION = '1.3086';
 
   /* =========================================================
      STORE
@@ -3607,6 +3609,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (m === 60) { h += 1; m = 0; }
     return h ? h + 'h ' + pad2(m) + 'm' : m + 'm';
   }
+  // 144 488.5 kg does not fit a card; 144.5k kg says the same
+  function fmtKg(kg) {
+    if (Math.abs(kg) < 10000) return fmtVolume(kg);
+    var k = Math.round(kg / 100) / 10;
+    return (k % 1 === 0 ? k : k.toFixed(1)) + 'k kg';
+  }
+
   function fmtVolume(kg) {
     var r = Math.round(kg * 10) / 10;
     var whole = Math.floor(r), frac = Math.round((r - whole) * 10);
@@ -4494,13 +4503,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('stchart-body').innerHTML =
       '<button class="strange" id="st-range">' + def.name + '</button>' +
       radar(byGroup(cur.by), byGroup(prev.by)) +
-      '<div class="wstats" style="padding:0 var(--pad)">' +
+      '<div class="wstats big" style="padding:0 var(--pad)">' +
         '<div><span class="k">Workouts</span><span class="v">' + cur.workouts +
           gap(cur.workouts, prev.workouts) + '</span></div>' +
         '<div><span class="k">Duration</span><span class="v">' + fmtDuration(cur.seconds) +
           gap(cur.seconds, prev.seconds, function (n) { return fmtDuration(n); }) + '</span></div>' +
-        '<div><span class="k">Volume</span><span class="v">' + fmtVolume(cur.volume) +
-          gap(cur.volume, prev.volume) + '</span></div>' +
+        '<div><span class="k">Volume</span><span class="v">' + fmtKg(cur.volume) +
+          gap(cur.volume, prev.volume, function (n) { return fmtKg(n); }) + '</span></div>' +
         '<div><span class="k">Sets</span><span class="v">' + cur.sets +
           gap(cur.sets, prev.sets) + '</span></div>' +
       '</div>';
