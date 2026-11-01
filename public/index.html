@@ -776,6 +776,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .reportbar .go span{display:block;margin-top:2px;font-size:.72rem;color:var(--fg-3)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
+.whogo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
 /* someone else's routine, read only */
 .ctl .val{font-size:.85rem;font-weight:700}
 .rocue{
@@ -2092,7 +2093,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3098';
+  var APP_VERSION = '1.3099';
 
   /* =========================================================
      STORE
@@ -2421,10 +2422,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   /* --- lists of people: followers, following, friends --- */
-  var peopleMode = 'friends';
+  var peopleMode = 'friends', peopleList = null;
   var PEOPLE_TITLE = { followers: 'Followers', following: 'Following', friends: 'Friends' };
 
   function peopleIds() {
+    if (peopleList) return peopleList;
     if (peopleMode === 'followers') return Object.keys(social.followers);
     if (peopleMode === 'following') return Object.keys(social.following);
     return friendIds();
@@ -2445,8 +2447,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }).join('');
   }
 
-  function openPeople(mode) {
+  function openPeople(mode, ids) {
     peopleMode = mode;
+    peopleList = ids || null;
     push('people');
     drawPeople();
     var ids = peopleIds().filter(function (id) { return !social.people[id]; });
@@ -2571,8 +2574,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '<span class="pid"><span class="pname">' + esc(p.name || p.username || '') + '</span>' +
       '<span class="pstats">' +
         '<span><b>' + (stats.workouts || 0) + '</b><i>Workouts</i></span>' +
-        '<span><b>' + userView.fers + '</b><i>Followers</i></span>' +
-        '<span><b>' + userView.fing + '</b><i>Following</i></span>' +
+        '<button data-ufollow="followers"><b>' + userView.fers + '</b><i>Followers</i></button>' +
+        '<button data-ufollow="following"><b>' + userView.fing + '</b><i>Following</i></button>' +
       '</span></span></div>' +
       (p.bio ? '<p class="pbio">' + esc(p.bio) + '</p>' : '') +
       '<div style="padding:.6rem var(--pad) 0">' +
@@ -2628,6 +2631,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (f) { followSet(f.dataset.follow, !social.following[f.dataset.follow]); return; }
     var c = e.target.closest('[data-openrt]');
     if (c && userView && userView.lib) { openFrRoutine(Number(c.dataset.openrt)); return; }
+    var uf = e.target.closest('[data-ufollow]');
+    if (uf && userView && sb) {
+      var who2 = userView.id, mode = uf.dataset.ufollow;
+      var q = mode === 'followers'
+        ? sb.from('follows').select('follower').eq('followee', who2)
+        : sb.from('follows').select('followee').eq('follower', who2);
+      q.then(function (r) {
+        var ids = (r.data || []).map(function (x) { return x.follower || x.followee; });
+        openPeople(mode, ids);
+      });
+      return;
+    }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
@@ -4634,9 +4649,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return '<article class="wcard" data-w="' + w.id + '"' +
           (who ? ' data-u="' + esc(w.by) + '"' : '') + '>' +
         '<div class="wtop">' +
+          (who ? '<button class="whogo" data-openu="' + esc(w.by) + '">' : '<span class="whogo">') +
           avatarTag(34, '', who || store.profile) +
           '<span class="who"><span class="nm">' +
             esc((who ? (who.username || who.handle) : store.profile.handle) || 'you') + '</span></span>' +
+          (who ? '</button>' : '</span>') +
           '<span class="right">' +
             (ordinal ? '<span class="wnum">' + pad2(ordinal) + '</span>' : '') +
             '<span class="wdate">' + relDate(w.date) + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</span>' +
@@ -5632,7 +5649,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   function statsRow(w, t) {
-    var p = prevWorkout(w), pt = p ? workoutTotals(p) : null;
+    var p = detailRO ? null : prevWorkout(w), pt = p ? workoutTotals(p) : null;
 
     function gap(now, was) {
       if (!pt) return '';
@@ -5654,6 +5671,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('home-list').addEventListener('click', function (e) {
+    var go = e.target.closest('[data-openu]');
+    if (go) { openUser(go.dataset.openu); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
@@ -5792,10 +5811,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var who = detailRO ? detailWho : store.profile;
 
     var head = '<div style="padding:1.2rem var(--pad) 0">' +
-      '<div class="whead">' + avatarTag(34, '', who) +
+      '<div class="whead">' +
+      (detailRO ? '<button class="whogo" data-openu="' + esc(w.by || '') + '">' : '<span class="whogo">') +
+      avatarTag(34, '', who) +
       '<span class="who"><span class="nm">' +
         esc(who.username || who.handle || 'you') + '</span>' +
       '<span class="dt">' + fullDate(w.date) + '</span></span>' +
+      (detailRO ? '</button>' : '</span>') +
       (detailRO ? '<span></span>'
         : '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button>') + '</div>' +
       (detailEdit
