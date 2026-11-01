@@ -805,6 +805,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .stdays .on{background:var(--accent);border-color:var(--accent)}
 .stdays .on .d{color:var(--accent-ink);opacity:.7}
 .stdays .on .n{color:var(--accent-ink)}
+/* which session it was, under the date */
+.stdays .w{
+  display:block;margin-top:3px;padding:0 2px;font-size:.46rem;font-weight:700;
+  letter-spacing:.02em;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.stdays .on .w{color:var(--accent-ink);opacity:.75}
 /* The artwork is one flat drawing, so the heat sits on top of it: the
    picture and the blobs share a box and the same coordinates, and the box
    is scaled to crop the empty margins of the original file. */
@@ -1896,7 +1902,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3082';
+  var APP_VERSION = '1.3083';
 
   /* =========================================================
      STORE
@@ -4604,13 +4610,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
 
     var byDay = {};
-    store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = 1; });
+    store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = w.name; });
 
     var days = '';
     for (var i = 0; i < 7; i++) {
       var d = addDays(start, i), on = byDay[dayKey(d)];
       days += '<div class="' + (on ? 'on' : '') + '"><span class="d">' +
-        'MTWTFSS'.charAt(i) + '</span><span class="n">' + d.getDate() + '</span></div>';
+        'MTWTFSS'.charAt(i) + '</span><span class="n">' + d.getDate() + '</span>' +
+        '<span class="w">' + (on ? esc(on) : '&nbsp;') + '</span></div>';
     }
 
     $('stbody-body').innerHTML =
