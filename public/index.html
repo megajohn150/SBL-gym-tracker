@@ -285,6 +285,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   border:var(--border);border-radius:var(--radius);background:var(--surface);opacity:.5;
 }
 .exchip[aria-current="true"]{opacity:1}
+.exchip.done{background:linear-gradient(var(--done),var(--done)),var(--bg)}
+.exchip.done .n{color:var(--fg-2)}
 .exchip[aria-current="true"]::after{
   content:"";position:absolute;left:28%;right:28%;bottom:6px;height:2px;background:var(--fg);
 }
@@ -1705,13 +1707,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3069';
+  var APP_VERSION = '1.3070';
 
   /* =========================================================
      STORE
      ========================================================= */
   var store = {
-    exercises: [], routines: [], workouts: [],
+    exercises: [], routines: [], workouts: [], gone: [],
     profile: { handle: 'you', name: 'your name', bio: '', pic: null }
   };
 
@@ -1724,6 +1726,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (Array.isArray(raw.exercises)) store.exercises = raw.exercises;
       if (Array.isArray(raw.routines)) store.routines = raw.routines.map(migrate);
       if (Array.isArray(raw.workouts)) store.workouts = raw.workouts;
+      if (Array.isArray(raw.gone)) store.gone = raw.gone;
       // workouts saved before exercises were linked by id
       store.workouts.forEach(function (w) {
         w.exercises.forEach(function (e) {
@@ -1773,15 +1776,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // Workouts are joined by id, so two devices writing on their own
   // can never delete each other's sessions.
   function mergeStores(local, remote) {
+    var gone = {};
+    (remote.gone || []).concat(local.gone || []).forEach(function (id) { gone[id] = 1; });
     var byId = {};
-    (remote.workouts || []).concat(local.workouts || []).forEach(function (w) { byId[w.id] = w; });
+    (remote.workouts || []).concat(local.workouts || []).forEach(function (w) {
+      if (!gone[w.id]) byId[w.id] = w;
+    });
     var workouts = Object.keys(byId).map(function (k) { return byId[k]; })
       .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
     return {
       profile: remote.profile || local.profile,
       exercises: (remote.exercises && remote.exercises.length) ? remote.exercises : local.exercises,
       routines: (remote.routines && remote.routines.length) ? remote.routines : local.routines,
-      workouts: workouts
+      workouts: workouts,
+      gone: Object.keys(gone)
     };
   }
 
@@ -2841,6 +2849,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   function setFull(st) { return st.weight !== '' && st.reps !== '' && st.rir !== ''; }
 
+  // the whole exercise is behind you once every set you filled in is ticked
+  function exDone(e) {
+    var any = false;
+    for (var i = 0; i < e.sets.length; i++) {
+      var st = e.sets[i];
+      if (st.done) { any = true; continue; }
+      if (st.weight !== '' || st.reps !== '' || st.rir !== '') return false;
+    }
+    return any;
+  }
+
   // F means no reps left in the tank, so it counts as zero
   function rirNum(v) { return String(v).toUpperCase() === 'F' ? 0 : num(v); }
 
@@ -3004,8 +3023,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
 
     $('sess-chips').innerHTML = session.exercises.map(function (e, i) {
-      return '<button class="exchip" data-chip="' + i + '" aria-current="' + (!done && i === session.idx) + '">' +
-        '<span class="n">' + (i + 1) + '</span>' +
+      var ed = exDone(e);
+      return '<button class="exchip' + (ed ? ' done' : '') + '" data-chip="' + i +
+        '" aria-current="' + (!done && i === session.idx) + '">' +
+        '<span class="n">' + (i + 1) + (ed ? ' \u2713' : '') + '</span>' +
         '<span class="ini">' + esc(e.code || initials(e.name)) + '</span>' +
         '</button>';
     }).join('');
@@ -3702,7 +3723,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             '<span class="wname">' + esc(w.name) + '</span>' +
           '</span>' +
         '</div>' +
-        '<span class="wpr">' + (w.records ? w.records + " PR's" : "0 PR's :(") + '</span>' +
+        '<span class="wpr">' + (w.records ? w.records + (w.records === 1 ? ' PR' : " PR's") : "0 PR's :(") + '</span>' +
         '<div class="wstats3">' +
           '<div><b>' + fmtDuration(w.seconds) + '</b><i>Time</i></div>' +
           '<div><b>' + fmtVolume(t.volume) + '</b><i>Volume</i></div>' +
@@ -4380,6 +4401,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (act === 'delete') {
       askConfirm('Delete workout?', 'It will be removed from Home for good.', 'Delete', function () {
         store.workouts = store.workouts.filter(function (x) { return x.id !== detailW.id; });
+        if (store.gone.indexOf(detailW.id) < 0) store.gone.push(detailW.id);
         recomputeRecords();
         saveStore();
         detailEdit = false;
