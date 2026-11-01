@@ -816,6 +816,32 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 /* The artwork is one flat drawing, so the heat sits on top of it: the
    picture and the blobs share a box and the same coordinates, and the box
    is scaled to crop the empty margins of the original file. */
+/* ---- month report ---- */
+.mhead{padding:.2rem var(--pad) .9rem;font-family:var(--display);font-size:1.6rem;font-weight:700}
+.mhead i{font-family:var(--font);font-size:.72rem;font-weight:700;font-style:normal;margin-left:7px}
+.mhead i.up{color:var(--green)}
+.mhead i.down{color:var(--red)}
+.mbars{display:flex;align-items:flex-end;gap:4px;height:140px;padding:0 var(--pad)}
+.mbars > div{flex:1;display:flex;align-items:flex-end;height:100%}
+.mbars i{display:block;width:100%;background:var(--fg-3);opacity:.4;border-radius:2px 2px 0 0}
+.mbars .on i{background:var(--accent);opacity:1}
+.mbarlab{display:flex;gap:4px;padding:6px var(--pad) 0;font-size:.6rem;font-weight:700;color:var(--fg-3)}
+.mbarlab span{flex:1;text-align:center}
+.seg.four{grid-template-columns:repeat(4,1fr)}
+.seg.four button{font-size:.72rem;padding:9px 4px}
+.mstreak{padding:0 var(--pad) .6rem;font-size:.9rem;font-weight:700;text-align:center}
+.mcal .calcell{min-height:34px;padding:3px 0;border-bottom:none}
+.mcal .calday{width:26px;height:26px;font-size:.75rem}
+.mrow{display:flex;align-items:center;gap:10px;padding:9px var(--pad);border-bottom:var(--dash)}
+.mrow .nm{width:86px;flex:none;font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .mbar{flex:1;height:9px;background:var(--surface);border-radius:5px;overflow:hidden}
+.mrow .mbar i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.mrow .n{width:34px;text-align:right;font-family:var(--display);font-weight:700;font-size:.85rem}
+.mmore{display:block;width:100%;padding:12px;font-size:.78rem;font-weight:700;color:var(--fg-3)}
+.prcount{padding:.2rem var(--pad) .7rem;text-align:center;font-size:1rem;font-weight:700}
+.prrow{padding:10px var(--pad);border-bottom:var(--dash)}
+.prrow .nm{display:block;font-size:.85rem;font-weight:600;margin-bottom:4px}
+.prrow .pr{display:block;font-size:.75rem;font-weight:700;color:var(--accent);opacity:.85}
 .bodymap{position:relative;overflow:hidden;margin:.4rem var(--pad) 1rem;aspect-ratio:614 / 588}
 .bodymap > *{position:absolute;left:-11.24%;top:-1.53%;width:130.29%;height:102.04%}
 .bodymap svg{pointer-events:none}
@@ -1904,7 +1930,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3086';
+  var APP_VERSION = '1.3087';
 
   /* =========================================================
      STORE
@@ -4452,7 +4478,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }).join(' ');
   }
 
-  function radar(now, was) {
+  function radar(now, was, labNow, labWas) {
     var cx = 165, cy = 150, r0 = 92, max = 0;
     GROUPS.forEach(function (n) { max = Math.max(max, now[n], was[n]); });
 
@@ -4484,8 +4510,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '<polygon points="' + radarPoints(now, max, r0, cx, cy) + '" fill="var(--accent)" ' +
         'fill-opacity=".22" stroke="var(--accent)" stroke-width="2"/>' +
       '</svg>' +
-      '<div class="stlegend"><span><i style="background:var(--accent)"></i>Current</span>' +
-      '<span><i style="background:var(--fg-3)"></i>Previous</span></div>';
+      '<div class="stlegend"><span><i style="background:var(--accent)"></i>' + labNow + '</span>' +
+      '<span><i style="background:var(--fg-3)"></i>' + labWas + '</span></div>';
   }
 
   function drawStatChart() {
@@ -4502,7 +4528,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     $('stchart-body').innerHTML =
       '<button class="strange" id="st-range">' + def.name + '</button>' +
-      radar(byGroup(cur.by), byGroup(prev.by)) +
+      radar(byGroup(cur.by), byGroup(prev.by), 'Current', 'Previous') +
       '<div class="wstats big" style="padding:0 var(--pad)">' +
         '<div><span class="k">Workouts</span><span class="v">' + cur.workouts +
           gap(cur.workouts, prev.workouts) + '</span></div>' +
@@ -4648,9 +4674,168 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawStatBody();
   });
 
-  function drawStatMonth() {
-    $('stmonth-body').innerHTML = '<div class="note" style="margin:2rem var(--pad)">Nothing here yet.</div>';
+  /* --- the month in one page --- */
+  var stMonthOff = 0, stMetric = 'sets', stMoreMuscles = false;
+  var METRICS = [
+    { id: 'workouts', name: 'Workouts' }, { id: 'seconds', name: 'Duration' },
+    { id: 'volume', name: 'Volume' }, { id: 'sets', name: 'Sets' }
+  ];
+
+  function metricVal(st, m) { return st[m]; }
+  function metricFmt(m, v) {
+    return m === 'seconds' ? fmtDuration(v) : m === 'volume' ? fmtKg(v) : String(Math.round(v));
   }
+
+  // every personal best the month produced, exercise by exercise
+  function monthPRs(from, to) {
+    var out = {};
+    store.workouts.forEach(function (w) {
+      var d = new Date(w.date);
+      if (d < from || d >= to) return;
+      w.exercises.forEach(function (e) {
+        e.sets.forEach(function (st) {
+          if (!st.prs || !st.prs.length) return;
+          var o = out[e.name] || (out[e.name] = {});
+          var kg = num(st.weight), reps = num(st.reps);
+          st.prs.forEach(function (c) {
+            var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(epley(kg, reps) * 100) / 100 : kg * reps;
+            if (!(c in o) || v > o[c]) o[c] = v;
+          });
+        });
+      });
+    });
+    return out;
+  }
+
+  function drawStatMonth() {
+    var n = new Date();
+    var from = new Date(n.getFullYear(), n.getMonth() + stMonthOff, 1);
+    var to = new Date(from.getFullYear(), from.getMonth() + 1, 1);
+    var pfrom = new Date(from.getFullYear(), from.getMonth() - 1, 1);
+    var cur = statsFor(from, to), prev = statsFor(pfrom, from);
+    var title = MONTHS[from.getMonth()] + ' ' + from.getFullYear();
+    var ptitle = MONTHS[pfrom.getMonth()] + ' ' + pfrom.getFullYear();
+
+    function gap(a, b, fmt) {
+      var d = a - b;
+      if (!d) return '';
+      return '<i class="' + (d > 0 ? 'up' : 'down') + '">(' + (d > 0 ? '+' : '\u2212') +
+        (fmt ? fmt(Math.abs(d)) : Math.round(Math.abs(d) * 10) / 10) + ')</i>';
+    }
+
+    // a year of months, so this one has something to stand against
+    var bars = [], max = 0, i;
+    for (i = 11; i >= 0; i--) {
+      var f = new Date(from.getFullYear(), from.getMonth() - i, 1);
+      var t = new Date(f.getFullYear(), f.getMonth() + 1, 1);
+      var v = metricVal(statsFor(f, t), stMetric);
+      bars.push({ m: f.getMonth(), v: v, on: i === 0 });
+      max = Math.max(max, v);
+    }
+    var chart = '<div class="mbars">' + bars.map(function (b) {
+      return '<div class="' + (b.on ? 'on' : '') + '"><i style="height:' +
+        (max ? Math.max(1, b.v / max * 100) : 1) + '%"></i></div>';
+    }).join('') + '</div><div class="mbarlab">' + bars.map(function (b) {
+      return '<span>' + MONTHS[b.m].charAt(0) + '</span>';
+    }).join('') + '</div>';
+
+    // the days you turned up, laid out like a month
+    var byDay = {};
+    store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = 1; });
+    var days = new Date(from.getFullYear(), from.getMonth() + 1, 0).getDate();
+    var lead = (from.getDay() + 6) % 7, cells = '';
+    for (i = 0; i < lead; i++) cells += '<span class="calcell"></span>';
+    for (i = 1; i <= days; i++) {
+      var dd = new Date(from.getFullYear(), from.getMonth(), i);
+      cells += '<span class="calcell"><span class="calday' +
+        (byDay[dayKey(dd)] ? ' on' : '') + '">' + i + '</span></span>';
+    }
+
+    // muscles, longest bar first
+    var names = Object.keys(cur.by).sort(function (a, b) {
+      return cur.by[b] - cur.by[a] || a.localeCompare(b);
+    });
+    var top = cur.by[names[0]] || 1;
+    var shown = stMoreMuscles ? names : names.slice(0, 6);
+    var muscles = shown.map(function (m) {
+      return '<div class="mrow"><span class="nm">' + esc(m) + '</span>' +
+        '<span class="mbar"><i style="width:' + (cur.by[m] / top * 100) + '%"></i></span>' +
+        '<span class="n">' + cur.by[m] + '</span></div>';
+    }).join('') + (names.length > 6
+      ? '<button class="mmore" data-more>' + (stMoreMuscles ? 'Show less'
+        : 'See ' + (names.length - 6) + ' more') + '</button>' : '');
+
+    var prs = monthPRs(from, to), prNames = Object.keys(prs);
+    var prCount = 0;
+    prNames.forEach(function (k) { prCount += Object.keys(prs[k]).length; });
+    var prList = prNames.length
+      ? '<div class="prcount">' + prCount + (prCount === 1 ? ' new PR' : ' new PRs') + '</div>' +
+        prNames.map(function (k) {
+          return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' +
+            Object.keys(prs[k]).map(function (c) {
+              var v = prs[k][c];
+              return '<span class="pr">' + c + ' \u2013 ' +
+                (c === 'Volume' ? fmtKg(v) : (Math.round(v * 100) / 100) + ' kg') + '</span>';
+            }).join('') + '</div>';
+        }).join('')
+      : '<div class="note" style="padding:0 var(--pad) 1rem">No records this month.</div>';
+
+    var streak = weekStreak();
+
+    $('stmonth-body').innerHTML =
+      '<div class="stweek">' +
+        '<button data-mo="-1">&lsaquo;</button>' +
+        '<span class="lab">' + title + '</span>' +
+        '<button data-mo="1"' + (stMonthOff >= 0 ? ' disabled' : '') + '>&rsaquo;</button>' +
+      '</div>' +
+      '<div class="mhead">' + metricFmt(stMetric, metricVal(cur, stMetric)) +
+        gap(metricVal(cur, stMetric), metricVal(prev, stMetric),
+          stMetric === 'seconds' ? fmtDuration : stMetric === 'volume' ? fmtKg : null) + '</div>' +
+      chart +
+      '<div class="seg four" style="padding:.9rem var(--pad) 0">' + METRICS.map(function (m) {
+        return '<button data-metric2="' + m.id + '" aria-pressed="' + (m.id === stMetric) + '">' +
+          m.name + '</button>';
+      }).join('') + '</div>' +
+
+      '<div class="dsec">Summary</div>' +
+      '<div class="wstats big" style="padding:0 var(--pad)">' +
+        '<div><span class="k">Workouts</span><span class="v">' + cur.workouts +
+          gap(cur.workouts, prev.workouts) + '</span></div>' +
+        '<div><span class="k">Duration</span><span class="v">' + fmtDuration(cur.seconds) +
+          gap(cur.seconds, prev.seconds, fmtDuration) + '</span></div>' +
+        '<div><span class="k">Volume</span><span class="v">' + fmtKg(cur.volume) +
+          gap(cur.volume, prev.volume, fmtKg) + '</span></div>' +
+        '<div><span class="k">Sets</span><span class="v">' + cur.sets +
+          gap(cur.sets, prev.sets) + '</span></div>' +
+      '</div>' +
+
+      '<div class="dsec">Workout days</div>' +
+      '<div class="mstreak">' + (streak ? streak + ' week streak' : 'No streak yet') + '</div>' +
+      '<div class="caldays" style="border:none;padding-bottom:0">' +
+        '<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span>' +
+        '<span>Fri</span><span>Sat</span><span>Sun</span></div>' +
+      '<div class="calgrid mcal">' + cells + '</div>' +
+
+      '<div class="dsec">Muscle distribution</div>' +
+      radar(byGroup(cur.by), byGroup(prev.by), title, ptitle) +
+
+      '<div class="dsec">Main muscle groups</div>' + muscles +
+
+      '<div class="dsec">Personal records</div>' + prList;
+  }
+
+  $('stmonth-body').addEventListener('click', function (e) {
+    var mo = e.target.closest('[data-mo]'), me = e.target.closest('[data-metric2]');
+    if (mo && !mo.disabled) {
+      stMonthOff += Number(mo.dataset.mo);
+      if (stMonthOff > 0) stMonthOff = 0;
+    } else if (me) {
+      stMetric = me.dataset.metric2;
+    } else if (e.target.closest('[data-more]')) {
+      stMoreMuscles = !stMoreMuscles;
+    } else return;
+    drawStatMonth();
+  });
 
   function drawCalendar() {
     var byDay = {};
