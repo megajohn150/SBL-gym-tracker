@@ -900,6 +900,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 /* The artwork is one flat drawing, so the heat sits on top of it: the
    picture and the blobs share a box and the same coordinates, and the box
    is scaled to crop the empty margins of the original file. */
+/* ---- what the session came to ---- */
+.sumhead{padding:1.4rem var(--pad) .2rem}
+.sumhead .eyebrow{display:block;margin-bottom:.3rem}
+.sumline{padding:.2rem var(--pad) 1rem;font-size:.82rem;color:var(--fg-3)}
+
 /* ---- month report ---- */
 .mtitle{
   font-family:var(--display);font-size:1.3rem;font-weight:var(--namew);
@@ -1545,6 +1550,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </section>
 
 
+  <section class="screen" id="s-summary" data-tab="home" data-title="Summary">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Summary</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="summary-body"></div>
+    <div class="footbar">
+      <button class="btn btn-primary" id="sum-done">Done</button>
+    </div>
+  </section>
+
   <section class="screen" id="s-frroutine" data-tab="home" data-title="Routine">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
@@ -2107,7 +2124,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3042';
+  var APP_VERSION = '2.3043';
 
   /* =========================================================
      STORE
@@ -4586,7 +4603,31 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     stopRest();
     goTab('home');
     drawHome();
+    summaryW = w;                       // recomputeRecords has filled in its medals
+    push('summary');
+    drawSummary();
   }
+
+  /* --- what the session came to, read once and put away --- */
+  var summaryW = null;
+
+  function drawSummary() {
+    var w = summaryW;
+    if (!w) return;
+    detailRO = false;                   // the comparison belongs to your own log
+    var t = workoutTotals(w), pr = prBlock(workoutPRs(w));
+
+    $('summary-body').innerHTML =
+      '<div class="sumhead"><span class="eyebrow">Workout saved</span>' +
+      '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
+      (w.private ? '<span class="prbadge">Private</span>' : '') +
+      '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2></div>' +
+      '<div class="sumline">' + fullDate(w.date) + '</div>' +
+      '<div style="padding:0 var(--pad)">' + statsRow(w, t) + '</div>' +
+      (pr.count ? '<div class="dsec">Records</div>' + pr.html : '');
+  }
+
+  $('sum-done').addEventListener('click', function () { pop(); });
 
   /* =========================================================
      BACKUP
@@ -5521,25 +5562,58 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return m === 'seconds' ? fmtDuration(v) : m === 'volume' ? fmtKg(v) : String(Math.round(v));
   }
 
-  // every personal best the month produced, exercise by exercise
-  function monthPRs(from, to) {
-    var out = {};
-    store.workouts.forEach(function (w) {
-      var d = new Date(w.date);
-      if (d < from || d >= to) return;
-      w.exercises.forEach(function (e) {
-        e.sets.forEach(function (st) {
-          if (!st.prs || !st.prs.length) return;
-          var o = out[e.name] || (out[e.name] = {});
-          var kg = num(st.weight), reps = num(st.reps);
-          st.prs.forEach(function (c) {
-            var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(epley(kg, reps) * 100) / 100 : kg * reps;
-            if (!(c in o) || v > o[c]) o[c] = v;
-          });
+  // the bests one session produced, exercise by exercise
+  function workoutPRs(w, out) {
+    out = out || {};
+    w.exercises.forEach(function (e) {
+      e.sets.forEach(function (st) {
+        if (!st.prs || !st.prs.length) return;
+        var o = out[e.name] || (out[e.name] = {});
+        var kg = num(st.weight), reps = num(st.reps);
+        st.prs.forEach(function (c) {
+          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(epley(kg, reps) * 100) / 100 : kg * reps;
+          if (!(c in o) || v > o[c]) o[c] = v;
         });
       });
     });
     return out;
+  }
+
+  function monthPRs(from, to) {
+    var out = {};
+    store.workouts.forEach(function (w) {
+      var d = new Date(w.date);
+      if (d >= from && d < to) workoutPRs(w, out);
+    });
+    return out;
+  }
+
+  // one list of records, used by the month report and by the session summary
+  function prBlock(prs) {
+    var names = Object.keys(prs), count = 0;
+    names.forEach(function (k) { count += Object.keys(prs[k]).length; });
+    if (!names.length) return { count: 0, html: '' };
+    return {
+      count: count,
+      html: '<div class="prcup">' + '<svg width="30" height="30" viewBox="0 0 24 24"><path fill="currentColor" ' +
+      'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
+      '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
+      '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>' +
+      '</div>' +
+        '<div class="prcount">' + count + (count === 1 ? ' new PR' : ' new PRs') + '</div>' +
+        names.map(function (k) {
+          return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' +
+            Object.keys(prs[k]).map(function (c) {
+              var v = prs[k][c];
+              return '<span class="pr">' + '<svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
+      'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
+      '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
+      '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>' +
+              c + ' \u2013 ' +
+                (c === 'Volume' ? fmtKg(v) : (Math.round(v * 100) / 100) + ' kg') + '</span>';
+            }).join('') + '</div>';
+        }).join('')
+    };
   }
 
   function drawStatMonth() {
