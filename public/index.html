@@ -778,6 +778,40 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   padding:1.2rem var(--pad) .6rem;
 }
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 6px}
+/* a fast flick must not drag the whole calendar sideways */
+#cal-body{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+/* the year and multi-year views: the same month, drawn as squares */
+.calyr{
+  font-family:var(--display);font-size:1.25rem;font-weight:700;
+  letter-spacing:-.01em;padding:1.3rem var(--pad) .7rem;
+}
+.calmons{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 12px;padding:0 var(--pad) .4rem}
+.calmons .lab{display:block;font-size:.72rem;font-weight:700;margin-bottom:6px}
+.calrow{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:0 10px .4rem}
+.calrow .calmini{gap:1px}
+/* at this size a square has to carry itself without a border */
+.calrow .calmini > *{border-radius:1px}
+.calrow .calmini > i{background:var(--line)}
+.calmlab{
+  display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:0 10px 6px;
+  font-size:.55rem;font-weight:700;letter-spacing:.04em;color:var(--fg-3);text-align:center;
+}
+.calmons > div,.calrow > div{min-width:0}
+.calmini{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;min-width:0}
+.calmini > *{
+  aspect-ratio:1;min-width:0;width:100%;padding:0;border:0;
+  border-radius:2px;background:var(--surface);display:block;
+}
+.calmini > .on{background:var(--accent)}
+.calmini > .pad{background:none}
+/* only the day grid is read by weekday name */
+#s-calendar.v-year .caldays,#s-calendar.v-multi .caldays{display:none}
+.h1btn{
+  font-family:var(--display);font-size:var(--name);font-weight:var(--namew);
+  letter-spacing:var(--nametrack);text-transform:var(--namecase);
+}
+.h1btn::after{content:"\25BE";font-size:.6em;margin-left:6px;color:var(--fg-3);vertical-align:middle}
+.pop-wrap.mid{justify-content:center}
 .calcell{
   min-height:56px;padding:6px 2px;text-align:center;border-bottom:1px solid var(--line);
 }
@@ -1309,7 +1343,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <section class="screen" id="s-calendar" data-tab="profile" data-title="Calendar">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
-      <h1>Month</h1>
+      <button class="h1btn" id="cal-view">Month</button>
       <span></span>
     </div>
     <div class="calstreak" id="cal-streak"></div>
@@ -1557,6 +1591,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="pop" id="calview-sheet" hidden>
+  <div class="pop-bg" data-calview-close></div>
+  <div class="pop-wrap mid">
+    <div class="pop-menu">
+      <button data-cv="month" aria-pressed="true">Month</button>
+      <button data-cv="year" aria-pressed="false">Year</button>
+      <button data-cv="multi" aria-pressed="false">Multi-year</button>
+    </div>
+  </div>
+</div>
+
 <div class="restbar bar-card" id="save-bar" hidden>
   <span class="lab">Unsaved changes</span>
   <button class="btn btn-primary" id="save-go" style="width:auto;padding:8px 16px;font-size:.8rem">Save</button>
@@ -1742,7 +1787,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3078';
+  var APP_VERSION = '1.3079';
 
   /* =========================================================
      STORE
@@ -4160,6 +4205,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return n;
   }
 
+  var calView = 'month';
+  var CALVIEWS = { month: 'Month', year: 'Year', multi: 'Multi-year' };
+
+  // one month as a block of squares, a square a day
+  function miniMonth(y, m, byDay) {
+    var days = new Date(y, m + 1, 0).getDate(), lead = (new Date(y, m, 1).getDay() + 6) % 7, out = '';
+    for (var i = 0; i < lead; i++) out += '<i class="pad"></i>';
+    for (var d = 1; d <= days; d++) {
+      var w = byDay[y + '-' + m + '-' + d];
+      out += w ? '<button class="on" data-w="' + w.id + '"></button>' : '<i></i>';
+    }
+    return '<div class="calmini">' + out + '</div>';
+  }
+
   function drawCalendar() {
     var byDay = {};
     store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = w; });
@@ -4172,6 +4231,30 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       ? new Date(store.workouts[store.workouts.length - 1].date)
       : now;
     var y = first.getFullYear(), m = first.getMonth(), html = '';
+
+    $('cal-view').textContent = CALVIEWS[calView];
+    var sc = $('s-calendar');
+    sc.classList.remove('v-month', 'v-year', 'v-multi');
+    sc.classList.add('v-' + calView);
+
+    if (calView !== 'month') {
+      for (var yy = y; yy <= now.getFullYear(); yy++) {
+        var blocks = '';
+        for (var mm = 0; mm < 12; mm++) {
+          blocks += calView === 'year'
+            ? '<div><span class="lab">' + MONTHS[mm] + '</span>' + miniMonth(yy, mm, byDay) + '</div>'
+            : miniMonth(yy, mm, byDay);
+        }
+        html += '<div class="calyr">' + yy + '</div>' +
+          (calView === 'year'
+            ? '<div class="calmons">' + blocks + '</div>'
+            : '<div class="calmlab">' + MONTHS.map(function (n) {
+                return '<span>' + n.slice(0, 3) + '</span>';
+              }).join('') + '</div><div class="calrow">' + blocks + '</div>');
+      }
+      $('cal-body').innerHTML = html;
+      return;
+    }
 
     while (y < now.getFullYear() || (y === now.getFullYear() && m <= now.getMonth())) {
       var start = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
@@ -4194,6 +4277,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     $('cal-body').innerHTML = html;
   }
+
+  $('cal-view').addEventListener('click', function () { $('calview-sheet').hidden = false; });
+  document.querySelector('[data-calview-close]').addEventListener('click', function () {
+    $('calview-sheet').hidden = true;
+  });
+  document.querySelectorAll('[data-cv]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      calView = b.dataset.cv;
+      document.querySelectorAll('[data-cv]').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      $('calview-sheet').hidden = true;
+      drawCalendar();
+      $('cal-body').scrollTop = $('cal-body').scrollHeight;
+    });
+  });
 
   $('cal-body').addEventListener('click', function (e) {
     var c = e.target.closest('[data-w]');
