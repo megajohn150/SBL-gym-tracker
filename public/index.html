@@ -2124,7 +2124,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3044';
+  var APP_VERSION = '2.3046';
 
   /* =========================================================
      STORE
@@ -5080,7 +5080,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
   function closeProf() { $('prof-sheet').hidden = true; }
   document.querySelector('[data-prof-close]').addEventListener('click', closeProf);
-  var UN_WAIT = 30 * 864e5;              // a month between changes
+  var UN_WAIT = 7 * 864e5;               // a week between changes
 
   $('pf-unchange').addEventListener('click', function () {
     var left = Math.ceil((UN_WAIT - (Date.now() - (store.profile.unameAt || 0))) / 864e5);
@@ -5090,7 +5090,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     askConfirm('Change your username?',
       'It is how friends find you, and the old one is free for anyone else to take ' +
-      'the moment you let it go. You can only do this once a month.',
+      'the moment you let it go. You can only do this once a week.',
       'Change it', function () { closeProf(); openUname(true); });
   });
 
