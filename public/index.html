@@ -760,11 +760,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .pxlab span{flex:1;text-align:center;font-size:9px;color:var(--fg-3);white-space:nowrap;overflow:hidden}
 .dash{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 var(--pad)}
 .dashbtn{
-  padding:14px var(--cardpad);text-align:left;font-size:.9rem;font-weight:600;
+  padding:14px var(--cardpad);text-align:center;font-size:.9rem;font-weight:600;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
 /* ---- statistics ---- */
-.dashbtn.wide{grid-column:1 / -1;text-align:center}
+.dashbtn.wide{grid-column:1 / -1}
 .statlist{padding:1rem var(--pad) 0}
 .statlist button{
   display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
@@ -1902,7 +1902,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3084';
+  var APP_VERSION = '1.3085';
 
   /* =========================================================
      STORE
