@@ -2069,7 +2069,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3096';
+  var APP_VERSION = '1.3097';
 
   /* =========================================================
      STORE
@@ -2488,15 +2488,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       userView.fing = res[2].count || 0;
       drawUser();
       if (!(social.following[id] && social.followers[id])) return;
+      // the cards need the whole workout, the chart only its length, so the
+      // thirteen weeks behind it come down as two columns instead of thirty
+      // full sessions
+      var since = addDays(monday(new Date()), -12 * 7).toISOString();
       return Promise.all([
         sb.from('posts').select('id,date,data').eq('user_id', id).order('date', { ascending: false }).limit(30),
-        sb.from('library').select('data').eq('user_id', id).maybeSingle()
+        sb.from('library').select('data').eq('user_id', id).maybeSingle(),
+        sb.from('posts').select('date,secs:data->seconds').eq('user_id', id).gte('date', since)
       ]).then(function (r2) {
         if (!userView || userView.id !== id) return;
         userView.posts = (r2[0].data || []).map(function (row) {
           var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
         });
         userView.lib = (r2[1].data && r2[1].data.data) || null;
+        userView.hours = (r2[2].data || []).map(function (row) {
+          return { date: row.date, seconds: Number(row.secs) || 0 };
+        });
         drawUser();
       });
     });
@@ -2556,7 +2564,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return;
     }
 
-    var weeks = weekHours(userView.posts), max = 0;
+    var weeks = weekHours(userView.hours || userView.posts), max = 0;
     weeks.forEach(function (w) { max = Math.max(max, w.secs); });
     var thisWeek = weeks[weeks.length - 1].secs;
     var chart = '<div class="pchart">' +
