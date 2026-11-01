@@ -2076,7 +2076,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3094';
+  var APP_VERSION = '1.3095';
 
   /* =========================================================
      STORE
@@ -5752,6 +5752,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             '<input type="text" id="d-m" inputmode="numeric" value="' + Math.round((w.seconds % 3600) / 60) + '"></span>' +
           '</div>'
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
+          (w.private ? '<span class="prbadge">Private</span>' : '') +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
       statsRow(w, t) + '</div>' +
@@ -5832,6 +5833,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('detail-menu-items').innerHTML = detailEdit
       ? '<button data-dact="cancel">Discard changes</button>'
       : '<button data-dact="edit">Edit workout</button>' +
+        '<button data-dact="private">' +
+          (detailW && detailW.private ? 'Share with friends' : 'Make private') + '</button>' +
         '<button data-dact="delete" class="danger">Delete workout</button>';
     $('detail-pop').hidden = false;
   }
@@ -5846,6 +5849,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     if (act === 'edit') { detailEdit = true; detailDirty = false; drawDetail(detailW); return; }
     if (act === 'cancel') { leaveEdit(); return; }
+
+    // a workout can leave the feed, or join it, long after it happened
+    if (act === 'private') {
+      detailW.private = !detailW.private;
+      saveStore();
+      drawDetail(detailW);
+      drawHome();
+      toast(detailW.private ? 'Hidden from friends' : 'Shared with friends');
+      return;
+    }
 
     if (act === 'delete') {
       askConfirm('Delete workout?', 'It will be removed from Home for good.', 'Delete', function () {
