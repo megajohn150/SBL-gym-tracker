@@ -789,6 +789,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .unrow b{font-size:.95rem;font-weight:700}
 
 /* ---- people ---- */
+.prow .rel{flex:none;font-size:.66rem;font-weight:700;color:var(--fg-3);letter-spacing:.04em}
+/* somebody followed you and you have not followed back */
+.hasnew{position:relative}
+.hasnew::after{
+  content:"";position:absolute;top:4px;right:4px;width:7px;height:7px;
+  border-radius:50%;background:var(--accent);
+}
 .toast{
   position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);
   z-index:30;padding:10px 16px;font-size:.8rem;font-weight:700;border-radius:999px;
@@ -2093,7 +2100,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3000';
+  var APP_VERSION = '1.3001';
 
   /* =========================================================
      STORE
@@ -2152,7 +2159,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // if the library cannot be reached the app still opens, local only
   var sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
   var me = null;
-  var cloud = { rev: 0, timer: null, dirty: false };
+  var cloud = { rev: 0, timer: null, dirty: false, pulled: false };
 
   function syncState(s) {
     var el = document.getElementById('set-sync');
@@ -2197,6 +2204,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (r.error) { syncState('err'); return; }
         if (!r.data) {                       // no row yet: claim one
           cloud.rev = 0;
+          cloud.pulled = true;
           return cloudPush(true);
         }
         cloud.rev = r.data.rev || 0;
@@ -2204,6 +2212,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         // a fresh account with something already on this device
         if (!cloud.rev && (store.workouts.length || store.exercises.length)) return cloudPush(true);
 
+        cloud.pulled = true;
         store = mergeStores(store, r.data.data || {});
         save('data', JSON.stringify(store));
 
@@ -2258,11 +2267,33 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      friendship, and a copy of every workout that is not private.
      ========================================================= */
   var social = {
-    username: '', timer: null,
+    username: '', timer: null, at: 0, dirty: false, more: false,
     following: {}, followers: {},        // user_id -> 1
     people: {},                          // user_id -> profile row
     feed: []                             // friends' workouts, newest first
   };
+  var FEED_PAGE = 60, FR_PAGE = 30;
+
+  // what has already gone up, so a save does not re-send the whole history
+  var sigs = { prof: '', lib: '', posts: {} };
+  function sigOf(v) {
+    var t = typeof v === 'string' ? v : JSON.stringify(v), h = 5381, i = t.length;
+    while (i) h = (h * 33 ^ t.charCodeAt(--i)) >>> 0;
+    return h.toString(36);
+  }
+  function sigsLoad() {
+    sigs = { prof: '', lib: '', posts: {} };
+    try {
+      var raw = JSON.parse(load('sigs-' + me.id) || 'null');
+      if (raw) { sigs = raw; if (!sigs.posts) sigs.posts = {}; }
+    } catch (e) {}
+  }
+  function sigsSave() { save('sigs-' + me.id, JSON.stringify(sigs)); }
+
+  // the people who follow you and whom you do not follow back
+  function pendingBack() {
+    return Object.keys(social.followers).filter(function (id) { return !social.following[id]; });
+  }
   var userView = null;                   // whose profile is open
 
   function friendIds() {
@@ -2271,10 +2302,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function cleanName(v) {
     return String(v || '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
   }
+  // a private workout is one that did not happen, as far as anyone else goes
+  function publicWorkouts() {
+    return store.workouts.filter(function (w) { return !w.private; });
+  }
   function myStats() {
-    var secs = 0;
-    store.workouts.forEach(function (w) { secs += w.seconds || 0; });
-    return { workouts: store.workouts.length, streak: weekStreak(), seconds: secs };
+    var pub = publicWorkouts();
+    return { workouts: pub.length, streak: weekStreak(pub) };
   }
   function postRow(w) {
     return { user_id: me.id, id: w.id, date: w.date, data: w, updated_at: new Date().toISOString() };
@@ -2290,43 +2324,63 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     toastT = setTimeout(function () { el.hidden = true; }, 1800);
   }
 
-  function pushProfile() {
-    if (!sb || !me || !social.username) return Promise.resolve();
-    return sb.from('profiles').upsert({
+  function pushProfile(force) {
+    if (!sb || !me || !social.username) return Promise.resolve({});
+    var pe = picEntry(store.profile.pic);          // legacy numbers resolve to their id
+    var row = {
       user_id: me.id, username: social.username,
       name: store.profile.name || '', bio: store.profile.bio || '',
-      pic: store.profile.pic == null ? null : String(store.profile.pic),
+      pic: pe ? pe.id : null,
       stats: myStats(), updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
+    };
+    var s = sigOf([row.username, row.name, row.bio, row.pic, row.stats]);
+    if (!force && s === sigs.prof) return Promise.resolve({});
+    return sb.from('profiles').upsert(row, { onConflict: 'user_id' }).then(function (r) {
+      if (r.error) { social.dirty = true; return r; }
+      sigs.prof = s; sigsSave();
+      return r;
+    });
   }
 
   function pushLibrary() {
     if (!sb || !me || !social.username) return Promise.resolve();
+    var data = { routines: store.routines, exercises: store.exercises };
+    var s = sigOf(data);
+    if (s === sigs.lib) return Promise.resolve();
     return sb.from('library').upsert({
-      user_id: me.id,
-      data: { routines: store.routines, exercises: store.exercises },
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
+      user_id: me.id, data: data, updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' }).then(function (r) {
+      if (r.error) { social.dirty = true; return; }
+      sigs.lib = s; sigsSave();
+    });
   }
 
   // the cloud copy follows the log: new workouts go up, private and
   // deleted ones come down
   function syncPosts() {
     if (!sb || !me || !social.username) return Promise.resolve();
+    // the local copy has to be the real one before anything is deleted by it
+    if (!cloud.pulled) { social.dirty = true; return Promise.resolve(); }
     return sb.from('posts').select('id').eq('user_id', me.id).then(function (r) {
-      if (r.error) return;
+      if (r.error) { social.dirty = true; return; }
       var have = {}, mine = {}, add = [];
       (r.data || []).forEach(function (row) { have[row.id] = 1; });
-      store.workouts.forEach(function (w) {
-        if (w.private) return;
+      publicWorkouts().forEach(function (w) {
         mine[w.id] = 1;
-        add.push(postRow(w));                    // upsert keeps edits in step
+        var s = sigOf(w);
+        if (!have[w.id] || sigs.posts[w.id] !== s) { add.push(postRow(w)); sigs.posts[w.id] = s; }
       });
       var drop = Object.keys(have).filter(function (id) { return !mine[id]; });
+      Object.keys(sigs.posts).forEach(function (id) { if (!mine[id]) delete sigs.posts[id]; });
+
       var jobs = [];
       if (add.length) jobs.push(sb.from('posts').upsert(add, { onConflict: 'user_id,id' }));
       if (drop.length) jobs.push(sb.from('posts').delete().eq('user_id', me.id).in('id', drop));
-      return Promise.all(jobs);
+      if (!jobs.length) { sigsSave(); return; }
+      return Promise.all(jobs).then(function (res) {
+        if (res.some(function (x) { return x && x.error; })) { social.dirty = true; return; }
+        sigsSave();
+      });
     });
   }
 
@@ -2334,9 +2388,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!sb || !me || !social.username) return;
     clearTimeout(social.timer);
     social.timer = setTimeout(function () {
+      social.dirty = false;
       pushProfile(); pushLibrary(); syncPosts();
     }, 2500);
   }
+
+  // Home is where the feed lives, so that is where it is worth a new look
+  function refreshSocial(force) {
+    if (!sb || !me || !social.username) return;
+    if (social.dirty) queueSocial();
+    if (!force && Date.now() - social.at < 60000) return;
+    social.at = Date.now();
+    loadFollows();
+  }
+
+  addEventListener('visibilitychange', function () { if (!document.hidden) refreshSocial(); });
+  addEventListener('online', function () { refreshSocial(true); });
 
   function loadFollows() {
     if (!sb || !me) return Promise.resolve();
@@ -2352,21 +2419,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
   }
 
-  function loadFeed() {
+  function loadFeed(more) {
     var ids = friendIds();
-    social.feed = [];
-    if (!sb || !ids.length) { drawHome(); return Promise.resolve(); }
+    if (!sb || !ids.length) { social.feed = []; social.more = false; drawHome(); return Promise.resolve(); }
+    var from = more ? social.feed.length : 0;
     return Promise.all([
       sb.from('posts').select('user_id,id,date,data').in('user_id', ids)
-        .order('date', { ascending: false }).limit(60),
-      sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
+        .order('date', { ascending: false }).range(from, from + FEED_PAGE - 1),
+      more ? Promise.resolve({ data: [] })
+        : sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
     ]).then(function (res) {
       (res[1].data || []).forEach(function (p) { social.people[p.user_id] = p; });
-      social.feed = (res[0].data || []).map(function (row) {
+      var rows = (res[0].data || []).map(function (row) {
         var w = row.data || {};
         w.id = row.id; w.by = row.user_id; w.date = row.date;
         return w;
       });
+      social.feed = more ? social.feed.concat(rows) : rows;
+      social.more = rows.length === FEED_PAGE;
       drawHome();
     });
   }
@@ -2379,6 +2449,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (!r.data || !r.data.username) { openUname(false); return; }
         social.username = r.data.username;
         store.profile.handle = social.username;
+        sigsLoad();
         drawProfile(); drawHome();
         return pushProfile().then(pushLibrary).then(syncPosts).then(loadFollows);
       });
@@ -2401,19 +2472,31 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('un-cancel').addEventListener('click', function () { $('uname').hidden = true; });
 
   $('un-go').addEventListener('click', function () {
-    var v = cleanName($('un-val').value);
+    var v = cleanName($('un-val').value), was = social.username;
     $('un-val').value = v;
-    if (v.length < 3) { unameErr('At least three characters.'); return; }
-    if (v === social.username) { $('uname').hidden = true; return; }
+    // it has to start and end on a letter or a number, so '...' is not a name
+    if (!/^[a-z0-9][a-z0-9_.]{1,18}[a-z0-9]$/.test(v)) {
+      unameErr('Three to twenty characters, starting and ending with a letter or number.');
+      return;
+    }
+    if (v === was) { $('uname').hidden = true; return; }
     unameErr('');
     sb.from('profiles').select('user_id').eq('username', v).maybeSingle().then(function (r) {
       if (r.error) { unameErr(r.error.message); return; }
       if (r.data && r.data.user_id !== me.id) { unameErr('That one is taken.'); return; }
       social.username = v;
-      store.profile.handle = v;
-      if (unameChange) store.profile.unameAt = Date.now();
-      saveStore();
-      pushProfile().then(function () {
+      sigsLoad();
+      return pushProfile(true).then(function (res) {
+        // somebody may have claimed it between the check and the write
+        if (res && res.error) {
+          social.username = was;
+          unameErr(/duplicate|unique/i.test(res.error.message || '')
+            ? 'That one is taken.' : res.error.message);
+          return;
+        }
+        store.profile.handle = v;
+        if (unameChange) store.profile.unameAt = Date.now();
+        saveStore();
         $('uname').hidden = true;
         drawProfile(); drawHome();
         if (!unameChange) return pushLibrary().then(syncPosts).then(loadFollows);
@@ -2441,9 +2524,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       : 'Nobody yet.';
     $('people-list').innerHTML = ids.map(function (id) {
       var p = social.people[id] || { username: '\u2026' };
+      var rel = relLabel(id);
       return '<button class="prow" data-user="' + id + '">' + avatarTag(38, '', p) +
         '<span class="pid2"><span class="un">' + esc(p.username || '\u2026') + '</span>' +
-        '<span class="nm2">' + esc(p.name || '') + '</span></span></button>';
+        '<span class="nm2">' + esc(p.name || '') + '</span></span>' +
+        (rel ? '<span class="rel">' + rel + '</span>' : '') + '</button>';
     }).join('');
   }
 
@@ -2466,13 +2551,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('dash-friends').addEventListener('click', function () { openPeople('friends'); });
 
   /* --- searching for people --- */
+  function relLabel(id) {
+    if (social.following[id] && social.followers[id]) return 'Friends';
+    if (social.following[id]) return 'Following';
+    if (social.followers[id]) return 'Follows you';
+    return '';
+  }
+
   function drawFind(rows) {
     $('find-note').hidden = !!(rows && rows.length);
     $('find-list').innerHTML = (rows || []).map(function (p) {
+      var rel = relLabel(p.user_id);
       return '<button class="prow" data-user="' + p.user_id + '">' +
         avatarTag(38, '', p) +
         '<span class="pid2"><span class="un">' + esc(p.username) + '</span>' +
         '<span class="nm2">' + esc(p.name || '\u2014') + '</span></span>' +
+        (rel ? '<span class="rel">' + rel + '</span>' : '') +
         '</button>';
     }).join('');
   }
@@ -2495,7 +2589,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-user]');
-    if (b) openUser(b.dataset.user);
+    if (b) { openUser(b.dataset.user); return; }
+    var u = e.target.closest('[data-openu]');
+    if (u && u.dataset.openu) openUser(u.dataset.openu);
   });
 
   /* --- somebody else's profile --- */
@@ -2519,14 +2615,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       // full sessions
       var since = addDays(monday(new Date()), -12 * 7).toISOString();
       return Promise.all([
-        sb.from('posts').select('id,date,data').eq('user_id', id).order('date', { ascending: false }).limit(30),
+        loadUserPosts(),
         sb.from('library').select('data').eq('user_id', id).maybeSingle(),
         sb.from('posts').select('date,secs:data->seconds').eq('user_id', id).gte('date', since)
       ]).then(function (r2) {
         if (!userView || userView.id !== id) return;
-        userView.posts = (r2[0].data || []).map(function (row) {
-          var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
-        });
         userView.lib = (r2[1].data && r2[1].data.data) || null;
         userView.hours = (r2[2].data || []).map(function (row) {
           return { date: row.date, seconds: Number(row.secs) || 0 };
@@ -2534,6 +2627,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         drawUser();
       });
     });
+  }
+
+  function loadUserPosts(more) {
+    if (!userView || !sb) return Promise.resolve();
+    var id = userView.id, from = more ? userView.posts.length : 0;
+    return sb.from('posts').select('id,date,data').eq('user_id', id)
+      .order('date', { ascending: false }).range(from, from + FR_PAGE - 1)
+      .then(function (r) {
+        if (!userView || userView.id !== id || r.error) return;
+        var rows = (r.data || []).map(function (row) {
+          var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
+        });
+        userView.posts = more ? userView.posts.concat(rows) : rows;
+        userView.more = rows.length === FR_PAGE;
+        if (more) drawUser();
+      });
   }
 
   function followSet(id, on) {
@@ -2580,7 +2689,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       (p.bio ? '<p class="pbio">' + esc(p.bio) + '</p>' : '') +
       '<div style="padding:.6rem var(--pad) 0">' +
         '<button class="followbtn' + (follows ? ' off' : '') + '" data-follow="' + id + '">' +
-        (follows ? (social.followers[id] ? 'Friends \u00b7 Unfollow' : 'Requested \u00b7 Unfollow')
+        (follows ? (social.followers[id] ? 'Friends \u00b7 Unfollow' : 'Following \u00b7 Unfollow')
           : (social.followers[id] ? 'Follow back' : 'Follow')) + '</button></div>';
 
     if (!friend) {
@@ -2618,7 +2727,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       : '<div class="note" style="padding:0 var(--pad) .6rem">No routines shared.</div>';
 
     var feed = userView.posts.length
-      ? userView.posts.map(function (w) { return workoutCard(w, 0, p); }).join('')
+      ? userView.posts.map(function (w) { return workoutCard(w, 0, p); }).join('') +
+        (userView.more ? '<button class="mmore" data-postsmore>Older sessions</button>' : '')
       : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged yet.</div>';
 
     $('user-body').innerHTML = head + chart +
@@ -2644,6 +2754,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       });
       return;
     }
+    if (e.target.closest('[data-openu]')) return;
+    if (e.target.closest('[data-postsmore]')) { loadUserPosts(true); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
@@ -2930,6 +3042,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (pickMuscle && !exEditId) mus.value = pickMuscle;
     }
     if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
+    if (id === 's-home') refreshSocial();
     if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
     if (id === 's-calendar') drawCalendar();
@@ -4638,7 +4751,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('home-list').hidden = !has;
     $('home-list').innerHTML = rows.map(function (r) {
       return workoutCard(r.w, r.n, r.who);
-    }).join('');
+    }).join('') +
+      (social.more ? '<button class="mmore" data-feedmore>Older sessions from friends</button>' : '');
   }
 
   function workoutCard(w, ordinal, who) {
@@ -4827,6 +4941,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('p-handle').textContent = pf.handle || 'you';
     $('p-followers').textContent = Object.keys(social.followers).length;
     $('p-following').textContent = Object.keys(social.following).length;
+    var back = pendingBack().length;
+    $('p-followers').parentNode.classList.toggle('hasnew', back > 0);
+    $('dash-friends').classList.toggle('hasnew', back > 0);
     $('p-name').textContent = pf.name || '';
     $('p-name').hidden = !pf.name;
     $('p-bio').textContent = pf.bio || '';
@@ -5052,11 +5169,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   /* --- calendar --- */
   function dayKey(d) { return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
 
-  function weekStreak() {
+  function weekStreak(list) {
     var now = new Date(), day = (now.getDay() + 6) % 7;
     var monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).getTime();
     var weeks = {};
-    store.workouts.forEach(function (w) {
+    (list || store.workouts).forEach(function (w) {
       var t = new Date(w.date).getTime();
       weeks[Math.floor((monday - t) / 6048e5)] = true;   // 0 = this week, 1 = last week...
     });
@@ -5672,8 +5789,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('home-list').addEventListener('click', function (e) {
-    var go = e.target.closest('[data-openu]');
-    if (go) { openUser(go.dataset.openu); return; }
+    if (e.target.closest('[data-openu]')) return;      // that one opens the profile
+    if (e.target.closest('[data-feedmore]')) { loadFeed(true); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });

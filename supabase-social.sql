@@ -96,3 +96,10 @@ create policy "library read"  on public.library for select to authenticated
 create policy "library write" on public.library for insert to authenticated with check (auth.uid() = user_id);
 create policy "library edit"  on public.library for update to authenticated using (auth.uid() = user_id)
                                                             with check (auth.uid() = user_id);
+
+-- Nazwa musi zaczynać się i kończyć literą lub cyfrą, 3-20 znaków — żeby nie
+-- dało się zająć nicka typu "..." albo "__". Aplikacja pilnuje tego samego.
+do $$ begin
+  alter table public.profiles add constraint username_shape
+    check (username ~ '^[a-z0-9][a-z0-9_.]{1,18}[a-z0-9]$');
+exception when duplicate_object then null; end $$;
