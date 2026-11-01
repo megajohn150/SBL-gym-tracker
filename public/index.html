@@ -765,6 +765,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   padding:14px var(--cardpad);text-align:center;font-size:.9rem;font-weight:600;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
+/* the month closed and its report is waiting on the home screen */
+.reportbar{
+  display:flex;align-items:center;gap:8px;margin:1rem var(--pad) .2rem;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.reportbar .go{flex:1;min-width:0;padding:13px var(--cardpad);text-align:left}
+.reportbar .go b{display:block;font-size:.88rem;font-weight:700}
+.reportbar .go span{display:block;margin-top:2px;font-size:.72rem;color:var(--fg-3)}
+.reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
+
 /* ---- statistics ---- */
 .dashbtn.wide{grid-column:1 / -1}
 .statlist{padding:1rem var(--pad) 0}
@@ -1103,6 +1113,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <p class="sub">Sessions you have finished.</p>
     </div>
     <div class="scroll">
+    <div class="reportbar" id="report-bar" hidden>
+      <button class="go" id="report-go"></button>
+      <button class="x" id="report-x" aria-label="Dismiss">&times;</button>
+    </div>
     <div class="feed" id="home-list" hidden></div>
     <div class="empty" id="home-empty">
       <span class="mark">
@@ -1458,7 +1472,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
         <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
-        <button data-push="stat-month"><b>Monthly report</b><span>Soon</span></button>
+        <button data-push="stat-month"><b>Monthly report</b></button>
       </div>
     </div>
   </section>
@@ -1940,7 +1954,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3091';
+  var APP_VERSION = '1.3092';
 
   /* =========================================================
      STORE
@@ -3953,7 +3967,40 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   /* --- the Home feed --- */
+  // The month is over and there is a report in it you have not opened yet.
+  function reportKey() {
+    var n = new Date(), m = new Date(n.getFullYear(), n.getMonth() - 1, 1);
+    return m.getFullYear() + '-' + m.getMonth();
+  }
+
+  function drawReportBar() {
+    var n = new Date();
+    var from = new Date(n.getFullYear(), n.getMonth() - 1, 1);
+    var to = new Date(from.getFullYear(), from.getMonth() + 1, 1);
+    var any = store.workouts.some(function (w) {
+      var d = new Date(w.date);
+      return d >= from && d < to;
+    });
+    var show = any && load('report-seen') !== reportKey();
+    $('report-bar').hidden = !show;
+    if (show) {
+      $('report-go').innerHTML = '<b>Your ' + MONTHS[from.getMonth()] + ' report is ready</b>' +
+        '<span>See how the month went</span>';
+    }
+  }
+
+  $('report-go').addEventListener('click', function () {
+    save('report-seen', reportKey());
+    $('report-bar').hidden = true;
+    push('stat-month');
+  });
+  $('report-x').addEventListener('click', function () {
+    save('report-seen', reportKey());
+    $('report-bar').hidden = true;
+  });
+
   function drawHome() {
+    drawReportBar();
     var has = store.workouts.length > 0;
     $('home-empty').hidden = has;
     $('home-list').hidden = !has;
