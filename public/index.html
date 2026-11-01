@@ -1742,7 +1742,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3077';
+  var APP_VERSION = '1.3078';
 
   /* =========================================================
      STORE
@@ -2078,6 +2078,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function render(id) {
     var screen = document.getElementById(id);
     if (!screen) return;                       // never blank the app over a bad id
+
+    // going back should land you where you were, not at the top of the list
+    var leaving = document.querySelector('.screen.on');
+    if (leaving) {
+      scrollMem[leaving.id] = [].map.call(
+        leaving.querySelectorAll('.scroll,.sscroll'), function (pane) { return pane.scrollTop; });
+    }
+
     document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
     var tab = screen.dataset.tab;
     document.querySelectorAll('.tabs button').forEach(function (b) {
@@ -2105,16 +2113,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var lab = document.querySelector('#' + id + ' .backlab');
     if (lab) lab.textContent = below ? document.getElementById(below).dataset.title : 'Back';
     window.scrollTo(0, 0);
-    screen.querySelectorAll('.scroll,.sscroll').forEach(function (pane) { pane.scrollTop = 0; });
+    var keep = scrollBack ? scrollMem[id] : null;
+    scrollBack = false;
+    screen.querySelectorAll('.scroll,.sscroll').forEach(function (pane, i) {
+      pane.scrollTop = (keep && keep[i]) || 0;
+    });
     // the calendar runs oldest to newest, so it opens on the month you are in
     if (id === 's-calendar') $('cal-body').scrollTop = $('cal-body').scrollHeight;
   }
 
+  var scrollMem = {}, scrollBack = false;
+
   function push(id) { stack.push('s-' + id); render(current()); }
-  function pop() { if (stack.length > 1) stack.pop(); render(current()); }
+  function pop() { if (stack.length > 1) stack.pop(); scrollBack = true; render(current()); }
   function popTo(id) {
     var target = 's-' + id, i = stack.lastIndexOf(target);
     if (i > -1) stack.length = i + 1; else stack = [target];
+    scrollBack = true;
     render(current());
   }
   function goTab(tab) { stack = ['s-' + tab]; render(current()); }
