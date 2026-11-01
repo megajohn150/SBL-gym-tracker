@@ -775,6 +775,60 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .reportbar .go span{display:block;margin-top:2px;font-size:.72rem;color:var(--fg-3)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
+/* ---- people ---- */
+.toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);
+  z-index:30;padding:10px 16px;font-size:.8rem;font-weight:700;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow);
+}
+.findrow{padding:1rem var(--pad) .6rem}
+.findrow input{
+  width:100%;padding:12px var(--cardpad);font-size:.9rem;color:var(--fg);
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.prow{display:flex;align-items:center;gap:11px;padding:11px var(--pad);border-bottom:var(--dash);width:100%;text-align:left}
+.prow .pid2{flex:1;min-width:0}
+.prow .un{display:block;font-size:.88rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .nm2{display:block;font-size:.72rem;color:var(--fg-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.followbtn{
+  flex:none;padding:8px 14px;font-size:.75rem;font-weight:700;border-radius:999px;
+  background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
+}
+.followbtn.off{background:none;color:var(--fg-2);border:var(--border)}
+.uhours{padding:1.1rem var(--pad) .2rem;font-family:var(--display);font-size:1.4rem;font-weight:700}
+.uhours span{font-family:var(--font);font-size:.8rem;font-weight:600;color:var(--fg-3);margin-left:7px}
+.ubars{display:flex;align-items:flex-end;gap:3px;height:120px;padding:.6rem var(--pad) 0}
+.ubars > div{flex:1;display:flex;align-items:flex-end;height:100%}
+.ubars i{display:block;width:100%;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
+.ubarlab{display:flex;padding:5px var(--pad) 0;font-size:.55rem;font-weight:700;color:var(--fg-3)}
+.ubarlab span{flex:1;text-align:center}
+.rtscroll{display:flex;gap:8px;overflow-x:auto;padding:.2rem var(--pad) .6rem;scrollbar-width:none}
+.rtscroll::-webkit-scrollbar{display:none}
+.rtcard{
+  flex:none;width:170px;padding:13px var(--cardpad);text-align:left;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.rtcard b{display:block;font-size:.85rem;font-weight:700;margin-bottom:4px}
+.rtcard span{display:block;font-size:.68rem;color:var(--fg-3)}
+.rtcard em{display:block;margin-top:9px;font-style:normal;font-size:.68rem;font-weight:700;color:var(--accent)}
+.privrow{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:.2rem 0 .8rem;padding:12px var(--cardpad);
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.privrow span{font-size:.85rem;font-weight:600}
+.privrow i{display:block;margin-top:2px;font-style:normal;font-size:.68rem;font-weight:400;color:var(--fg-3)}
+.privrow input{
+  appearance:none;-webkit-appearance:none;flex:none;width:42px;height:24px;border-radius:999px;
+  background:var(--line);position:relative;transition:background .15s;
+}
+.privrow input::after{
+  content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+  background:var(--bg);transition:transform .15s;
+}
+.privrow input:checked{background:var(--accent)}
+.privrow input:checked::after{transform:translateX(18px)}
+
 /* ---- statistics ---- */
 .dashbtn.wide{grid-column:1 / -1}
 .statlist{padding:1rem var(--pad) 0}
@@ -1108,9 +1162,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <!-- ===================== HOME ===================== -->
   <section class="screen on" id="s-home" data-tab="home" data-title="Home">
     <div class="head">
-      <p class="eyebrow">Your log</p>
-      <h1 class="title">Home</h1>
-      <p class="sub">Sessions you have finished.</p>
+      <div class="phead">
+        <span>
+          <p class="eyebrow">Your log</p>
+          <h1 class="title">Home</h1>
+        </span>
+        <span class="picons">
+          <button class="iconbtn" data-push="find" aria-label="Find people"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="m16 16 4.4 4.4"/></svg></button>
+        </span>
+      </div>
+      <p class="sub">Sessions you have finished, and your friends'.</p>
     </div>
     <div class="scroll">
     <div class="reportbar" id="report-bar" hidden>
@@ -1351,6 +1412,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <textarea id="sess-wnote" rows="1" placeholder="Session note"
                     autocomplete="off"></textarea>
         </div>
+        <label class="privrow"><span>Private workout<i>Friends will not see it</i></span>
+          <input type="checkbox" id="sess-private"></label>
         <button class="btn btn-primary" id="sess-end">End workout</button>
       </div>
     </div>
@@ -1408,8 +1471,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="pname" id="p-name">your name</span>
           <span class="pstats">
             <span><b id="p-workouts">0</b><i>Workouts</i></span>
-            <span><b>0</b><i>Followers</i></span>
-            <span><b>0</b><i>Following</i></span>
+            <span><b id="p-followers">0</b><i>Followers</i></span>
+            <span><b id="p-following">0</b><i>Following</i></span>
           </span>
         </span>
       </div>
@@ -1460,6 +1523,31 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="scroll" id="cal-body"></div>
   </section>
 
+
+  <section class="screen" id="s-find" data-tab="home" data-title="Find people">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Find people</h1>
+      <span></span>
+    </div>
+    <div class="scroll">
+      <div class="findrow">
+        <input type="text" id="find-q" placeholder="Username" autocomplete="off"
+               autocapitalize="none" spellcheck="false">
+      </div>
+      <div id="find-list"></div>
+      <div class="note" id="find-note" style="padding:0 var(--pad)">Search by username.</div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-user" data-tab="home" data-title="Profile">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1 id="u-title">Profile</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="user-body"></div>
+  </section>
 
   <section class="screen" id="s-stats" data-tab="profile" data-title="Statistics">
     <div class="bar">
@@ -1751,6 +1839,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="toast" id="toast" hidden></div>
+
+<div class="gate" id="uname" hidden>
+  <div class="gate-card">
+    <h1 class="gate-title">Pick a username</h1>
+    <p class="gate-sub">This is how friends find you. Letters, numbers, dot and underscore.</p>
+    <div class="field" style="padding:0 0 .7rem"><label for="un-val">Username</label>
+      <input type="text" id="un-val" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+    <p class="gate-err" id="un-err" hidden></p>
+    <p class="gate-ok" id="un-ok" hidden></p>
+    <button class="btn btn-primary" id="un-go">Continue</button>
+    <button class="gate-link" id="un-cancel" hidden>Cancel</button>
+  </div>
+</div>
+
 <div class="pop" id="strange-sheet" hidden>
   <div class="pop-bg" data-strange-close></div>
   <div class="pop-wrap mid">
@@ -1954,7 +2057,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3092';
+  var APP_VERSION = '1.3093';
 
   /* =========================================================
      STORE
@@ -1992,7 +2095,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       }
     } catch (e) {}
   }
-  function saveStore() { save('data', JSON.stringify(store)); queuePush(); }
+  function saveStore() { save('data', JSON.stringify(store)); queuePush(); queueSocial(); }
   function saveLocalSession() {
     try {
       if (session) localStorage.setItem('tracker-session', JSON.stringify(session));
@@ -2113,6 +2216,386 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   addEventListener('pagehide', function () { if (cloud.dirty) cloudPush(); });
   addEventListener('online', function () { if (cloud.dirty) cloudPush(); });
 
+  /* =========================================================
+     PEOPLE
+     A public profile keyed by username, follows both ways for a
+     friendship, and a copy of every workout that is not private.
+     ========================================================= */
+  var social = {
+    username: '', timer: null,
+    following: {}, followers: {},        // user_id -> 1
+    people: {},                          // user_id -> profile row
+    feed: []                             // friends' workouts, newest first
+  };
+  var userView = null;                   // whose profile is open
+
+  function friendIds() {
+    return Object.keys(social.following).filter(function (id) { return social.followers[id]; });
+  }
+  function cleanName(v) {
+    return String(v || '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
+  }
+  function myStats() {
+    var secs = 0;
+    store.workouts.forEach(function (w) { secs += w.seconds || 0; });
+    return { workouts: store.workouts.length, streak: weekStreak(), seconds: secs };
+  }
+  function postRow(w) {
+    return { user_id: me.id, id: w.id, date: w.date, data: w, updated_at: new Date().toISOString() };
+  }
+
+  // a line that says what just happened, then gets out of the way
+  var toastT = null;
+  function toast(msg) {
+    var el = $('toast');
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { el.hidden = true; }, 1800);
+  }
+
+  function pushProfile() {
+    if (!sb || !me || !social.username) return Promise.resolve();
+    return sb.from('profiles').upsert({
+      user_id: me.id, username: social.username,
+      name: store.profile.name || '', bio: store.profile.bio || '',
+      pic: store.profile.pic == null ? null : String(store.profile.pic),
+      stats: myStats(), updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  }
+
+  function pushLibrary() {
+    if (!sb || !me || !social.username) return Promise.resolve();
+    return sb.from('library').upsert({
+      user_id: me.id,
+      data: { routines: store.routines, exercises: store.exercises },
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+  }
+
+  // the cloud copy follows the log: new workouts go up, private and
+  // deleted ones come down
+  function syncPosts() {
+    if (!sb || !me || !social.username) return Promise.resolve();
+    return sb.from('posts').select('id').eq('user_id', me.id).then(function (r) {
+      if (r.error) return;
+      var have = {}, mine = {}, add = [];
+      (r.data || []).forEach(function (row) { have[row.id] = 1; });
+      store.workouts.forEach(function (w) {
+        if (w.private) return;
+        mine[w.id] = 1;
+        add.push(postRow(w));                    // upsert keeps edits in step
+      });
+      var drop = Object.keys(have).filter(function (id) { return !mine[id]; });
+      var jobs = [];
+      if (add.length) jobs.push(sb.from('posts').upsert(add, { onConflict: 'user_id,id' }));
+      if (drop.length) jobs.push(sb.from('posts').delete().eq('user_id', me.id).in('id', drop));
+      return Promise.all(jobs);
+    });
+  }
+
+  function queueSocial() {
+    if (!sb || !me || !social.username) return;
+    clearTimeout(social.timer);
+    social.timer = setTimeout(function () {
+      pushProfile(); pushLibrary(); syncPosts();
+    }, 2500);
+  }
+
+  function loadFollows() {
+    if (!sb || !me) return Promise.resolve();
+    return Promise.all([
+      sb.from('follows').select('followee').eq('follower', me.id),
+      sb.from('follows').select('follower').eq('followee', me.id)
+    ]).then(function (res) {
+      social.following = {}; social.followers = {};
+      (res[0].data || []).forEach(function (f) { social.following[f.followee] = 1; });
+      (res[1].data || []).forEach(function (f) { social.followers[f.follower] = 1; });
+      drawProfile();
+      return loadFeed();
+    });
+  }
+
+  function loadFeed() {
+    var ids = friendIds();
+    social.feed = [];
+    if (!sb || !ids.length) { drawHome(); return Promise.resolve(); }
+    return Promise.all([
+      sb.from('posts').select('user_id,id,date,data').in('user_id', ids)
+        .order('date', { ascending: false }).limit(60),
+      sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
+    ]).then(function (res) {
+      (res[1].data || []).forEach(function (p) { social.people[p.user_id] = p; });
+      social.feed = (res[0].data || []).map(function (row) {
+        var w = row.data || {};
+        w.id = row.id; w.by = row.user_id; w.date = row.date;
+        return w;
+      });
+      drawHome();
+    });
+  }
+
+  function loadSocial() {
+    if (!sb || !me) return Promise.resolve();
+    return sb.from('profiles').select('username,name,bio,pic').eq('user_id', me.id).maybeSingle()
+      .then(function (r) {
+        if (r.error) return;
+        if (!r.data || !r.data.username) { openUname(false); return; }
+        social.username = r.data.username;
+        store.profile.handle = social.username;
+        drawProfile(); drawHome();
+        return pushProfile().then(pushLibrary).then(syncPosts).then(loadFollows);
+      });
+  }
+
+  /* --- picking a username --- */
+  var unameChange = false;
+
+  function openUname(change) {
+    unameChange = !!change;
+    $('un-val').value = change ? social.username : '';
+    $('un-err').hidden = true;
+    $('un-ok').hidden = true;
+    $('un-cancel').hidden = !change;
+    $('uname').hidden = false;
+  }
+
+  function unameErr(m) { $('un-err').textContent = m || ''; $('un-err').hidden = !m; }
+
+  $('un-cancel').addEventListener('click', function () { $('uname').hidden = true; });
+
+  $('un-go').addEventListener('click', function () {
+    var v = cleanName($('un-val').value);
+    $('un-val').value = v;
+    if (v.length < 3) { unameErr('At least three characters.'); return; }
+    if (v === social.username) { $('uname').hidden = true; return; }
+    unameErr('');
+    sb.from('profiles').select('user_id').eq('username', v).maybeSingle().then(function (r) {
+      if (r.error) { unameErr(r.error.message); return; }
+      if (r.data && r.data.user_id !== me.id) { unameErr('That one is taken.'); return; }
+      social.username = v;
+      store.profile.handle = v;
+      saveStore();
+      pushProfile().then(function () {
+        $('uname').hidden = true;
+        drawProfile(); drawHome();
+        if (!unameChange) return pushLibrary().then(syncPosts).then(loadFollows);
+      });
+    });
+  });
+
+  /* --- searching for people --- */
+  function drawFind(rows) {
+    $('find-note').hidden = !!(rows && rows.length);
+    $('find-list').innerHTML = (rows || []).map(function (p) {
+      return '<button class="prow" data-user="' + p.user_id + '">' +
+        avatarTag(38, '', p) +
+        '<span class="pid2"><span class="un">' + esc(p.username) + '</span>' +
+        '<span class="nm2">' + esc(p.name || '\u2014') + '</span></span>' +
+        '</button>';
+    }).join('');
+  }
+
+  var findTimer = null;
+  $('find-q').addEventListener('input', function () {
+    var q = cleanName(this.value);
+    clearTimeout(findTimer);
+    if (!q) { drawFind([]); $('find-note').textContent = 'Search by username.'; return; }
+    findTimer = setTimeout(function () {
+      sb.from('profiles').select('user_id,username,name,pic').ilike('username', q + '%').limit(20)
+        .then(function (r) {
+          var rows = (r.data || []).filter(function (p) { return p.user_id !== me.id; });
+          rows.forEach(function (p) { social.people[p.user_id] = p; });
+          $('find-note').textContent = 'Nobody by that name.';
+          drawFind(rows);
+        });
+    }, 250);
+  });
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-user]');
+    if (b) openUser(b.dataset.user);
+  });
+
+  /* --- somebody else's profile --- */
+  function openUser(id) {
+    userView = { id: id, p: social.people[id] || null, posts: [], lib: null, fers: 0, fing: 0 };
+    push('user');
+    drawUser();
+    Promise.all([
+      sb.from('profiles').select('user_id,username,name,bio,pic,stats').eq('user_id', id).maybeSingle(),
+      sb.from('follows').select('follower', { count: 'exact', head: true }).eq('followee', id),
+      sb.from('follows').select('followee', { count: 'exact', head: true }).eq('follower', id)
+    ]).then(function (res) {
+      if (!userView || userView.id !== id) return;
+      if (res[0].data) { userView.p = res[0].data; social.people[id] = res[0].data; }
+      userView.fers = res[1].count || 0;
+      userView.fing = res[2].count || 0;
+      drawUser();
+      if (!(social.following[id] && social.followers[id])) return;
+      return Promise.all([
+        sb.from('posts').select('id,date,data').eq('user_id', id).order('date', { ascending: false }).limit(30),
+        sb.from('library').select('data').eq('user_id', id).maybeSingle()
+      ]).then(function (r2) {
+        if (!userView || userView.id !== id) return;
+        userView.posts = (r2[0].data || []).map(function (row) {
+          var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
+        });
+        userView.lib = (r2[1].data && r2[1].data.data) || null;
+        drawUser();
+      });
+    });
+  }
+
+  function followSet(id, on) {
+    var q = on
+      ? sb.from('follows').insert({ follower: me.id, followee: id })
+      : sb.from('follows').delete().eq('follower', me.id).eq('followee', id);
+    return q.then(function () {
+      if (on) social.following[id] = 1; else delete social.following[id];
+      drawUser();
+      return loadFollows();
+    });
+  }
+
+  // how long they trained, week by week, over the last three months
+  function weekHours(posts) {
+    var out = [], start = monday(new Date()), i;
+    for (i = 12; i >= 0; i--) {
+      var from = addDays(start, -i * 7), to = addDays(from, 7), secs = 0;
+      posts.forEach(function (w) {
+        var d = new Date(w.date);
+        if (d >= from && d < to) secs += w.seconds || 0;
+      });
+      out.push({ from: from, secs: secs });
+    }
+    return out;
+  }
+
+  function drawUser() {
+    if (!userView) return;
+    var p = userView.p || { username: '\u2026', name: '', bio: '' };
+    var id = userView.id;
+    var friend = !!(social.following[id] && social.followers[id]);
+    var follows = !!social.following[id];
+    $('u-title').textContent = p.username || 'Profile';
+
+    var stats = p.stats || {};
+    var head = '<div class="ptop">' + avatarTag(66, '', p) +
+      '<span class="pid"><span class="pname">' + esc(p.name || p.username || '') + '</span>' +
+      '<span class="pstats">' +
+        '<span><b>' + (stats.workouts || 0) + '</b><i>Workouts</i></span>' +
+        '<span><b>' + userView.fers + '</b><i>Followers</i></span>' +
+        '<span><b>' + userView.fing + '</b><i>Following</i></span>' +
+      '</span></span></div>' +
+      (p.bio ? '<p class="pbio">' + esc(p.bio) + '</p>' : '') +
+      '<div style="padding:.6rem var(--pad) 0">' +
+        '<button class="followbtn' + (follows ? ' off' : '') + '" data-follow="' + id + '">' +
+        (follows ? (social.followers[id] ? 'Friends \u00b7 Unfollow' : 'Requested \u00b7 Unfollow')
+          : (social.followers[id] ? 'Follow back' : 'Follow')) + '</button></div>';
+
+    if (!friend) {
+      $('user-body').innerHTML = head +
+        '<div class="note" style="padding:1.4rem var(--pad)">Follow each other to see ' +
+        esc(p.username || 'their') + '\u2019s training.</div>';
+      return;
+    }
+
+    var weeks = weekHours(userView.posts), max = 0;
+    weeks.forEach(function (w) { max = Math.max(max, w.secs); });
+    var thisWeek = weeks[weeks.length - 1].secs;
+    var chart = '<div class="uhours">' + fmtDuration(thisWeek) + '<span>this week</span></div>' +
+      '<div class="ubars">' + weeks.map(function (w) {
+        return '<div><i style="height:' + (max ? Math.max(2, w.secs / max * 100) : 2) + '%"></i></div>';
+      }).join('') + '</div>' +
+      '<div class="ubarlab">' + weeks.map(function (w, i) {
+        return '<span>' + (i % 4 === 0 ? w.from.getDate() + ' ' + MONTHS[w.from.getMonth()] : '') + '</span>';
+      }).join('') + '</div>';
+
+    var lib = userView.lib || {};
+    var routines = (lib.routines || []);
+    var rts = routines.length
+      ? '<div class="rtscroll">' + routines.map(function (rt, i) {
+          return '<div class="rtcard"><b>' + esc(rt.name || 'Routine') + '</b>' +
+            '<span>' + (rt.items || []).length + ' exercise' +
+            ((rt.items || []).length === 1 ? '' : 's') + '</span>' +
+            '<em data-copyrt="' + i + '">Copy to mine</em></div>';
+        }).join('') + '</div>'
+      : '<div class="note" style="padding:0 var(--pad) .6rem">No routines shared.</div>';
+
+    var feed = userView.posts.length
+      ? userView.posts.map(function (w) { return workoutCard(w, 0, p); }).join('')
+      : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged yet.</div>';
+
+    var mineNames = {};
+    store.exercises.forEach(function (e) { mineNames[e.name.toLowerCase()] = 1; });
+    var newEx = (lib.exercises || []).filter(function (e) { return !mineNames[String(e.name).toLowerCase()]; });
+    var exs = newEx.length
+      ? newEx.map(function (e, i) {
+          return '<div class="prow"><span class="pid2"><span class="un">' + esc(e.name) + '</span>' +
+            '<span class="nm2">' + esc(e.muscle || '') + '</span></span>' +
+            '<button class="followbtn off" data-copyex="' + i + '">Copy</button></div>';
+        }).join('')
+      : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing here you are missing.</div>';
+    userView.newEx = newEx;
+
+    $('user-body').innerHTML = head + chart +
+      '<div class="dsec">Routines</div>' + rts +
+      '<div class="dsec">Exercises</div>' + exs +
+      '<div class="dsec">Recent workouts</div>' +
+      '<div class="feed">' + feed + '</div>';
+  }
+
+  $('user-body').addEventListener('click', function (e) {
+    var f = e.target.closest('[data-follow]');
+    if (f) { followSet(f.dataset.follow, !social.following[f.dataset.follow]); return; }
+    var c = e.target.closest('[data-copyrt]');
+    if (c && userView && userView.lib) {
+      copyRoutine(userView.lib.routines[Number(c.dataset.copyrt)], userView.lib.exercises || []);
+      return;
+    }
+    var ce = e.target.closest('[data-copyex]');
+    if (ce && userView && userView.newEx) {
+      var src = userView.newEx[Number(ce.dataset.copyex)];
+      store.exercises.push({ id: uid(), name: src.name, muscle: src.muscle, unilateral: !!src.unilateral });
+      saveStore();
+      drawExercises();
+      drawUser();
+      toast('Exercise copied');
+      return;
+    }
+    var card = e.target.closest('[data-w]');
+    if (card) openWorkout(card.dataset.w, card.dataset.u);
+  });
+
+  // their routine, written in your own exercise ids; anything you are
+  // missing joins your list under the same name
+  function copyRoutine(rt, theirEx) {
+    if (!rt) return;
+    var map = {};
+    (rt.items || []).forEach(function (it) {
+      var src = theirEx.filter(function (e) { return e.id === it.exId; })[0];
+      if (!src) return;
+      var mineEx = store.exercises.filter(function (e) {
+        return e.name.toLowerCase() === String(src.name).toLowerCase();
+      })[0];
+      if (!mineEx) {
+        mineEx = { id: uid(), name: src.name, muscle: src.muscle, unilateral: !!src.unilateral };
+        store.exercises.push(mineEx);
+      }
+      map[it.exId] = mineEx.id;
+    });
+    var copy = JSON.parse(JSON.stringify(rt));
+    copy.id = uid();
+    copy.items = (copy.items || []).filter(function (it) { return map[it.exId]; })
+      .map(function (it) { it.exId = map[it.exId]; return it; });
+    store.routines.push(copy);
+    saveStore();
+    drawRoutines();
+    drawExercises();
+    toast('Routine copied');
+  }
+
   /* --- the sign-in gate --- */
   function gateErr(msg) {
     var el = document.getElementById('gate-err');
@@ -2130,7 +2613,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
     if (!me) { syncState('off'); return; }
     save('uid', me.id);
-    if (me.id !== was) { cloud.rev = 0; cloudPull(); }
+    if (me.id !== was) { cloud.rev = 0; cloudPull().then(loadSocial); }
   }
 
   function gateOk(msg) {
@@ -3277,6 +3760,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
     $('sess-endpage').hidden = !done;
     if (done) {
+      $('sess-private').checked = !!session.private;
       $('sess-wnotebox').className = 'notebox' + (session.note ? ' has' : '');
       $('sess-wnote').value = session.note || '';
       grow($('sess-wnote'));
@@ -3395,6 +3879,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     ex.snote = this.value;
     $('sess-notebox').className = 'notebox' + (this.value.trim() ? ' has' : '');
     grow(this);
+    saveSession();
+  });
+
+  $('sess-private').addEventListener('change', function () {
+    if (!session) return;
+    session.private = this.checked;
     saveSession();
   });
 
@@ -3816,6 +4306,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       date: new Date().toISOString(),
       seconds: seconds || sessionSeconds(),
       routineId: session.routineId || null,
+      private: !!session.private,
       // only what was actually logged is worth keeping
       exercises: session.exercises.map(function (e) {
         return {
@@ -4001,29 +4492,36 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   function drawHome() {
     drawReportBar();
-    var has = store.workouts.length > 0;
+    var total = store.workouts.length;
+    var rows = store.workouts.map(function (w, i) { return { w: w, n: total - i, who: null }; });
+
+    social.feed.forEach(function (w) {
+      rows.push({ w: w, n: 0, who: social.people[w.by] || { username: 'friend' } });
+    });
+    rows.sort(function (a, b) { return new Date(b.w.date) - new Date(a.w.date); });
+
+    var has = rows.length > 0;
     $('home-empty').hidden = has;
     $('home-list').hidden = !has;
-
-    var total = store.workouts.length;
-    $('home-list').innerHTML = store.workouts.map(function (w, i) {
-      return workoutCard(w, total - i);
+    $('home-list').innerHTML = rows.map(function (r) {
+      return workoutCard(r.w, r.n, r.who);
     }).join('');
   }
 
-  function workoutCard(w, ordinal) {
+  function workoutCard(w, ordinal, who) {
     {
       var t = workoutTotals(w);
       var shown = w.exercises.slice(0, 3);
       var rest = w.exercises.length - shown.length;
       var d = new Date(w.date);
-      return '<article class="wcard" data-w="' + w.id + '">' +
+      return '<article class="wcard" data-w="' + w.id + '"' +
+          (who ? ' data-u="' + esc(w.by) + '"' : '') + '>' +
         '<div class="wtop">' +
-          avatarTag(34) +
+          avatarTag(34, '', who || store.profile) +
           '<span class="who"><span class="nm">' +
-            esc(store.profile.handle || 'you') + '</span></span>' +
+            esc((who ? (who.username || who.handle) : store.profile.handle) || 'you') + '</span></span>' +
           '<span class="right">' +
-            '<span class="wnum">' + pad2(ordinal) + '</span>' +
+            (ordinal ? '<span class="wnum">' + pad2(ordinal) + '</span>' : '') +
             '<span class="wdate">' + relDate(w.date) + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</span>' +
             '<span class="wname">' + esc(w.name) + '</span>' +
           '</span>' +
@@ -4192,6 +4690,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function drawProfile() {
     var pf = store.profile;
     $('p-handle').textContent = pf.handle || 'you';
+    $('p-followers').textContent = Object.keys(social.followers).length;
+    $('p-following').textContent = Object.keys(social.following).length;
     $('p-name').textContent = pf.name || '';
     $('p-name').hidden = !pf.name;
     $('p-bio').textContent = pf.bio || '';
@@ -4276,7 +4776,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function closeProf() { $('prof-sheet').hidden = true; }
   document.querySelector('[data-prof-close]').addEventListener('click', closeProf);
   $('pf-save').addEventListener('click', function () {
-    store.profile.handle = $('pf-handle').value.trim() || 'you';
+    var un = cleanName($('pf-handle').value);
+    store.profile.handle = un || store.profile.handle;
     store.profile.name = $('pf-name').value.trim();
     store.profile.bio = $('pf-bio').value.trim();
     store.profile.pic = pfPic;
@@ -4285,6 +4786,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawHome();                       // the cards carry the picture and the handle
     drawProfile();
     if (detailW) drawDetail(detailW);
+    if (sb && me && un && un !== social.username) openUname(true);
   });
 
   document.querySelectorAll('[data-metric]').forEach(function (b) {
@@ -5024,14 +5526,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   $('home-list').addEventListener('click', function (e) {
     var card = e.target.closest('[data-w]');
-    if (card) openWorkout(card.dataset.w);
+    if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
 
   /* --- one finished workout --- */
-  function openWorkout(id) {
-    var w = null;
-    for (var i = 0; i < store.workouts.length; i++) if (store.workouts[i].id === id) w = store.workouts[i];
+  function openWorkout(id, uid2) {
+    var w = null, i;
+    if (uid2) {
+      for (i = 0; i < social.feed.length; i++) {
+        if (social.feed[i].id === id && social.feed[i].by === uid2) w = social.feed[i];
+      }
+      if (!w && userView) {
+        for (i = 0; i < userView.posts.length; i++) if (userView.posts[i].id === id) w = userView.posts[i];
+      }
+    } else {
+      for (i = 0; i < store.workouts.length; i++) if (store.workouts[i].id === id) w = store.workouts[i];
+    }
     if (!w) return;
+    detailRO = !!uid2;
+    detailWho = uid2 ? (social.people[uid2] || { username: 'friend' }) : null;
     drawDetail(w);
     push('detail');
   }
@@ -5093,17 +5606,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function hasPic() { return !!picEntry(store.profile.pic); }
 
   // one avatar as markup, picture or initials
-  function avatarTag(size, cls) {
+  function avatarTag(size, cls, who) {
+    who = who || store.profile;
     var w = size || 34;
     var box = 'width:' + w + 'px;height:' + w + 'px;';
-    var a = picEntry(store.profile.pic);
+    var a = picEntry(who.pic);
     if (a) {
       return '<span class="' + picClass(a) + (cls ? ' ' + cls : '') + '" style="' + box +
         avatarArt(a, w) + '"></span>';
     }
     return '<span class="avatar' + (cls ? ' ' + cls : '') + '" style="' + box +
       'font-size:' + Math.round(w * 0.38) + 'px">' +
-      esc(initials(store.profile.name || store.profile.handle || 'you')) + '</span>';
+      esc(initials(who.name || who.handle || who.username || 'you')) + '</span>';
   }
 
   function muscleArt(m, size) {
@@ -5118,7 +5632,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       (w / 2 - ART_CY[c[1]] * k).toFixed(1) + 'px"></span>';
   }
 
-  var detailW = null, detailEdit = false;
+  var detailW = null, detailEdit = false, detailRO = false, detailWho = null;
 
   function medal(st) {
     if (!st.prs || !st.prs.length) return '';
@@ -5146,12 +5660,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function drawDetail(w) {
     detailW = w;
     var t = workoutTotals(w), split = muscleSplit(w);
+    var who = detailRO ? detailWho : store.profile;
 
     var head = '<div style="padding:1.2rem var(--pad) 0">' +
-      '<div class="whead">' + avatarTag(34) +
-      '<span class="who"><span class="nm">' + esc(store.profile.handle) + '</span>' +
+      '<div class="whead">' + avatarTag(34, '', who) +
+      '<span class="who"><span class="nm">' +
+        esc(who.username || who.handle || 'you') + '</span>' +
       '<span class="dt">' + fullDate(w.date) + '</span></span>' +
-      '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button></div>' +
+      (detailRO ? '<span></span>'
+        : '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button>') + '</div>' +
       (detailEdit
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
           '<button class="datebtn" id="d-date">' + fullDate(pendingDate || w.date) + '</button>' +
