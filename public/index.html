@@ -725,7 +725,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .ptop{display:flex;align-items:center;gap:14px;padding:.6rem var(--pad) 0}
 .pid{flex:1;min-width:0}
 .pname{display:block;font-weight:700;font-size:1rem}
-.pstats{display:flex;gap:1.1rem;margin-top:.5rem}
+.pstats{display:flex;gap:1.1rem;margin-top:.5rem;align-items:flex-start}
+.pstats button{text-align:left}
 .pstats b{display:block;font-size:.95rem;font-weight:700}
 .pstats i{display:block;font-style:normal;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:600;margin-top:2px}
 .pbio{padding:.7rem var(--pad) 0;font-size:.85rem;color:var(--fg-3)}
@@ -774,6 +775,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .reportbar .go b{display:block;font-size:.88rem;font-weight:700}
 .reportbar .go span{display:block;margin-top:2px;font-size:.72rem;color:var(--fg-3)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
+
+/* the username is the one thing on this sheet that other people see */
+.unrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:5px}
+.unrow b{font-size:.95rem;font-weight:700}
 
 /* ---- people ---- */
 .toast{
@@ -1471,8 +1476,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="pname" id="p-name">your name</span>
           <span class="pstats">
             <span><b id="p-workouts">0</b><i>Workouts</i></span>
-            <span><b id="p-followers">0</b><i>Followers</i></span>
-            <span><b id="p-following">0</b><i>Following</i></span>
+            <button data-people="followers"><b id="p-followers">0</b><i>Followers</i></button>
+            <button data-people="following"><b id="p-following">0</b><i>Following</i></button>
           </span>
         </span>
       </div>
@@ -1496,7 +1501,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <div class="dash">
         <button class="dashbtn" data-push="exercises">Exercises</button>
         <button class="dashbtn" data-push="calendar">Calendar</button>
-        <button class="dashbtn wide" data-push="stats">Statistics</button>
+        <button class="dashbtn" data-push="stats">Stats</button>
+        <button class="dashbtn" id="dash-friends">Friends</button>
       </div>
 
       <div class="dsec row2">
@@ -1523,6 +1529,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="scroll" id="cal-body"></div>
   </section>
 
+
+  <section class="screen" id="s-people" data-tab="profile" data-title="People">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1 id="people-title">People</h1>
+      <span></span>
+    </div>
+    <div class="scroll">
+      <div id="people-list"></div>
+      <div class="note" id="people-note" style="padding:1.2rem var(--pad)"></div>
+    </div>
+  </section>
 
   <section class="screen" id="s-find" data-tab="home" data-title="Find people">
     <div class="bar">
@@ -1884,8 +1902,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <h3>Your profile</h3>
     <div class="field" style="padding:0 0 .55rem"><label>Profile picture</label></div>
     <div class="avagrid" id="pf-pics"></div>
-    <div class="field" style="padding:0 0 .7rem"><label for="pf-handle">Username</label>
-      <input type="text" id="pf-handle" autocomplete="off" spellcheck="false"></div>
+    <div class="field" style="padding:0 0 .7rem"><label>Username</label>
+      <span class="unrow"><b id="pf-handle">you</b>
+        <button class="followbtn off" id="pf-unchange">Change</button></span></div>
     <div class="field" style="padding:0 0 .7rem"><label for="pf-name">Name</label>
       <input type="text" id="pf-name" autocomplete="off"></div>
     <div class="field" style="padding:0 0 .9rem"><label for="pf-bio">Bio</label>
@@ -2057,7 +2076,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3093';
+  var APP_VERSION = '1.3094';
 
   /* =========================================================
      STORE
@@ -2375,6 +2394,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (r.data && r.data.user_id !== me.id) { unameErr('That one is taken.'); return; }
       social.username = v;
       store.profile.handle = v;
+      if (unameChange) store.profile.unameAt = Date.now();
       saveStore();
       pushProfile().then(function () {
         $('uname').hidden = true;
@@ -2383,6 +2403,48 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       });
     });
   });
+
+  /* --- lists of people: followers, following, friends --- */
+  var peopleMode = 'friends';
+  var PEOPLE_TITLE = { followers: 'Followers', following: 'Following', friends: 'Friends' };
+
+  function peopleIds() {
+    if (peopleMode === 'followers') return Object.keys(social.followers);
+    if (peopleMode === 'following') return Object.keys(social.following);
+    return friendIds();
+  }
+
+  function drawPeople() {
+    var ids = peopleIds();
+    $('people-title').textContent = PEOPLE_TITLE[peopleMode];
+    $('people-note').hidden = ids.length > 0;
+    $('people-note').textContent = peopleMode === 'friends'
+      ? 'Follow each other and they show up here.'
+      : 'Nobody yet.';
+    $('people-list').innerHTML = ids.map(function (id) {
+      var p = social.people[id] || { username: '\u2026' };
+      return '<button class="prow" data-user="' + id + '">' + avatarTag(38, '', p) +
+        '<span class="pid2"><span class="un">' + esc(p.username || '\u2026') + '</span>' +
+        '<span class="nm2">' + esc(p.name || '') + '</span></span></button>';
+    }).join('');
+  }
+
+  function openPeople(mode) {
+    peopleMode = mode;
+    push('people');
+    drawPeople();
+    var ids = peopleIds().filter(function (id) { return !social.people[id]; });
+    if (!sb || !ids.length) return;
+    sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids).then(function (r) {
+      (r.data || []).forEach(function (p) { social.people[p.user_id] = p; });
+      if (current() === 's-people') drawPeople();
+    });
+  }
+
+  document.querySelectorAll('[data-people]').forEach(function (b) {
+    b.addEventListener('click', function () { openPeople(b.dataset.people); });
+  });
+  $('dash-friends').addEventListener('click', function () { openPeople('friends'); });
 
   /* --- searching for people --- */
   function drawFind(rows) {
@@ -4768,16 +4830,28 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var cur = picEntry(store.profile.pic);
     pfPic = cur ? cur.id : null;
     drawPicker();
-    $('pf-handle').value = store.profile.handle;
+    $('pf-handle').textContent = store.profile.handle;
     $('pf-name').value = store.profile.name;
     $('pf-bio').value = store.profile.bio;
     $('prof-sheet').hidden = false;
   });
   function closeProf() { $('prof-sheet').hidden = true; }
   document.querySelector('[data-prof-close]').addEventListener('click', closeProf);
+  var UN_WAIT = 30 * 864e5;              // a month between changes
+
+  $('pf-unchange').addEventListener('click', function () {
+    var left = Math.ceil((UN_WAIT - (Date.now() - (store.profile.unameAt || 0))) / 864e5);
+    if (store.profile.unameAt && left > 0) {
+      toast('You can change it again in ' + left + ' day' + (left === 1 ? '' : 's'));
+      return;
+    }
+    askConfirm('Change your username?',
+      'It is how friends find you, and the old one is free for anyone else to take ' +
+      'the moment you let it go. You can only do this once a month.',
+      'Change it', function () { closeProf(); openUname(true); });
+  });
+
   $('pf-save').addEventListener('click', function () {
-    var un = cleanName($('pf-handle').value);
-    store.profile.handle = un || store.profile.handle;
     store.profile.name = $('pf-name').value.trim();
     store.profile.bio = $('pf-bio').value.trim();
     store.profile.pic = pfPic;
@@ -4786,7 +4860,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawHome();                       // the cards carry the picture and the handle
     drawProfile();
     if (detailW) drawDetail(detailW);
-    if (sb && me && un && un !== social.username) openUname(true);
   });
 
   document.querySelectorAll('[data-metric]').forEach(function (b) {
