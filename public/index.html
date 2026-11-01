@@ -816,7 +816,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 }
 .frcard b{display:block;font-size:.85rem;font-weight:700;margin-bottom:4px}
 .frcard span{display:block;font-size:.68rem;color:var(--fg-3)}
-.frcard em{display:block;margin-top:9px;font-style:normal;font-size:.68rem;font-weight:700;color:var(--accent)}
+.frcard{min-height:64px}
 .privrow{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   margin:.2rem 0 .8rem;padding:12px var(--cardpad);
@@ -2093,7 +2093,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3099';
+  var APP_VERSION = '1.3000';
 
   /* =========================================================
      STORE
@@ -2609,10 +2609,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var routines = (lib.routines || []);
     var rts = routines.length
       ? '<div class="rtscroll">' + routines.map(function (rt, i) {
+          var n = (rt.items || []).length;
+          var sets = (rt.items || []).reduce(function (a, it) { return a + (it.sets || 0); }, 0);
           return '<button class="frcard" data-openrt="' + i + '"><b>' +
-            esc(rt.name || 'Routine') + '</b><span>' + (rt.items || []).length + ' exercise' +
-            ((rt.items || []).length === 1 ? '' : 's') + '</span>' +
-            '<em>See what is in it</em></button>';
+            esc(rt.name || 'Routine') + '</b><span>' + n + ' exercise' + (n === 1 ? '' : 's') +
+            ' \u00b7 ' + sets + ' set' + (sets === 1 ? '' : 's') + '</span></button>';
         }).join('') + '</div>'
       : '<div class="note" style="padding:0 var(--pad) .6rem">No routines shared.</div>';
 
