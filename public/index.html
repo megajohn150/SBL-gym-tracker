@@ -763,6 +763,52 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   padding:14px var(--cardpad);text-align:left;font-size:.9rem;font-weight:600;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
+/* ---- statistics ---- */
+.dashbtn.wide{grid-column:1 / -1}
+.statlist{padding:1rem var(--pad) 0}
+.statlist button{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  padding:15px var(--cardpad);margin-bottom:8px;text-align:left;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.statlist b{font-size:.9rem;font-weight:600}
+.statlist span{font-size:.7rem;color:var(--fg-3);font-weight:700;white-space:nowrap}
+.strange{
+  display:block;width:calc(100% - 2 * var(--pad));margin:1rem var(--pad) .4rem;
+  padding:13px var(--cardpad);text-align:center;font-size:.9rem;font-weight:600;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.strange::after{content:"\25BE";margin-left:7px;font-size:.7em;color:var(--fg-3)}
+.stperiod{padding:1rem var(--pad) .2rem;font-size:.8rem;font-weight:700;color:var(--fg-3)}
+.sthead,.strow{display:flex;align-items:center;gap:10px;padding:11px var(--pad);border-bottom:var(--dash)}
+.sthead{
+  font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:700;
+}
+.strow .nm{flex:1;font-size:.88rem}
+.strow .n{font-size:.88rem;font-weight:700;font-family:var(--display)}
+.strow.tot .nm,.strow.tot .n{font-weight:700;font-size:.95rem}
+.stdot{width:9px;height:9px;border-radius:50%;flex:none}
+.stlegend{display:flex;gap:16px;justify-content:center;padding:.2rem 0 .9rem;font-size:.7rem;color:var(--fg-3)}
+.stlegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.radar{display:block;margin:0 auto;max-width:330px;width:100%}
+.stweek{display:flex;align-items:center;gap:10px;padding:1rem var(--pad) .3rem}
+.stweek .lab{flex:1;text-align:center;font-size:.9rem;font-weight:700}
+.stweek button{color:var(--fg-2);font-size:1.1rem;padding:4px 10px}
+.stweek button[disabled]{opacity:.25}
+.stdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:.3rem var(--pad) .9rem}
+.stdays > div{
+  padding:7px 0;text-align:center;background:var(--surface);
+  border:var(--border);border-radius:calc(var(--radius) - 2px);
+}
+.stdays .d{display:block;font-size:.55rem;letter-spacing:.1em;color:var(--fg-3);font-weight:700}
+.stdays .n{display:block;margin-top:4px;font-size:.85rem;font-weight:700}
+.stdays .on{background:var(--accent);border-color:var(--accent)}
+.stdays .on .d{color:var(--accent-ink);opacity:.7}
+.stdays .on .n{color:var(--accent-ink)}
+.stbody-slot{
+  margin:.4rem var(--pad) 1rem;padding:2.2rem 1rem;text-align:center;
+  border:var(--dash);border-radius:var(--radius);color:var(--fg-3);font-size:.78rem;
+}
 .calstreak{
   flex:none;padding:14px var(--pad);border-bottom:var(--dash);
   font-size:.95rem;font-weight:700;text-align:center;
@@ -1327,6 +1373,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <div class="dash">
         <button class="dashbtn" data-push="exercises">Exercises</button>
         <button class="dashbtn" data-push="calendar">Calendar</button>
+        <button class="dashbtn wide" data-push="stats">Statistics</button>
       </div>
 
       <div class="dsec row2">
@@ -1351,6 +1398,59 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
     </div>
     <div class="scroll" id="cal-body"></div>
+  </section>
+
+
+  <section class="screen" id="s-stats" data-tab="profile" data-title="Statistics">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Statistics</h1>
+      <span></span>
+    </div>
+    <div class="scroll">
+      <div class="statlist">
+        <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
+        <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
+        <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
+        <button data-push="stat-month"><b>Monthly report</b><span>Soon</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-stat-sets" data-tab="profile" data-title="Set count">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Set count</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="stsets-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-chart" data-tab="profile" data-title="Distribution">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Distribution</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="stchart-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-body" data-tab="profile" data-title="Body">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Body</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="stbody-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-month" data-tab="profile" data-title="Monthly report">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Monthly report</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="stmonth-body"></div>
   </section>
 
   <!-- ===================== SETTINGS ===================== -->
@@ -1591,6 +1691,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="pop" id="strange-sheet" hidden>
+  <div class="pop-bg" data-strange-close></div>
+  <div class="pop-wrap mid">
+    <div class="pop-menu" id="strange-menu"></div>
+  </div>
+</div>
+
 <div class="pop" id="calview-sheet" hidden>
   <div class="pop-bg" data-calview-close></div>
   <div class="pop-wrap mid">
@@ -1787,7 +1894,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3079';
+  var APP_VERSION = '1.3080';
 
   /* =========================================================
      STORE
@@ -2150,6 +2257,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
     if (id === 's-calendar') drawCalendar();
+    if (id === 's-stat-sets') drawStatSets();
+    if (id === 's-stat-chart') drawStatChart();
+    if (id === 's-stat-body') drawStatBody();
+    if (id === 's-stat-month') drawStatMonth();
     if (id !== 's-detail' && detailEdit) { detailEdit = false; detailDirty = false; }
     $('save-bar').hidden = !(id === 's-detail' && detailEdit && detailDirty);
     drawDock();
@@ -4217,6 +4328,234 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       out += w ? '<button class="on" data-w="' + w.id + '"></button>' : '<i></i>';
     }
     return '<div class="calmini">' + out + '</div>';
+  }
+
+  /* =========================================================
+     STATISTICS
+     Set counts stand per muscle; the radar groups them the way
+     a training week is usually talked about.
+     ========================================================= */
+  var MGROUP = {
+    'Chest': 'Chest', 'Upper back': 'Back', 'Lats': 'Back', 'Shoulders': 'Shoulders',
+    'Biceps': 'Arms', 'Triceps': 'Arms', 'Forearms': 'Arms', 'Abs': 'Core',
+    'Adductors': 'Legs', 'Glutes': 'Legs', 'Quads': 'Legs', 'Hamstrings': 'Legs', 'Calves': 'Legs'
+  };
+  var GROUPS = ['Back', 'Chest', 'Core', 'Shoulders', 'Arms', 'Legs'];
+
+  function monday(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+    return x;
+  }
+  function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function dmy(d) { return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
+
+  // everything a stretch of time holds, muscle by muscle
+  function statsFor(from, to) {
+    var by = {}, total = 0, sets = 0, volume = 0, seconds = 0, count = 0;
+    Object.keys(MUSCLE_CELL).forEach(function (m) { by[m] = 0; });
+    store.workouts.forEach(function (w) {
+      var d = new Date(w.date);
+      if (d < from || d >= to) return;
+      count++;
+      seconds += w.seconds || 0;
+      w.exercises.forEach(function (e) {
+        var n = countSets(e);
+        if (!n) return;
+        var key = by[e.muscle] != null ? e.muscle : 'Other';
+        by[key] = (by[key] || 0) + n;
+        total += n;
+        e.sets.forEach(function (st) {
+          if (logged(st)) volume += num(st.weight) * num(st.reps);
+        });
+      });
+    });
+    sets = total;
+    return { by: by, total: total, sets: sets, volume: volume, seconds: seconds, workouts: count };
+  }
+
+  function byGroup(by) {
+    var g = {};
+    GROUPS.forEach(function (n) { g[n] = 0; });
+    Object.keys(by).forEach(function (m) { if (MGROUP[m]) g[MGROUP[m]] += by[m]; });
+    return g;
+  }
+
+  // green for the light end of the scale, red for the heaviest muscle of the period
+  function heat(n, max) {
+    if (!n) return 'var(--line)';
+    var t = max > 0 ? n / max : 0;
+    return 'hsl(' + Math.round(125 - 125 * t) + ' 52% 46%)';
+  }
+
+  function muscleTable(by, total, head) {
+    var max = 0;
+    Object.keys(by).forEach(function (m) { max = Math.max(max, by[m]); });
+    var names = Object.keys(by).sort(function (a, b) {
+      return by[b] - by[a] || a.localeCompare(b);
+    });
+    return '<div class="sthead"><span style="flex:1">Muscle</span><span>' + head + '</span></div>' +
+      '<div class="strow tot"><span class="nm">Total</span><span class="n">' + total + '</span></div>' +
+      names.map(function (m) {
+        return '<div class="strow">' +
+          '<span class="stdot" style="background:' + heat(by[m], max) + '"></span>' +
+          '<span class="nm">' + esc(m) + '</span>' +
+          '<span class="n">' + by[m] + '</span></div>';
+      }).join('');
+  }
+
+  /* --- set count: the last week that is already behind you --- */
+  function drawStatSets() {
+    var end = monday(new Date()), start = addDays(end, -7);
+    var r = statsFor(start, end);
+    $('stsets-body').innerHTML =
+      '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
+      muscleTable(r.by, r.total, 'Sets');
+  }
+
+  /* --- the radar, this period against the one before it --- */
+  var ST_RANGES = [
+    { id: '7d', name: 'Last 7 days', days: 7 },
+    { id: '30d', name: 'Last 30 days', days: 30 },
+    { id: '3m', name: 'Last 3 months', days: 90 },
+    { id: '6m', name: 'Last 6 months', days: 180 },
+    { id: '1y', name: 'Last year', days: 365 }
+  ];
+  var stRange = '30d';
+
+  function stRangeDef() {
+    return ST_RANGES.filter(function (r) { return r.id === stRange; })[0];
+  }
+
+  function radarPoints(g, max, r0, cx, cy) {
+    return GROUPS.map(function (n, i) {
+      var a = (-120 + i * 60) * Math.PI / 180;
+      var r = max > 0 ? r0 * (g[n] / max) : 0;
+      return (cx + r * Math.cos(a)).toFixed(1) + ',' + (cy + r * Math.sin(a)).toFixed(1);
+    }).join(' ');
+  }
+
+  function radar(now, was) {
+    var cx = 165, cy = 150, r0 = 92, max = 0;
+    GROUPS.forEach(function (n) { max = Math.max(max, now[n], was[n]); });
+
+    var web = '';
+    [0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var pts = GROUPS.map(function (n, i) {
+        var a = (-120 + i * 60) * Math.PI / 180;
+        return (cx + r0 * f * Math.cos(a)).toFixed(1) + ',' + (cy + r0 * f * Math.sin(a)).toFixed(1);
+      }).join(' ');
+      web += '<polygon points="' + pts + '" fill="none" stroke="var(--line)" stroke-width="1"/>';
+    });
+    GROUPS.forEach(function (n, i) {
+      var a = (-120 + i * 60) * Math.PI / 180;
+      web += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + r0 * Math.cos(a)).toFixed(1) +
+        '" y2="' + (cy + r0 * Math.sin(a)).toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>';
+    });
+
+    var labs = GROUPS.map(function (n, i) {
+      var a = (-120 + i * 60) * Math.PI / 180;
+      var x = cx + (r0 + 24) * Math.cos(a), y = cy + (r0 + 24) * Math.sin(a);
+      var anchor = Math.cos(a) > 0.3 ? 'start' : Math.cos(a) < -0.3 ? 'end' : 'middle';
+      return '<text x="' + x.toFixed(1) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="' + anchor +
+        '" font-size="11" font-weight="700" fill="var(--fg-3)">' + n + '</text>';
+    }).join('');
+
+    return '<svg class="radar" viewBox="0 0 330 300">' + web + labs +
+      '<polygon points="' + radarPoints(was, max, r0, cx, cy) + '" fill="var(--fg-3)" ' +
+        'fill-opacity=".14" stroke="var(--fg-3)" stroke-width="1.5"/>' +
+      '<polygon points="' + radarPoints(now, max, r0, cx, cy) + '" fill="var(--accent)" ' +
+        'fill-opacity=".22" stroke="var(--accent)" stroke-width="2"/>' +
+      '</svg>' +
+      '<div class="stlegend"><span><i style="background:var(--accent)"></i>Current</span>' +
+      '<span><i style="background:var(--fg-3)"></i>Previous</span></div>';
+  }
+
+  function drawStatChart() {
+    var def = stRangeDef(), now = new Date();
+    var start = addDays(now, -def.days), before = addDays(now, -2 * def.days);
+    var cur = statsFor(start, now), prev = statsFor(before, start);
+
+    function gap(a, b, fmt) {
+      var d = a - b;
+      if (!d) return '';
+      return '<i class="' + (d > 0 ? 'up' : 'down') + '">(' + (d > 0 ? '+' : '\u2212') +
+        (fmt ? fmt(Math.abs(d)) : Math.round(Math.abs(d) * 10) / 10) + ')</i>';
+    }
+
+    $('stchart-body').innerHTML =
+      '<button class="strange" id="st-range">' + def.name + '</button>' +
+      radar(byGroup(cur.by), byGroup(prev.by)) +
+      '<div class="wstats" style="padding:0 var(--pad)">' +
+        '<div><span class="k">Workouts</span><span class="v">' + cur.workouts +
+          gap(cur.workouts, prev.workouts) + '</span></div>' +
+        '<div><span class="k">Duration</span><span class="v">' + fmtDuration(cur.seconds) +
+          gap(cur.seconds, prev.seconds, function (n) { return fmtDuration(n); }) + '</span></div>' +
+        '<div><span class="k">Volume</span><span class="v">' + fmtVolume(cur.volume) +
+          gap(cur.volume, prev.volume) + '</span></div>' +
+        '<div><span class="k">Sets</span><span class="v">' + cur.sets +
+          gap(cur.sets, prev.sets) + '</span></div>' +
+      '</div>';
+
+    $('st-range').addEventListener('click', function () {
+      $('strange-menu').innerHTML = ST_RANGES.map(function (r) {
+        return '<button data-sr="' + r.id + '" aria-pressed="' + (r.id === stRange) + '">' +
+          r.name + '</button>';
+      }).join('');
+      $('strange-sheet').hidden = false;
+    });
+  }
+
+  document.querySelector('[data-strange-close]').addEventListener('click', function () {
+    $('strange-sheet').hidden = true;
+  });
+  $('strange-menu').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-sr]');
+    if (!b) return;
+    stRange = b.dataset.sr;
+    $('strange-sheet').hidden = true;
+    drawStatChart();
+  });
+
+  /* --- the body map, one week at a time --- */
+  var stWeek = 0;                                   // 0 is the week you are in
+
+  function drawStatBody() {
+    var start = addDays(monday(new Date()), stWeek * 7), end = addDays(start, 7);
+    var r = statsFor(start, end), max = 0;
+    Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
+
+    var byDay = {};
+    store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = 1; });
+
+    var days = '';
+    for (var i = 0; i < 7; i++) {
+      var d = addDays(start, i), on = byDay[dayKey(d)];
+      days += '<div class="' + (on ? 'on' : '') + '"><span class="d">' +
+        'MTWTFSS'.charAt(i) + '</span><span class="n">' + d.getDate() + '</span></div>';
+    }
+
+    $('stbody-body').innerHTML =
+      '<div class="stweek">' +
+        '<button data-wk="-1">&lsaquo;</button>' +
+        '<span class="lab">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</span>' +
+        '<button data-wk="1"' + (stWeek >= 0 ? ' disabled' : '') + '>&rsaquo;</button>' +
+      '</div>' +
+      '<div class="stdays">' + days + '</div>' +
+      '<div class="stbody-slot">Body map goes here once the artwork lands.</div>' +
+      muscleTable(r.by, r.total, 'Sets');
+  }
+
+  $('stbody-body').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-wk]');
+    if (!b || b.disabled) return;
+    stWeek += Number(b.dataset.wk);
+    if (stWeek > 0) stWeek = 0;
+    drawStatBody();
+  });
+
+  function drawStatMonth() {
+    $('stmonth-body').innerHTML = '<div class="note" style="margin:2rem var(--pad)">Nothing here yet.</div>';
   }
 
   function drawCalendar() {
