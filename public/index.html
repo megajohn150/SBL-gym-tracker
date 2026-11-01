@@ -1938,7 +1938,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3089';
+  var APP_VERSION = '1.3090';
 
   /* =========================================================
      STORE
@@ -4683,7 +4683,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   /* --- the month in one page --- */
-  var stMetric = 'sets', stMoreMuscles = false;
+  var stMetric = 'sets', stMoreMuscles = false, stMorePRs = false;
   var METRICS = [
     { id: 'workouts', name: 'Workouts' }, { id: 'seconds', name: 'Duration' },
     { id: 'volume', name: 'Volume' }, { id: 'sets', name: 'Sets' }
@@ -4777,9 +4777,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var prs = monthPRs(from, to), prNames = Object.keys(prs);
     var prCount = 0;
     prNames.forEach(function (k) { prCount += Object.keys(prs[k]).length; });
+    var prShown = stMorePRs ? prNames : prNames.slice(0, 3);
     var prList = prNames.length
       ? '<div class="prcount">' + prCount + (prCount === 1 ? ' new PR' : ' new PRs') + '</div>' +
-        prNames.map(function (k) {
+        prShown.map(function (k) {
           return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' +
             Object.keys(prs[k]).map(function (c) {
               var v = prs[k][c];
@@ -4791,7 +4792,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
               c + ' \u2013 ' +
                 (c === 'Volume' ? fmtKg(v) : (Math.round(v * 100) / 100) + ' kg') + '</span>';
             }).join('') + '</div>';
-        }).join('')
+        }).join('') +
+        (prNames.length > 3
+          ? '<button class="mmore" data-morepr>' + (stMorePRs ? 'Show less'
+            : 'See ' + (prNames.length - 3) + ' more') + '</button>' : '')
       : '<div class="note" style="padding:0 var(--pad) 1rem">No records this month.</div>';
 
     var streak = weekStreak();
@@ -4840,6 +4844,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       stMetric = me.dataset.metric2;
     } else if (e.target.closest('[data-more]')) {
       stMoreMuscles = !stMoreMuscles;
+    } else if (e.target.closest('[data-morepr]')) {
+      stMorePRs = !stMorePRs;
     } else return;
     drawStatMonth();
   });
