@@ -776,6 +776,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .reportbar .go span{display:block;margin-top:2px;font-size:.72rem;color:var(--fg-3)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
+/* someone else's routine, read only */
+.ctl .val{font-size:.85rem;font-weight:700}
+.rocue{
+  margin-top:10px;padding:9px 11px;font-size:.85rem;color:var(--fg-2);
+  background:var(--bg);border:var(--dash);border-radius:calc(var(--radius) - 3px);
+}
+
 /* the username is the one thing on this sheet that other people see */
 .unrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:5px}
 .unrow b{font-size:.95rem;font-weight:700}
@@ -1523,6 +1530,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </section>
 
 
+  <section class="screen" id="s-frroutine" data-tab="home" data-title="Routine">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1 id="frrt-title">Routine</h1>
+      <button class="dmenu" id="frrt-menu" aria-label="Routine menu">&#8942;</button>
+    </div>
+    <div class="scroll" id="frrt-body"></div>
+  </section>
+
   <section class="screen" id="s-people" data-tab="profile" data-title="People">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
@@ -1850,6 +1866,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="pop" id="frrt-pop" hidden>
+  <div class="pop-bg" data-frrt-close></div>
+  <div class="pop-wrap">
+    <div class="pop-menu"><button id="frrt-save">Save routine</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
 <div class="gate" id="uname" hidden>
@@ -2069,7 +2092,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3097';
+  var APP_VERSION = '1.3098';
 
   /* =========================================================
      STORE
@@ -2583,10 +2606,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var routines = (lib.routines || []);
     var rts = routines.length
       ? '<div class="rtscroll">' + routines.map(function (rt, i) {
-          return '<div class="frcard"><b>' + esc(rt.name || 'Routine') + '</b>' +
-            '<span>' + (rt.items || []).length + ' exercise' +
+          return '<button class="frcard" data-openrt="' + i + '"><b>' +
+            esc(rt.name || 'Routine') + '</b><span>' + (rt.items || []).length + ' exercise' +
             ((rt.items || []).length === 1 ? '' : 's') + '</span>' +
-            '<em data-copyrt="' + i + '">Copy to mine</em></div>';
+            '<em>See what is in it</em></button>';
         }).join('') + '</div>'
       : '<div class="note" style="padding:0 var(--pad) .6rem">No routines shared.</div>';
 
@@ -2594,21 +2617,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       ? userView.posts.map(function (w) { return workoutCard(w, 0, p); }).join('')
       : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged yet.</div>';
 
-    var mineNames = {};
-    store.exercises.forEach(function (e) { mineNames[e.name.toLowerCase()] = 1; });
-    var newEx = (lib.exercises || []).filter(function (e) { return !mineNames[String(e.name).toLowerCase()]; });
-    var exs = newEx.length
-      ? newEx.map(function (e, i) {
-          return '<div class="prow"><span class="pid2"><span class="un">' + esc(e.name) + '</span>' +
-            '<span class="nm2">' + esc(e.muscle || '') + '</span></span>' +
-            '<button class="followbtn off" data-copyex="' + i + '">Copy</button></div>';
-        }).join('')
-      : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing here you are missing.</div>';
-    userView.newEx = newEx;
-
     $('user-body').innerHTML = head + chart +
       '<div class="dsec">Routines</div>' + rts +
-      '<div class="dsec">Exercises</div>' + exs +
       '<div class="dsec">Recent workouts</div>' +
       '<div class="feed">' + feed + '</div>';
   }
@@ -2616,23 +2626,60 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('user-body').addEventListener('click', function (e) {
     var f = e.target.closest('[data-follow]');
     if (f) { followSet(f.dataset.follow, !social.following[f.dataset.follow]); return; }
-    var c = e.target.closest('[data-copyrt]');
-    if (c && userView && userView.lib) {
-      copyRoutine(userView.lib.routines[Number(c.dataset.copyrt)], userView.lib.exercises || []);
-      return;
-    }
-    var ce = e.target.closest('[data-copyex]');
-    if (ce && userView && userView.newEx) {
-      var src = userView.newEx[Number(ce.dataset.copyex)];
-      store.exercises.push({ id: uid(), name: src.name, muscle: src.muscle, unilateral: !!src.unilateral });
-      saveStore();
-      drawExercises();
-      drawUser();
-      toast('Exercise copied');
-      return;
-    }
+    var c = e.target.closest('[data-openrt]');
+    if (c && userView && userView.lib) { openFrRoutine(Number(c.dataset.openrt)); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
+  });
+
+  var frRoutine = null;
+
+  function openFrRoutine(i) {
+    var lib = (userView && userView.lib) || {};
+    frRoutine = (lib.routines || [])[i];
+    if (!frRoutine) return;
+    push('frroutine');
+    drawFrRoutine();
+  }
+
+  function drawFrRoutine() {
+    var rt = frRoutine;
+    if (!rt) return;
+    var theirEx = ((userView && userView.lib) || {}).exercises || [];
+    $('frrt-title').textContent = rt.name || 'Routine';
+
+    var rows = (rt.items || []).map(function (it) {
+      var x = theirEx.filter(function (e) { return e.id === it.exId; })[0];
+      if (!x) return '';
+      var uni = !!x.unilateral;
+      return '<div class="exitem">' +
+        '<div class="exitem-h">' + muscleArt(x.muscle, 34) +
+          '<span class="lab"><span class="nm">' + esc(x.name) + '</span>' +
+          '<span class="meta">' + esc(x.muscle || '') + (uni ? ' &middot; unilateral' : '') +
+          '</span></span></div>' +
+        '<div class="ctl"><span class="ctl-lab">Sets</span><span class="val">' + it.sets + '</span></div>' +
+        (it.reps ? '<div class="ctl"><span class="ctl-lab">Rep range</span>' +
+          '<span class="val">' + esc(it.reps) + '</span></div>' : '') +
+        (uni ? '<div class="ctl"><span class="ctl-lab">Starts with</span>' +
+          '<span class="val">' + (it.side === 'L' ? 'Left' : 'Right') + '</span></div>' : '') +
+        (it.note ? '<p class="rocue">' + esc(it.note) + '</p>' : '') +
+        '</div>';
+    }).join('');
+
+    $('frrt-body').innerHTML = '<div class="group" style="margin-top:1rem">' +
+      '<h2>' + (rt.items || []).length + ' exercise' +
+      ((rt.items || []).length === 1 ? '' : 's') + '</h2>' +
+      '<div class="rows">' + rows + '</div></div>';
+  }
+
+  $('frrt-menu').addEventListener('click', function () { $('frrt-pop').hidden = false; });
+  document.querySelector('[data-frrt-close]').addEventListener('click', function () {
+    $('frrt-pop').hidden = true;
+  });
+  $('frrt-save').addEventListener('click', function () {
+    $('frrt-pop').hidden = true;
+    copyRoutine(frRoutine, ((userView && userView.lib) || {}).exercises || []);
+    pop();
   });
 
   // their routine, written in your own exercise ids; anything you are
@@ -2647,7 +2694,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         return e.name.toLowerCase() === String(src.name).toLowerCase();
       })[0];
       if (!mineEx) {
-        mineEx = { id: uid(), name: src.name, muscle: src.muscle, unilateral: !!src.unilateral };
+        mineEx = {
+          id: uid(), name: src.name, code: src.code || deriveCode(src.name),
+          muscle: src.muscle, unilateral: !!src.unilateral
+        };
         store.exercises.push(mineEx);
       }
       map[it.exId] = mineEx.id;
@@ -2660,7 +2710,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     saveStore();
     drawRoutines();
     drawExercises();
-    toast('Routine copied');
+    toast('Routine saved');
   }
 
   /* --- the sign-in gate --- */
