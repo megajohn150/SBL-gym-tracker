@@ -285,8 +285,12 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   border:var(--border);border-radius:var(--radius);background:var(--surface);opacity:.5;
 }
 .exchip[aria-current="true"]{opacity:1}
-.exchip.done{background:linear-gradient(var(--done),var(--done)),var(--bg)}
-.exchip.done .n{color:var(--fg-2)}
+.exchip.done{
+  opacity:1;border-color:var(--fg-3);
+  background:linear-gradient(var(--done),var(--done)),linear-gradient(var(--done),var(--done)),var(--bg);
+}
+.exchip.done .n{color:var(--fg);font-size:.72rem}
+.exchip.done .ini{color:var(--fg)}
 .exchip[aria-current="true"]::after{
   content:"";position:absolute;left:28%;right:28%;bottom:6px;height:2px;background:var(--fg);
 }
@@ -1707,7 +1711,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3070';
+  var APP_VERSION = '1.3071';
 
   /* =========================================================
      STORE
@@ -2849,15 +2853,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   function setFull(st) { return st.weight !== '' && st.reps !== '' && st.rir !== ''; }
 
-  // the whole exercise is behind you once every set you filled in is ticked
+  // the whole exercise is behind you only once every set is ticked
   function exDone(e) {
-    var any = false;
-    for (var i = 0; i < e.sets.length; i++) {
-      var st = e.sets[i];
-      if (st.done) { any = true; continue; }
-      if (st.weight !== '' || st.reps !== '' || st.rir !== '') return false;
-    }
-    return any;
+    return e.sets.length > 0 && e.sets.every(function (st) { return !!st.done; });
   }
 
   // F means no reps left in the tank, so it counts as zero
