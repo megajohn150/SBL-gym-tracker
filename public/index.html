@@ -800,22 +800,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
 }
 .followbtn.off{background:none;color:var(--fg-2);border:var(--border)}
-.uhours{padding:1.1rem var(--pad) .2rem;font-family:var(--display);font-size:1.4rem;font-weight:700}
-.uhours span{font-family:var(--font);font-size:.8rem;font-weight:600;color:var(--fg-3);margin-left:7px}
-.ubars{display:flex;align-items:flex-end;gap:3px;height:120px;padding:.6rem var(--pad) 0}
-.ubars > div{flex:1;display:flex;align-items:flex-end;height:100%}
-.ubars i{display:block;width:100%;background:var(--accent);border-radius:2px 2px 0 0;opacity:.85}
-.ubarlab{display:flex;padding:5px var(--pad) 0;font-size:.55rem;font-weight:700;color:var(--fg-3)}
-.ubarlab span{flex:1;text-align:center}
 .rtscroll{display:flex;gap:8px;overflow-x:auto;padding:.2rem var(--pad) .6rem;scrollbar-width:none}
 .rtscroll::-webkit-scrollbar{display:none}
-.rtcard{
+.frcard{
   flex:none;width:170px;padding:13px var(--cardpad);text-align:left;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
-.rtcard b{display:block;font-size:.85rem;font-weight:700;margin-bottom:4px}
-.rtcard span{display:block;font-size:.68rem;color:var(--fg-3)}
-.rtcard em{display:block;margin-top:9px;font-style:normal;font-size:.68rem;font-weight:700;color:var(--accent)}
+.frcard b{display:block;font-size:.85rem;font-weight:700;margin-bottom:4px}
+.frcard span{display:block;font-size:.68rem;color:var(--fg-3)}
+.frcard em{display:block;margin-top:9px;font-style:normal;font-size:.68rem;font-weight:700;color:var(--accent)}
 .privrow{
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   margin:.2rem 0 .8rem;padding:12px var(--cardpad);
@@ -2076,7 +2069,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3095';
+  var APP_VERSION = '1.3096';
 
   /* =========================================================
      STORE
@@ -2566,19 +2559,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var weeks = weekHours(userView.posts), max = 0;
     weeks.forEach(function (w) { max = Math.max(max, w.secs); });
     var thisWeek = weeks[weeks.length - 1].secs;
-    var chart = '<div class="uhours">' + fmtDuration(thisWeek) + '<span>this week</span></div>' +
-      '<div class="ubars">' + weeks.map(function (w) {
-        return '<div><i style="height:' + (max ? Math.max(2, w.secs / max * 100) : 2) + '%"></i></div>';
+    var chart = '<div class="pchart">' +
+      '<div class="pchart-h"><span><b>' + fmtDuration(thisWeek) + '</b> <i>this week</i></span></div>' +
+      '<div class="pbars">' + weeks.map(function (w) {
+        return '<button class="pbar" data-tip="' +
+          esc(fmtDuration(w.secs) + '  \u00b7  week of ' + w.from.getDate() + ' ' + MONTHS[w.from.getMonth()]) +
+          '"><i style="height:' + (max ? Math.max(2, Math.round(w.secs / max * 100)) : 2) +
+          '%"></i></button>';
       }).join('') + '</div>' +
-      '<div class="ubarlab">' + weeks.map(function (w, i) {
+      '<div class="pxlab">' + weeks.map(function (w, i) {
         return '<span>' + (i % 4 === 0 ? w.from.getDate() + ' ' + MONTHS[w.from.getMonth()] : '') + '</span>';
-      }).join('') + '</div>';
+      }).join('') + '</div></div>';
 
     var lib = userView.lib || {};
     var routines = (lib.routines || []);
     var rts = routines.length
       ? '<div class="rtscroll">' + routines.map(function (rt, i) {
-          return '<div class="rtcard"><b>' + esc(rt.name || 'Routine') + '</b>' +
+          return '<div class="frcard"><b>' + esc(rt.name || 'Routine') + '</b>' +
             '<span>' + (rt.items || []).length + ' exercise' +
             ((rt.items || []).length === 1 ? '' : 's') + '</span>' +
             '<em data-copyrt="' + i + '">Copy to mine</em></div>';
@@ -4960,6 +4957,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   barTips($('p-bars'));
+  barTips($('user-body'));
   barTips($('xh-body'));
 
   document.addEventListener('pointerdown', function (e) {
