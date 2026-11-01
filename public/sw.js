@@ -12,6 +12,7 @@ var CORE = [
   './logo/icon-180.png',
   './logo/icon-192.png',
   './logo/icon-512.png',
+  './imgs/body.svg',
   './imgs/muscles.jpg',
   './imgs/muscles-light.jpg',
   './imgs/avatars.jpg',

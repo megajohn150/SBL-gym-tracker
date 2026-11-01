@@ -805,10 +805,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .stdays .on{background:var(--accent);border-color:var(--accent)}
 .stdays .on .d{color:var(--accent-ink);opacity:.7}
 .stdays .on .n{color:var(--accent-ink)}
-.stbody-slot{
-  margin:.4rem var(--pad) 1rem;padding:2.2rem 1rem;text-align:center;
-  border:var(--dash);border-radius:var(--radius);color:var(--fg-3);font-size:.78rem;
-}
+/* The artwork is one flat drawing, so the heat sits on top of it: the
+   picture and the blobs share a box and the same coordinates, and the box
+   is scaled to crop the empty margins of the original file. */
+.bodymap{position:relative;overflow:hidden;margin:.4rem var(--pad) 1rem;aspect-ratio:614 / 588}
+.bodymap > *{position:absolute;left:-11.24%;top:-1.53%;width:130.29%;height:102.04%}
+.bodymap svg{pointer-events:none}
 .calstreak{
   flex:none;padding:14px var(--pad);border-bottom:var(--dash);
   font-size:.95rem;font-weight:700;text-align:center;
@@ -1894,7 +1896,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3080';
+  var APP_VERSION = '1.3081';
 
   /* =========================================================
      STORE
@@ -4517,6 +4519,42 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawStatChart();
   });
 
+  /* Where each muscle sits on imgs/body.svg: [cx, cy, rx, ry, tilt], in that
+     file's own 800 x 600 coordinates. Front figure first, back figure after. */
+  var BODY_ART = {
+    'Chest': [[170, 155, 21, 20, -8], [210, 155, 21, 20, 8]],
+    'Abs': [[190, 215, 20, 42, 0]],
+    'Shoulders': [[144, 141, 15, 14, 0], [235, 141, 15, 14, 0],
+      [509, 135, 15, 14, 0], [615, 135, 15, 14, 0]],
+    'Biceps': [[139, 180, 12, 24, -5], [241, 180, 12, 24, 5]],
+    'Forearms': [[127, 240, 12, 28, -5], [253, 240, 12, 28, 5],
+      [475, 234, 12, 27, -5], [647, 234, 12, 27, 5]],
+    'Adductors': [[180, 315, 9, 38, 4], [200, 315, 9, 38, -4]],
+    'Quads': [[167, 342, 20, 52, 3], [213, 342, 20, 52, -3]],
+    'Calves': [[164, 456, 14, 40, 2], [218, 456, 14, 40, -2],
+      [544, 464, 13, 40, 2], [583, 464, 13, 40, -2]],
+    'Upper back': [[561, 145, 42, 28, 0]],
+    'Lats': [[541, 196, 19, 27, 10], [583, 196, 19, 27, -10]],
+    'Triceps': [[491, 177, 13, 26, -5], [631, 177, 13, 26, 5]],
+    'Glutes': [[546, 293, 16, 22, 0], [577, 293, 16, 22, 0]],
+    'Hamstrings': [[542, 366, 16, 45, 3], [581, 366, 16, 45, -3]]
+  };
+
+  function bodyMap(by, max) {
+    var blobs = '';
+    Object.keys(BODY_ART).forEach(function (m) {
+      if (!by[m]) return;                       // an untouched muscle stays bare
+      var col = heat(by[m], max);
+      BODY_ART[m].forEach(function (e) {
+        blobs += '<ellipse cx="' + e[0] + '" cy="' + e[1] + '" rx="' + e[2] + '" ry="' + e[3] + '"' +
+          (e[4] ? ' transform="rotate(' + e[4] + ' ' + e[0] + ' ' + e[1] + ')"' : '') +
+          ' fill="' + col + '" fill-opacity=".62"/>';
+      });
+    });
+    return '<div class="bodymap"><img src="imgs/body.svg" alt="">' +
+      '<svg viewBox="0 0 800 600">' + blobs + '</svg></div>';
+  }
+
   /* --- the body map, one week at a time --- */
   var stWeek = 0;                                   // 0 is the week you are in
 
@@ -4542,7 +4580,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '<button data-wk="1"' + (stWeek >= 0 ? ' disabled' : '') + '>&rsaquo;</button>' +
       '</div>' +
       '<div class="stdays">' + days + '</div>' +
-      '<div class="stbody-slot">Body map goes here once the artwork lands.</div>' +
+      bodyMap(r.by, max) +
       muscleTable(r.by, r.total, 'Sets');
   }
 
