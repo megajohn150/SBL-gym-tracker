@@ -1595,7 +1595,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
         <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
-        <button data-push="stat-month"><b>Monthly report</b></button>
+        <button data-push="stat-month"><b>Monthly report</b><span id="stats-month"></span></button>
       </div>
     </div>
   </section>
@@ -2100,7 +2100,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '1.3003';
+  var APP_VERSION = '1.3004';
 
   /* =========================================================
      STORE
@@ -3043,6 +3043,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
     if (id === 's-home') refreshSocial();
+    if (id === 's-stats') {
+      var lastm = new Date();
+      lastm = new Date(lastm.getFullYear(), lastm.getMonth() - 1, 1);
+      $('stats-month').textContent = MONTHS[lastm.getMonth()] + ' ' + lastm.getFullYear();
+    }
     if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
     if (id === 's-calendar') drawCalendar();
