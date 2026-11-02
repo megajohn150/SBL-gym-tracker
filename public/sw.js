@@ -3,7 +3,7 @@
    basement with no signal. The Supabase API is never cached — stale
    training data would be worse than none. */
 
-var V = 'tracker-v5';
+var V = 'tracker-v6';
 
 var CORE = [
   './',
