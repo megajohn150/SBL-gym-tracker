@@ -2124,7 +2124,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3052';
+  var APP_VERSION = '2.3053';
 
   /* =========================================================
      STORE
@@ -3117,7 +3117,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-body') drawStatBody();
     if (id === 's-stat-month') drawStatMonth();
     if (id !== 's-detail' && detailEdit) { detailEdit = false; detailDirty = false; }
-    $('save-bar').hidden = !(id === 's-detail' && detailEdit && detailDirty);
+    $('save-bar').hidden = !((id === 's-detail' && detailEdit && detailDirty) ||
+      (id === 's-routine-form' && rtDirty));
     drawDock();
 
     var below = stack[stack.length - 2];
@@ -3546,8 +3547,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return items.reduce(function (n, it) { return n + it.sets; }, 0);
   }
 
+  /* --- an edited routine carries the same unsaved-changes bar as a workout --- */
+  var rtDirty = false, rtBase = '';
+
+  function rtSig() { return sigOf([$('rt-name').value.trim(), draft.items]); }
+
+  function rtTouch() {
+    rtDirty = !!draft.id && rtSig() !== rtBase;
+    if (current() === 's-routine-form') $('save-bar').hidden = !rtDirty;
+  }
+
   function newRoutine() {
     draft = { id: null, name: '', items: [] };
+    rtDirty = false; rtBase = '';
     $('rt-delete').hidden = true;
     $('rt-title').textContent = 'New routine';
     $('rt-name').value = '';
@@ -3567,6 +3579,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('rt-title').textContent = 'Edit routine';
     $('rt-delete').hidden = false;
     $('rt-name').value = r.name;
+    rtBase = rtSig();
+    rtDirty = false;
     push('routine-form');
     drawRoutineForm();
   }
@@ -3575,6 +3589,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function syncRtForm() {
     var ok = rtValid();
     $('rt-save').disabled = !ok;
+    rtTouch();
   }
   $('rt-name').addEventListener('input', function () { draft.name = $('rt-name').value; syncRtForm(); });
 
@@ -3583,6 +3598,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     wrap.hidden = draft.items.length === 0;
     $('rt-none').hidden = draft.items.length > 0;
 
+    rtTouch();
     wrap.innerHTML = draft.items.map(function (it, i) {
       var x = byId(it.exId);
       if (!x) return '';
@@ -3773,9 +3789,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   $('rt-picked').addEventListener('input', function (e) {
     var n = e.target.closest('[data-note]');
-    if (n) { draft.items[Number(n.dataset.note)].note = n.value; return; }
+    if (n) { draft.items[Number(n.dataset.note)].note = n.value; rtTouch(); return; }
     var r = e.target.closest('[data-reps]');
-    if (r) draft.items[Number(r.dataset.reps)].reps = r.value;
+    if (r) { draft.items[Number(r.dataset.reps)].reps = r.value; rtTouch(); }
   });
 
   function commitRoutine() {
@@ -3794,7 +3810,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!rtValid()) return;
     commitRoutine();
     newRoutine();
+    $('save-bar').hidden = true;
     popTo('workout');
+  }
+
+  // the × next to Save: back to the routine as it is stored
+  function dropRoutineEdits() {
+    var r = draft.id && routineById(draft.id);
+    if (!r) return;
+    draft = {
+      id: r.id,
+      name: r.name,
+      items: r.items.map(function (it) {
+        return { exId: it.exId, sets: it.sets, reps: it.reps || '', note: it.note, side: it.side };
+      })
+    };
+    $('rt-name').value = r.name;
+    rtBase = rtSig();
+    drawRoutineForm();
   }
   $('rt-delete').addEventListener('click', function () {
     $('rt-pop').hidden = true;
@@ -6363,8 +6396,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     detailDirty = true;
     drawSaveBar();
   });
-  $('save-go').addEventListener('click', saveDetail);
-  $('save-drop').addEventListener('click', leaveEdit);
+  $('save-go').addEventListener('click', function () {
+    if (current() === 's-routine-form') saveRoutine(); else saveDetail();
+  });
+  $('save-drop').addEventListener('click', function () {
+    if (current() === 's-routine-form') dropRoutineEdits(); else leaveEdit();
+  });
 
   $('detail-body').addEventListener('click', function (e) {
     var pl = e.target.closest('[data-plate]');
