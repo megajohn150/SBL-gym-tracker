@@ -44,6 +44,10 @@ drop policy if exists "follows delete" on public.follows;
 create policy "follows read"   on public.follows for select to authenticated using (true);
 create policy "follows insert" on public.follows for insert to authenticated with check (auth.uid() = follower);
 create policy "follows delete" on public.follows for delete to authenticated using (auth.uid() = follower);
+-- Followers można też odpiąć od siebie: usuwa wiersz ten, kogo obserwują.
+drop policy if exists "follows kick" on public.follows;
+create policy "follows kick" on public.follows for delete to authenticated using (auth.uid() = followee);
+
 
 -- wzajemność w jednym miejscu, żeby polityki niżej się nie powtarzały
 create or replace function public.friends_with(other uuid)

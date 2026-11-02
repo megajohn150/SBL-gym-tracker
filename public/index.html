@@ -796,6 +796,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .unrow b{font-size:.95rem;font-weight:700}
 
 /* ---- people ---- */
+.prowgo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
 .prow .rel{flex:none;font-size:.66rem;font-weight:700;color:var(--fg-3);letter-spacing:.04em}
 /* somebody followed you and you have not followed back */
 .hasnew{position:relative}
@@ -2123,7 +2124,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3050';
+  var APP_VERSION = '2.3051';
 
   /* =========================================================
      STORE
@@ -2545,13 +2546,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('people-note').textContent = peopleMode === 'friends'
       ? 'Follow each other and they show up here.'
       : 'Nobody yet.';
+    var own = !peopleList;              // somebody else's list is only for looking at
     $('people-list').innerHTML = ids.map(function (id) {
       var p = social.people[id] || { username: '\u2026' };
       var rel = relLabel(id);
-      return '<button class="prow" data-user="' + id + '">' + avatarTag(38, '', p) +
+      var kick = own && peopleMode === 'followers';
+      return '<div class="prow">' +
+        '<button class="prowgo" data-user="' + id + '">' + avatarTag(38, '', p) +
         '<span class="pid2"><span class="un">' + esc(p.username || '\u2026') + '</span>' +
-        '<span class="nm2">' + esc(p.name || '') + '</span></span>' +
-        (rel ? '<span class="rel">' + rel + '</span>' : '') + '</button>';
+        '<span class="nm2">' + esc(p.name || '') + '</span></span></button>' +
+        (kick ? '<button class="followbtn off" data-kick="' + id + '">Remove</button>'
+          : (rel ? '<span class="rel">' + rel + '</span>' : '')) + '</div>';
     }).join('');
   }
 
@@ -2567,6 +2572,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (current() === 's-people') drawPeople();
     });
   }
+
+  // sending a follower away: their row goes, and with it their view of your log
+  $('people-list').addEventListener('click', function (e) {
+    var k = e.target.closest('[data-kick]');
+    if (!k || !sb) return;
+    var id = k.dataset.kick, p = social.people[id] || {};
+    askConfirm('Remove ' + (p.username || 'this follower') + '?',
+      'They stop seeing your sessions. They can follow you again, and you will not be told.',
+      'Remove', function () {
+        sb.from('follows').delete().eq('follower', id).eq('followee', me.id).then(function (r) {
+          if (r.error) { toast('Could not remove them'); return; }
+          delete social.followers[id];
+          drawPeople();
+          drawProfile();
+          toast('Follower removed');
+          loadFollows();
+        });
+      });
+  });
 
   document.querySelectorAll('[data-people]').forEach(function (b) {
     b.addEventListener('click', function () { openPeople(b.dataset.people); });
