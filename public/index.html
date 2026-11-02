@@ -499,15 +499,74 @@ body.in-session .tabs{display:none}
 .wmore{font-size:.76rem;color:var(--fg-3);padding-top:.26rem}
 
 /* Like and comment, hanging under the card on their own rule. */
-.wacts{
-  display:flex;gap:4px;margin:.85rem calc(var(--cardpad) * -1) calc(var(--cardpad) * -1);
-  padding:.1rem calc(var(--cardpad) - 8px);border-top:var(--dash);
+.wfoot{
+  margin:.85rem calc(var(--cardpad) * -1) calc(var(--cardpad) * -1);
+  padding:.1rem calc(var(--cardpad) - 8px) .55rem;border-top:var(--dash);
 }
+.wacts{display:flex;gap:4px}
 .wacts button{
   background:none;border:0;padding:9px 8px;color:var(--fg-3);
-  display:flex;align-items:center;gap:6px;font-size:.76rem;
+  display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:700;
 }
-.wacts button span{color:var(--fg-3)}
+.wacts button.on{color:var(--accent)}
+.likeline,.cline{display:flex;gap:9px;padding:.15rem 8px .3rem;font-size:.76rem}
+.likeline{align-items:center;color:var(--fg-2)}
+.cline{align-items:flex-start}
+.cline .cb{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ch{font-size:.72rem;font-weight:700;color:var(--fg-2)}
+.ch i{font-style:normal;font-weight:600;color:var(--fg-3);margin-left:5px}
+.ct{color:var(--fg);line-height:1.35;overflow-wrap:anywhere}
+.cmore{
+  background:none;border:0;padding:.1rem 8px .2rem;font-size:.74rem;color:var(--fg-3);
+}
+
+/* --- the comments screen --- */
+.chead{padding:1.2rem var(--pad) 1rem;border-bottom:var(--dash)}
+.ctitle{font-size:1.15rem;font-weight:700;margin:.7rem 0 .2rem}
+.cnote{color:var(--fg-2);font-size:.82rem;line-height:1.4}
+.ccount{
+  display:flex;justify-content:space-between;margin-top:.9rem;
+  font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;
+  color:var(--fg-3);font-weight:600;
+}
+.cnone{padding:1.6rem var(--pad);color:var(--fg-3);font-size:.82rem;text-align:center}
+.crow{display:flex;gap:11px;padding:.85rem var(--pad);border-bottom:var(--dash)}
+.crow.rep{padding-left:calc(var(--pad) + 30px)}
+.crow .cb{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.crow .ct{font-size:.86rem}
+.cacts{display:flex;gap:14px;margin-top:.3rem}
+.cacts button{
+  background:none;border:0;padding:0;font-size:.72rem;font-weight:700;color:var(--fg-3);
+}
+.cbar{
+  flex:none;z-index:7;background:var(--bg);border-top:var(--border);
+  padding:9px var(--pad) calc(env(safe-area-inset-bottom) + 9px);
+}
+.replying{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:0 2px .5rem;font-size:.74rem;color:var(--fg-3);font-weight:600;
+}
+.replying .x{background:none;border:0;color:var(--fg-3);font-size:1.1rem;padding:0 4px}
+.cfield{display:flex;align-items:flex-end;gap:8px}
+.cfield textarea{
+  flex:1;resize:none;max-height:120px;padding:10px 13px;font:inherit;font-size:.86rem;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);color:var(--fg);
+}
+.cfield .send{
+  flex:none;width:38px;height:38px;border-radius:50%;border:0;
+  background:var(--accent);color:var(--accent-ink);font-size:1rem;font-weight:700;
+}
+
+/* --- notifications --- */
+.nlist{padding:.4rem 0}
+.nrow{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  background:none;border:0;padding:.85rem var(--pad);border-bottom:var(--dash);
+}
+.nb{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+.nt{flex:1;min-width:0;font-size:.84rem;color:var(--fg-2);line-height:1.35}
+.nt b{color:var(--fg);font-weight:700}
+.nd{flex:none;font-size:.72rem;font-weight:600;color:var(--fg-3)}
 
 /* --- one finished workout --- */
 .dsec{
@@ -1206,6 +1265,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         </span>
         <span class="picons">
           <button class="iconbtn" data-push="find" aria-label="Find people"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="m16 16 4.4 4.4"/></svg></button>
+          <button class="iconbtn" id="home-bell" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 5-2 6.4-2 6.4h16S18 14 18 9z"/><path d="M13.7 19.4a2 2 0 0 1-3.4 0"/></svg></button>
         </span>
       </div>
     </div>
@@ -1617,6 +1677,45 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span></span>
     </div>
     <div class="scroll" id="user-body"></div>
+  </section>
+
+  <!-- ===================== NOTIFICATIONS ===================== -->
+  <section class="screen" id="s-notes" data-tab="home" data-title="Notifications">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Notifications</h1>
+      <span></span>
+    </div>
+    <div class="scroll">
+      <div class="nlist" id="notes-list" hidden></div>
+      <div class="empty" id="notes-empty">
+        <span class="mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 5-2 6.4-2 6.4h16S18 14 18 9z"/><path d="M13.7 19.4a2 2 0 0 1-3.4 0"/></svg>
+        </span>
+        <p class="big">No recent notifications</p>
+        <p class="small">We'll notify you when you have new activity.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COMMENTS ===================== -->
+  <section class="screen" id="s-comments" data-tab="home" data-title="Comments">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Comments</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="cmt-list"></div>
+    <div class="cbar">
+      <div class="replying" id="cmt-replying" hidden>
+        <span id="cmt-replyto"></span>
+        <button class="x" id="cmt-replyx" aria-label="Cancel reply">&times;</button>
+      </div>
+      <div class="cfield">
+        <textarea id="cmt-input" rows="1" placeholder="Add a comment&hellip;" autocomplete="off"></textarea>
+        <button class="send" id="cmt-send" aria-label="Post comment">&uarr;</button>
+      </div>
+    </div>
   </section>
 
   <section class="screen" id="s-stats" data-tab="profile" data-title="Statistics">
@@ -2135,7 +2234,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3056';
+  var APP_VERSION = '2.3057';
 
   /* =========================================================
      STORE
@@ -2319,7 +2418,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     username: '', timer: null, at: 0, dirty: false, more: false,
     following: {}, followers: {},        // user_id -> 1
     people: {},                          // user_id -> profile row
-    feed: []                             // friends' workouts, newest first
+    feed: [],                            // friends' workouts, newest first
+    likes: {}, cmts: {},                 // "user|workout" -> [{by, at}] / [comment]
+    replies: []                          // answers to my comments, for the bell
   };
   var FEED_PAGE = 60, FR_PAGE = 30;
 
@@ -2487,6 +2588,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       social.feed = more ? social.feed.concat(rows) : rows;
       social.more = rows.length === FEED_PAGE;
       drawHome();
+      return loadReacts();
     });
   }
 
@@ -4925,13 +5027,388 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             '<em>' + n + ' set' + (n === 1 ? '' : 's') + '</em></li>';
         }).join('') + '</ul>' +
         (rest > 0 ? '<div class="wmore">See ' + rest + ' more exercise' + (rest === 1 ? '' : 's') + '</div>' : '') +
-        '<div class="wacts">' +
-          '<button type="button" data-act="like" aria-label="Like"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg></button>' +
-          '<button type="button" data-act="comment" aria-label="Comment"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6c0 4.2-3.8 7.6-8.5 7.6a9.6 9.6 0 0 1-2.6-.35L4 21l1.4-3.7A7.3 7.3 0 0 1 3.5 11.6C3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.6z"/></svg></button>' +
-        '</div>' +
+        actsBox(w, true) +
         '</article>';
     }
   }
+
+  /* =========================================================
+     Likes, comments and the bell. A post is addressed by its
+     owner and the workout's own id, joined into one key.
+     ========================================================= */
+  function postKey(uid2, id) { return uid2 + '|' + id; }
+  function keyUser(k) { return k.slice(0, k.indexOf('|')); }
+  function keyPost(k) { return k.slice(k.indexOf('|') + 1); }
+  function wKey(w) { return postKey(w.by || (me ? me.id : ''), w.id); }
+
+  function whoObj(uid2) {
+    return (me && uid2 === me.id) ? store.profile : (social.people[uid2] || {});
+  }
+  function whoName(uid2) {
+    if (me && uid2 === me.id) return 'you';
+    var p = social.people[uid2];
+    return (p && (p.username || p.name)) || 'someone';
+  }
+
+  // 5w, 3d, 2h — the feed's own short hand for how long ago
+  function shortAgo(iso) {
+    var s2 = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (s2 < 60) return 'now';
+    if (s2 < 3600) return Math.floor(s2 / 60) + 'm';
+    if (s2 < 86400) return Math.floor(s2 / 3600) + 'h';
+    if (s2 < 604800) return Math.floor(s2 / 86400) + 'd';
+    if (s2 < 2592000) return Math.floor(s2 / 604800) + 'w';
+    return Math.floor(s2 / 2592000) + 'mo';
+  }
+
+  // Whoever is named by a like or a comment has to have a username to show.
+  function ensureNames(ids) {
+    var need = {}, list;
+    ids.forEach(function (id) {
+      if (id && (!me || id !== me.id) && !social.people[id]) need[id] = 1;
+    });
+    list = Object.keys(need);
+    if (!sb || !list.length) return Promise.resolve();
+    return sb.from('profiles').select('user_id,username,name,pic').in('user_id', list)
+      .then(function (r) {
+        (r.data || []).forEach(function (pr) { social.people[pr.user_id] = pr; });
+      });
+  }
+
+  // My own posts are fetched whole — there are not many and the bell reads
+  // them. Friends' are narrowed to what the feed is actually showing.
+  function loadReacts() {
+    if (!sb || !me || !social.username) return Promise.resolve();
+    var fids = friendIds(), pids = {};
+    social.feed.forEach(function (w) { pids[w.id] = 1; });
+    var ids = Object.keys(pids), friendy = fids.length && ids.length;
+    var LK = 'post_user,post_id,liker,created_at';
+    var CM = 'id,post_user,post_id,author,parent,body,created_at';
+    return Promise.all([
+      sb.from('likes').select(LK).eq('post_user', me.id),
+      sb.from('comments').select(CM).eq('post_user', me.id).order('created_at'),
+      friendy ? sb.from('likes').select(LK).in('post_user', fids).in('post_id', ids)
+        : Promise.resolve({ data: [] }),
+      friendy ? sb.from('comments').select(CM).in('post_user', fids).in('post_id', ids)
+        .order('created_at') : Promise.resolve({ data: [] }),
+      sb.from('comments').select(CM).eq('parent_author', me.id)
+        .order('created_at', { ascending: false }).limit(40)
+    ]).then(function (res) {
+      if (res.some(function (r) { return r && r.error; })) return;
+      var L = {}, C = {}, names = [];
+      (res[0].data || []).concat(res[2].data || []).forEach(function (r) {
+        var k = postKey(r.post_user, r.post_id);
+        (L[k] || (L[k] = [])).push({ by: r.liker, at: r.created_at });
+        names.push(r.liker);
+      });
+      (res[1].data || []).concat(res[3].data || []).forEach(function (r) {
+        var k = postKey(r.post_user, r.post_id);
+        (C[k] || (C[k] = [])).push(cmtRow(r));
+        names.push(r.author);
+      });
+      social.likes = L; social.cmts = C;
+      social.replies = (res[4].data || []).map(cmtRow).filter(function (c) { return c.by !== me.id; });
+      social.replies.forEach(function (c) { names.push(c.by); });
+      return ensureNames(names).then(function () {
+        drawBell();
+        if (current() === 's-home') drawHome();
+        if (current() === 's-comments') drawComments();
+      });
+    });
+  }
+
+  function cmtRow(r) {
+    return { id: r.id, by: r.author, parent: r.parent, body: r.body, at: r.created_at,
+             pu: r.post_user, pi: r.post_id };
+  }
+
+  var THUMB = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg>';
+  var THUMB_ON = '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg>';
+  var BUBBLE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6c0 4.2-3.8 7.6-8.5 7.6a9.6 9.6 0 0 1-2.6-.35L4 21l1.4-3.7A7.3 7.3 0 0 1 3.5 11.6C3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.6z"/></svg>';
+
+  // A private workout was never published, so there is nothing to react to.
+  function reactable(w) { return !!social.username && !w.private; }
+
+  function actsBox(w, full) {
+    if (!reactable(w)) return '';
+    var k = wKey(w);
+    return '<div class="wfoot" data-acts="' + esc(k) + '"' + (full ? ' data-full="1"' : '') + '>' +
+      actsInner(k, full) + '</div>';
+  }
+
+  function actsInner(k, full) {
+    var L = social.likes[k] || [], C = social.cmts[k] || [];
+    var mine = L.some(function (x) { return me && x.by === me.id; });
+    var top = C.filter(function (c) { return !c.parent; })[0] || C[0];
+    var first = mine ? me.id : (L[0] && L[0].by);
+    var html = '<div class="wacts">' +
+      '<button type="button" class="lk' + (mine ? ' on' : '') + '" data-act="like" data-k="' +
+        esc(k) + '" aria-label="Like">' + (mine ? THUMB_ON : THUMB) +
+        (L.length ? '<span>' + L.length + '</span>' : '') + '</button>' +
+      '<button type="button" data-act="cmt" data-k="' + esc(k) + '" aria-label="Comments">' +
+        BUBBLE + (C.length ? '<span>' + C.length + '</span>' : '') + '</button>' +
+      '</div>';
+    if (!full) return html;                      // the open workout keeps to counts
+    if (L.length) {
+      html += '<div class="likeline">' + avatarTag(20, '', whoObj(first)) +
+        '<span>Liked by ' + esc(whoName(first)) +
+        (L.length > 1 ? ' and ' + (L.length - 1) + ' other' + (L.length > 2 ? 's' : '') : '') +
+        '</span></div>';
+    }
+    if (top) {
+      html += '<div class="cline">' + avatarTag(20, '', whoObj(top.by)) +
+        '<span class="cb"><span class="ch">' + esc(whoName(top.by)) +
+        ' <i>' + shortAgo(top.at) + '</i></span>' +
+        '<span class="ct">' + esc(top.body) + '</span></span></div>';
+      if (C.length > 1) {
+        html += '<button class="cmore" data-act="cmt" data-k="' + esc(k) + '">See ' +
+          (C.length - 1) + ' more comment' + (C.length > 2 ? 's' : '') + '</button>';
+      }
+    }
+    return html;
+  }
+
+  // One key can be on screen twice — the card and the open workout.
+  function paintActs(k) {
+    document.querySelectorAll('[data-acts="' + k + '"]').forEach(function (box) {
+      box.innerHTML = actsInner(k, box.dataset.full === '1');
+    });
+  }
+
+  function toggleLike(k) {
+    if (!sb || !me || !social.username) return;
+    var L = social.likes[k] || (social.likes[k] = []);
+    var i = -1, pu = keyUser(k), pi = keyPost(k);
+    L.forEach(function (x, j) { if (x.by === me.id) i = j; });
+    var job;
+    if (i >= 0) {
+      L.splice(i, 1);
+      job = sb.from('likes').delete().match({ post_user: pu, post_id: pi, liker: me.id });
+    } else {
+      L.push({ by: me.id, at: new Date().toISOString() });
+      job = sb.from('likes').insert({ post_user: pu, post_id: pi, liker: me.id });
+    }
+    paintActs(k);
+    job.then(function (r) {
+      if (r && r.error) { toast('Could not save that'); loadReacts(); }
+    });
+  }
+
+  /* --- the comments screen --- */
+  var cmtKey = '', cmtW = null, cmtReply = null;
+
+  function openComments(k) {
+    cmtKey = k; cmtReply = null;
+    cmtW = postByKey(k);
+    $('cmt-input').value = '';
+    push('comments');
+    drawComments();
+    if (cmtW) return;
+    fetchPost(keyUser(k), keyPost(k)).then(function (w) {
+      cmtW = w;
+      if (current() === 's-comments') drawComments();
+    });
+  }
+
+  function postByKey(k) {
+    var pu = keyUser(k), pi = keyPost(k), i;
+    if (me && pu === me.id) {
+      for (i = 0; i < store.workouts.length; i++) if (store.workouts[i].id === pi) return store.workouts[i];
+      return null;
+    }
+    for (i = 0; i < social.feed.length; i++) {
+      if (social.feed[i].id === pi && social.feed[i].by === pu) return social.feed[i];
+    }
+    if (userView) {
+      for (i = 0; i < userView.posts.length; i++) if (userView.posts[i].id === pi) return userView.posts[i];
+    }
+    return null;
+  }
+
+  // a workout reached from the bell may not be in any list yet
+  function fetchPost(uid2, id) {
+    if (!sb) return Promise.resolve(null);
+    return sb.from('posts').select('user_id,id,date,data').eq('user_id', uid2).eq('id', id)
+      .maybeSingle().then(function (r) {
+        if (!r.data) return null;
+        var w = r.data.data || {};
+        w.id = r.data.id; w.by = r.data.user_id; w.date = r.data.date;
+        return w;
+      });
+  }
+
+  function drawComments() {
+    var C = (social.cmts[cmtKey] || []).slice();
+    var L = social.likes[cmtKey] || [];
+    var w = cmtW;
+    var head = w
+      ? '<div class="chead">' + '<div class="whead">' +
+          '<button class="whogo" data-openu="' + esc(w.by || '') + '">' +
+          avatarTag(38, '', whoObj(keyUser(cmtKey))) +
+          '<span class="who"><span class="nm">' + esc(whoName(keyUser(cmtKey))) + '</span>' +
+          '<span class="dt">' + fullDate(w.date) + '</span></span></button></div>' +
+          '<h2 class="ctitle">' + esc(w.name) + '</h2>' +
+          (w.note ? '<p class="cnote">' + esc(w.note) + '</p>' : '') +
+          '<div class="ccount"><span>' + L.length + ' like' + (L.length === 1 ? '' : 's') +
+          '</span><span>' + C.length + ' comment' + (C.length === 1 ? '' : 's') + '</span></div>' +
+        '</div>'
+      : '<div class="chead"><p class="cnote">This session is no longer available.</p></div>';
+
+    // one level deep: an answer to an answer still hangs under the top comment
+    var tops = C.filter(function (c) { return !c.parent; });
+    var kids = {};
+    C.forEach(function (c) { if (c.parent) (kids[c.parent] || (kids[c.parent] = [])).push(c); });
+    var byId2 = {};
+    C.forEach(function (c) { byId2[c.id] = c; });
+    C.forEach(function (c) {
+      if (!c.parent || byId2[c.parent]) return;
+      tops.push(c);                                 // its parent is gone, stand it up
+    });
+
+    function row(c, rep2) {
+      return '<div class="crow' + (rep2 ? ' rep' : '') + '">' +
+        avatarTag(32, '', whoObj(c.by)) +
+        '<div class="cb"><span class="ch">' + esc(whoName(c.by)) +
+        ' <i>' + shortAgo(c.at) + '</i></span>' +
+        '<span class="ct">' + esc(c.body) + '</span>' +
+        '<span class="cacts"><button data-reply="' + esc(c.parent || c.id) + '" data-to="' +
+        esc(c.by) + '">Reply</button>' +
+        (me && (c.by === me.id || keyUser(cmtKey) === me.id)
+          ? '<button data-cdel="' + esc(c.id) + '">Delete</button>' : '') +
+        '</span></div></div>';
+    }
+
+    var list = tops.map(function (c) {
+      return row(c, false) + (kids[c.id] || []).map(function (r2) { return row(r2, true); }).join('');
+    }).join('');
+
+    $('cmt-list').innerHTML = head +
+      (C.length ? list : '<p class="cnone">No comments yet.</p>');
+    drawReplyBar();
+  }
+
+  function drawReplyBar() {
+    var on = !!cmtReply;
+    $('cmt-replying').hidden = !on;
+    if (on) $('cmt-replyto').textContent = 'Replying to ' + whoName(cmtReply.to);
+  }
+
+  function sendComment() {
+    var el = $('cmt-input'), body = el.value.trim();
+    if (!body || !sb || !me || !cmtKey) return;
+    var row = {
+      post_user: keyUser(cmtKey), post_id: keyPost(cmtKey), author: me.id,
+      parent: cmtReply ? cmtReply.id : null,
+      parent_author: cmtReply ? cmtReply.to : (keyUser(cmtKey) === me.id ? null : keyUser(cmtKey)),
+      body: body
+    };
+    el.value = ''; grow(el); cmtReply = null;
+    sb.from('comments').insert(row).select().single().then(function (r) {
+      if (r.error || !r.data) { toast('Could not post that'); el.value = body; return; }
+      (social.cmts[cmtKey] || (social.cmts[cmtKey] = [])).push(cmtRow(r.data));
+      drawComments();
+      paintActs(cmtKey);
+    });
+  }
+
+  function deleteComment(id) {
+    if (!sb) return;
+    var C = social.cmts[cmtKey] || [];
+    social.cmts[cmtKey] = C.filter(function (c) { return c.id !== id && c.parent !== id; });
+    drawComments(); paintActs(cmtKey);
+    sb.from('comments').delete().eq('id', id).then(function (r) {
+      if (r && r.error) { toast('Could not delete that'); loadReacts(); }
+    });
+  }
+
+  $('cmt-send').addEventListener('click', sendComment);
+  $('cmt-input').addEventListener('input', function () { grow(this); });
+  $('cmt-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); }
+  });
+  $('cmt-replyx').addEventListener('click', function () { cmtReply = null; drawReplyBar(); });
+  $('cmt-list').addEventListener('click', function (e) {
+    var r = e.target.closest('[data-reply]');
+    if (r) {
+      cmtReply = { id: r.dataset.reply, to: r.dataset.to };
+      drawReplyBar(); $('cmt-input').focus();
+      return;
+    }
+    var d = e.target.closest('[data-cdel]');
+    if (d) { deleteComment(d.dataset.cdel); return; }
+    var u = e.target.closest('[data-openu]');
+    if (u && u.dataset.openu) openUser(u.dataset.openu);
+  });
+
+  /* --- the bell --- */
+  function noteList() {
+    if (!me) return [];
+    var out = [];
+    Object.keys(social.likes).forEach(function (k) {
+      if (keyUser(k) !== me.id) return;
+      social.likes[k].forEach(function (x) {
+        if (x.by !== me.id) out.push({ type: 'like', by: x.by, at: x.at, k: k });
+      });
+    });
+    Object.keys(social.cmts).forEach(function (k) {
+      if (keyUser(k) !== me.id) return;
+      social.cmts[k].forEach(function (c) {
+        if (c.by !== me.id) out.push({ type: 'cmt', by: c.by, at: c.at, k: k });
+      });
+    });
+    social.replies.forEach(function (c) {
+      out.push({ type: 'rep', by: c.by, at: c.at, k: postKey(c.pu, c.pi) });
+    });
+    out.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    return out.slice(0, 40);
+  }
+
+  var NOTE_TEXT = {
+    like: ' liked your workout', cmt: ' commented on your workout',
+    rep: ' replied to your comment'
+  };
+
+  function drawBell() {
+    var last = load('notes-seen') || '';
+    var fresh = noteList().some(function (n) { return n.at > last; });
+    $('home-bell').classList.toggle('hasnew', fresh);
+  }
+
+  function drawNotes() {
+    var list = noteList();
+    $('notes-empty').hidden = list.length > 0;
+    $('notes-list').hidden = !list.length;
+    $('notes-list').innerHTML = list.map(function (n) {
+      return '<button class="nrow" data-note="' + esc(n.k) + '">' +
+        avatarTag(38, '', whoObj(n.by)) +
+        '<span class="nb"><span class="nt"><b>' + esc(whoName(n.by)) + '</b>' +
+        NOTE_TEXT[n.type] + '</span>' +
+        '<span class="nd">' + shortAgo(n.at) + '</span></span></button>';
+    }).join('');
+  }
+
+  $('home-bell').addEventListener('click', function () {
+    push('notes');
+    drawNotes();
+    save('notes-seen', new Date().toISOString());
+    drawBell();
+  });
+
+  $('notes-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-note]');
+    if (!b) return;
+    var k = b.dataset.note, pu = keyUser(k), pi = keyPost(k);
+    if (me && pu === me.id) { openWorkout(pi); return; }
+    openWorkout(pi, pu);
+  });
+
+  // every like and comment button in the app, wherever it was drawn
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]');
+    if (!b) return;
+    if (b.dataset.act === 'like') toggleLike(b.dataset.k);
+    else openComments(b.dataset.k);
+  });
 
   /* --- profile --- */
   var pMetric = 'reps', pPeriod = '3m', pFilter = '';
@@ -5983,6 +6460,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     } else {
       for (i = 0; i < store.workouts.length; i++) if (store.workouts[i].id === id) w = store.workouts[i];
     }
+    if (!w && uid2) {
+      return fetchPost(uid2, id).then(function (got) {
+        if (!got) { toast('That session is gone'); return; }
+        social.feed.push(got);
+        openWorkout(id, uid2);
+      });
+    }
     if (!w) return;
     detailRO = !!uid2;
     detailWho = uid2 ? (social.people[uid2] || { username: 'friend' }) : null;
@@ -6173,7 +6657,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           (w.private ? '<span class="prbadge">Private</span>' : '') +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
-      statsRow(w, t) + '</div>' +
+      statsRow(w, t) + (detailEdit ? '' : actsBox(w, false)) + '</div>' +
       (detailEdit
         ? '<div style="padding:.9rem var(--pad) 0"><div class="notebox' + (w.note ? ' has' : '') + '">' +
             NOTE_SVG + '<textarea rows="1" id="d-wnote" placeholder="Session note">' +

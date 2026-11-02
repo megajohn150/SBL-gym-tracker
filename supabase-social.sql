@@ -107,3 +107,58 @@ do $$ begin
   alter table public.profiles add constraint username_shape
     check (username ~ '^[a-z0-9][a-z0-9_.]{1,18}[a-z0-9]$');
 exception when duplicate_object then null; end $$;
+
+-- ------------------------------------------------------------------
+-- 5. Lajki. Jeden wiersz = jedna osoba pod jednym treningiem.
+--    Widzi je ten, kto widzi sam trening; stawia tylko znajomy.
+-- ------------------------------------------------------------------
+create table if not exists public.likes (
+  post_user  uuid not null,
+  post_id    text not null,
+  liker      uuid not null references auth.users on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_user, post_id, liker),
+  foreign key (post_user, post_id) references public.posts (user_id, id) on delete cascade
+);
+create index if not exists likes_post_idx on public.likes (post_user, post_id);
+alter table public.likes enable row level security;
+
+drop policy if exists "likes read"  on public.likes;
+drop policy if exists "likes write" on public.likes;
+drop policy if exists "likes drop"  on public.likes;
+create policy "likes read"  on public.likes for select to authenticated
+  using (auth.uid() = post_user or public.friends_with(post_user));
+create policy "likes write" on public.likes for insert to authenticated
+  with check (auth.uid() = liker and (auth.uid() = post_user or public.friends_with(post_user)));
+create policy "likes drop"  on public.likes for delete to authenticated using (auth.uid() = liker);
+
+-- ------------------------------------------------------------------
+-- 6. Komentarze. parent to komentarz, pod który poszła odpowiedź;
+--    parent_author trzymamy osobno, żeby powiadomienie o odpowiedzi
+--    dało się wyciągnąć jednym zapytaniem, bez złączeń.
+-- ------------------------------------------------------------------
+create table if not exists public.comments (
+  id            uuid primary key default gen_random_uuid(),
+  post_user     uuid not null,
+  post_id       text not null,
+  author        uuid not null references auth.users on delete cascade,
+  parent        uuid references public.comments (id) on delete cascade,
+  parent_author uuid,
+  body          text not null check (char_length(body) between 1 and 500),
+  created_at    timestamptz not null default now(),
+  foreign key (post_user, post_id) references public.posts (user_id, id) on delete cascade
+);
+create index if not exists comments_post_idx on public.comments (post_user, post_id, created_at);
+create index if not exists comments_parent_author_idx on public.comments (parent_author, created_at desc);
+alter table public.comments enable row level security;
+
+drop policy if exists "comments read"  on public.comments;
+drop policy if exists "comments write" on public.comments;
+drop policy if exists "comments drop"  on public.comments;
+create policy "comments read"  on public.comments for select to authenticated
+  using (auth.uid() = post_user or public.friends_with(post_user) or auth.uid() = parent_author);
+create policy "comments write" on public.comments for insert to authenticated
+  with check (auth.uid() = author and (auth.uid() = post_user or public.friends_with(post_user)));
+-- swój komentarz kasuje autor, cudzy pod swoim treningiem — gospodarz
+create policy "comments drop"  on public.comments for delete to authenticated
+  using (auth.uid() = author or auth.uid() = post_user);
