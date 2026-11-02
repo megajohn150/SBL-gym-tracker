@@ -162,3 +162,8 @@ create policy "comments write" on public.comments for insert to authenticated
 -- komentarz kasuje wyłącznie jego autor
 create policy "comments drop"  on public.comments for delete to authenticated
   using (auth.uid() = author);
+
+-- nikt nie obserwuje samego siebie
+do $$ begin
+  alter table public.follows add constraint follows_not_self check (follower <> followee);
+exception when duplicate_object then null; end $$;

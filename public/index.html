@@ -2253,7 +2253,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3064';
+  var APP_VERSION = '2.3065';
 
   /* =========================================================
      STORE
@@ -2750,6 +2750,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   /* --- searching for people --- */
   function relLabel(id) {
+    if (me && id === me.id) return 'You';
     if (social.following[id] && social.followers[id]) return 'Friends';
     if (social.following[id]) return 'Following';
     if (social.followers[id]) return 'Follows you';
@@ -2844,6 +2845,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   function followSet(id, on) {
+    if (!me || id === me.id) return Promise.resolve();   // nobody follows themselves
     var q = on
       ? sb.from('follows').insert({ follower: me.id, followee: id })
       : sb.from('follows').delete().eq('follower', me.id).eq('followee', id);
@@ -2885,10 +2887,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '<button data-ufollow="following"><b>' + userView.fing + '</b><i>Following</i></button>' +
       '</span></span></div>' +
       (p.bio ? '<p class="pbio">' + esc(p.bio) + '</p>' : '') +
-      '<div style="padding:.6rem var(--pad) 0">' +
-        '<button class="followbtn' + (follows ? ' off' : '') + '" data-follow="' + id + '">' +
-        (follows ? (social.followers[id] ? 'Friends \u00b7 Unfollow' : 'Following \u00b7 Unfollow')
-          : (social.followers[id] ? 'Follow back' : 'Follow')) + '</button></div>';
+      (me && id === me.id ? ''
+        : '<div style="padding:.6rem var(--pad) 0">' +
+          '<button class="followbtn' + (follows ? ' off' : '') + '" data-follow="' + id + '">' +
+          (follows ? (social.followers[id] ? 'Friends \u00b7 Unfollow' : 'Following \u00b7 Unfollow')
+            : (social.followers[id] ? 'Follow back' : 'Follow')) + '</button></div>');
 
     if (!friend) {
       $('user-body').innerHTML = head +
