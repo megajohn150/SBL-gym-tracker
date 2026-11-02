@@ -2124,7 +2124,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3051';
+  var APP_VERSION = '2.3052';
 
   /* =========================================================
      STORE
@@ -2183,7 +2183,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // if the library cannot be reached the app still opens, local only
   var sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
   var me = null;
-  var cloud = { rev: 0, timer: null, dirty: false, pulled: false };
+  var cloud = { rev: 0, timer: null, dirty: false, pulled: false, dataSig: '', sessSig: '' };
 
   function syncState(s) {
     var el = document.getElementById('set-sync');
@@ -2239,6 +2239,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         cloud.pulled = true;
         store = mergeStores(store, r.data.data || {});
         save('data', JSON.stringify(store));
+        cloud.dataSig = sigOf(r.data.data || {});
+        cloud.sessSig = sigOf(r.data.session || null);
 
         // never drop a workout that is running here; adopt one from elsewhere
         if (r.data.session && r.data.session.exercises && !session) {
@@ -2250,15 +2252,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       });
   }
 
+  // The log and the running session move at different speeds: logging a set
+  // rewrites the session a dozen times while the history sits still. Sending
+  // only the half that changed keeps a workout from re-uploading every
+  // workout you have ever done.
   function cloudPush(force) {
     if (!me) return Promise.resolve();
     clearTimeout(cloud.timer);
+
+    var dataSig = sigOf(store), sessSig = sigOf(session);
+    var sendData = force || dataSig !== cloud.dataSig;
+    var sendSess = force || sessSig !== cloud.sessSig;
+    if (!sendData && !sendSess) { cloud.dirty = false; syncState('ok'); return Promise.resolve(); }
+
     syncState('busy');
     var next = cloud.rev + 1;
-    var row = {
-      user_id: me.id, data: store, session: session,
-      rev: next, updated_at: new Date().toISOString()
-    };
+    var row = { user_id: me.id, rev: next, updated_at: new Date().toISOString() };
+    if (sendData) row.data = store;
+    if (sendSess) row.session = session;
+
     // upsert also covers the very first write, when no row exists yet
     var q = force
       ? sb.from('tracker').upsert(row, { onConflict: 'user_id' })
@@ -2269,6 +2281,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (!r.data) return cloudPull().then(function () { return cloudPush(true); });  // someone wrote first
       cloud.rev = next;
       cloud.dirty = false;
+      cloud.dataSig = dataSig;
+      cloud.sessSig = sessSig;
       syncState('ok');
     });
   }
@@ -6032,6 +6046,53 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // it hangs off a row, so it has no business staying put once that row moves
   document.addEventListener('scroll', function () { $('pr-pop').hidden = true; }, true);
 
+  /* --- a finished session, written back as a routine --- */
+  function routineName(base) {
+    var name = base || 'Routine', n = 2;
+    var taken = function (v) {
+      return store.routines.some(function (r) {
+        return String(r.name).toLowerCase() === v.toLowerCase();
+      });
+    };
+    while (taken(name)) { name = (base || 'Routine') + ' ' + n; n++; }
+    return name;
+  }
+
+  function routineFromWorkout(w) {
+    if (!w) return;
+    var items = [];
+    w.exercises.forEach(function (e) {
+      var x = (e.exId && byId(e.exId)) || store.exercises.filter(function (o) {
+        return o.name.toLowerCase() === String(e.name).toLowerCase();
+      })[0];
+      if (!x) {                                   // the movement is gone from the library
+        x = {
+          id: uid(), name: e.name, code: deriveCode(e.name),
+          muscle: e.muscle, unilateral: !!e.unilateral
+        };
+        store.exercises.push(x);
+      }
+      var sets = countSets(e);
+      if (!sets) return;
+      var first = e.sets[0] || {};
+      items.push({
+        exId: x.id,
+        sets: sets,
+        reps: '',
+        note: (e.note || '').trim(),
+        side: x.unilateral ? (String(first.label).charAt(0) === 'L' ? 'L' : 'R') : null
+      });
+    });
+    if (!items.length) { toast('Nothing to save'); return; }
+
+    var r = { id: uid(), name: routineName(w.name), items: items };
+    store.routines.push(r);
+    saveStore();
+    drawRoutines();
+    drawExercises();
+    toast('Saved as "' + r.name + '"');
+  }
+
   function drawDetail(w) {
     detailW = w;
     var t = workoutTotals(w), split = muscleSplit(w);
@@ -6138,6 +6199,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('detail-menu-items').innerHTML = detailEdit
       ? '<button data-dact="cancel">Discard changes</button>'
       : '<button data-dact="edit">Edit workout</button>' +
+        '<button data-dact="routine">Save as routine</button>' +
         '<button data-dact="private">' +
           (detailW && detailW.private ? 'Share with friends' : 'Make private') + '</button>' +
         '<button data-dact="delete" class="danger">Delete workout</button>';
@@ -6154,6 +6216,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     if (act === 'edit') { detailEdit = true; detailDirty = false; drawDetail(detailW); return; }
     if (act === 'cancel') { leaveEdit(); return; }
+
+    if (act === 'routine') { routineFromWorkout(detailW); return; }
 
     // a workout can leave the feed, or join it, long after it happened
     if (act === 'private') {
