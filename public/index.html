@@ -2247,7 +2247,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3062';
+  var APP_VERSION = '2.3063';
 
   /* =========================================================
      STORE
@@ -3241,6 +3241,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
+    if (id === 's-notes') drawNotes();
     if (id === 's-calendar') drawCalendar();
     if (id === 's-stat-sets') drawStatSets();
     if (id === 's-stat-chart') drawStatChart();
@@ -5437,7 +5438,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   $('home-bell').addEventListener('click', function () {
     push('notes');
-    drawNotes();
     save('notes-seen', new Date().toISOString());
     drawBell();
   });
@@ -5452,7 +5452,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var b = e.target.closest('[data-note]');
     if (!b) return;
     var n = notesShown[+b.dataset.note];
-    dropNote(n); drawBell();                     // opening one is reading it
+    dropNote(n); drawNotes(); drawBell();        // opening one is reading it
     if (!n.k) { openUser(n.by); return; }        // a follow opens the person
     var pu = keyUser(n.k), pi = keyPost(n.k);
     if (me && pu === me.id) { openWorkout(pi); return; }
