@@ -159,6 +159,6 @@ create policy "comments read"  on public.comments for select to authenticated
   using (auth.uid() = post_user or public.friends_with(post_user) or auth.uid() = parent_author);
 create policy "comments write" on public.comments for insert to authenticated
   with check (auth.uid() = author and (auth.uid() = post_user or public.friends_with(post_user)));
--- swój komentarz kasuje autor, cudzy pod swoim treningiem — gospodarz
+-- komentarz kasuje wyłącznie jego autor
 create policy "comments drop"  on public.comments for delete to authenticated
-  using (auth.uid() = author or auth.uid() = post_user);
+  using (auth.uid() = author);
