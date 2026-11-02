@@ -2254,7 +2254,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4062';
+  var APP_VERSION = '3.4063';
 
   /* =========================================================
      STORE
@@ -5080,7 +5080,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return (me && uid2 === me.id) ? store.profile : (social.people[uid2] || {});
   }
   function whoName(uid2) {
-    if (me && uid2 === me.id) return 'you';
+    if (me && uid2 === me.id) return store.profile.handle || social.username || 'you';
     var p = social.people[uid2];
     return (p && (p.username || p.name)) || 'someone';
   }
@@ -5187,7 +5187,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!full) return html;                      // the open workout keeps to counts
     if (L.length) {
       html += '<div class="likeline">' + avatarTag(20, '', whoObj(first)) +
-        '<span>Liked by ' + esc(whoName(first)) +
+        '<span>Liked by ' + (mine ? 'you' : esc(whoName(first))) +
         (L.length > 1 ? ' and ' + (L.length - 1) + ' other' + (L.length > 2 ? 's' : '') : '') +
         '</span></div>';
     }
