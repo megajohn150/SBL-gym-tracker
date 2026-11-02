@@ -498,6 +498,17 @@ body.in-session .tabs{display:none}
 .noteline{display:flex;align-items:flex-start;gap:8px;padding:.2rem 0 .35rem}
 .wmore{font-size:.76rem;color:var(--fg-3);padding-top:.26rem}
 
+/* Like and comment, hanging under the card on their own rule. */
+.wacts{
+  display:flex;gap:4px;margin:.85rem calc(var(--cardpad) * -1) calc(var(--cardpad) * -1);
+  padding:.1rem calc(var(--cardpad) - 8px);border-top:var(--dash);
+}
+.wacts button{
+  background:none;border:0;padding:9px 8px;color:var(--fg-3);
+  display:flex;align-items:center;gap:6px;font-size:.76rem;
+}
+.wacts button span{color:var(--fg-3)}
+
 /* --- one finished workout --- */
 .dsec{
   font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;
@@ -2124,7 +2135,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3055';
+  var APP_VERSION = '2.3056';
 
   /* =========================================================
      STORE
@@ -2815,7 +2826,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       });
       return;
     }
-    if (e.target.closest('[data-openu]')) return;
+    if (e.target.closest('[data-openu]') || e.target.closest('[data-act]')) return;
     if (e.target.closest('[data-postsmore]')) { loadUserPosts(true); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
@@ -4914,6 +4925,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             '<em>' + n + ' set' + (n === 1 ? '' : 's') + '</em></li>';
         }).join('') + '</ul>' +
         (rest > 0 ? '<div class="wmore">See ' + rest + ' more exercise' + (rest === 1 ? '' : 's') + '</div>' : '') +
+        '<div class="wacts">' +
+          '<button type="button" data-act="like" aria-label="Like"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg></button>' +
+          '<button type="button" data-act="comment" aria-label="Comment"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6c0 4.2-3.8 7.6-8.5 7.6a9.6 9.6 0 0 1-2.6-.35L4 21l1.4-3.7A7.3 7.3 0 0 1 3.5 11.6C3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.6z"/></svg></button>' +
+        '</div>' +
         '</article>';
     }
   }
@@ -5949,7 +5964,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('home-list').addEventListener('click', function (e) {
-    if (e.target.closest('[data-openu]')) return;      // that one opens the profile
+    if (e.target.closest('[data-openu]') || e.target.closest('[data-act]')) return;
     if (e.target.closest('[data-feedmore]')) { loadFeed(true); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
