@@ -501,8 +501,9 @@ body.in-session .tabs{display:none}
 /* Like and comment, hanging under the card on their own rule. */
 .wfoot{
   margin:.85rem calc(var(--cardpad) * -1) calc(var(--cardpad) * -1);
-  padding:.1rem calc(var(--cardpad) - 8px) .55rem;border-top:var(--dash);
+  padding:.1rem calc(var(--cardpad) - 8px);border-top:var(--dash);
 }
+.wfoot:has(.likeline),.wfoot:has(.cline){padding-bottom:.5rem}
 .wacts{display:flex;gap:12px}
 .wacts button{
   background:none;border:0;padding:9px 8px;color:var(--fg-3);
@@ -540,7 +541,7 @@ body.in-session .tabs{display:none}
 }
 .cbar{
   flex:none;z-index:7;background:var(--bg);border-top:var(--border);
-  padding:9px var(--pad) calc(env(safe-area-inset-bottom) + 9px);
+  padding:9px var(--pad);
 }
 .replying{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -553,8 +554,9 @@ body.in-session .tabs{display:none}
   background:var(--surface);border:var(--border);border-radius:var(--radius);color:var(--fg);
 }
 .cfield .send{
-  flex:none;width:38px;height:38px;border-radius:50%;border:0;
-  background:var(--accent);color:var(--accent-ink);font-size:1rem;font-weight:700;
+  flex:none;height:40px;padding:0 15px;border-radius:var(--radius);border:0;
+  background:var(--accent);color:var(--accent-ink);font-size:.78rem;font-weight:700;
+  letter-spacing:var(--labtrack);text-transform:uppercase;
 }
 
 /* --- notifications --- */
@@ -1265,7 +1267,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         </span>
         <span class="picons">
           <button class="iconbtn" data-push="find" aria-label="Find people"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="m16 16 4.4 4.4"/></svg></button>
-          <button class="iconbtn" id="home-bell" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 5-2 6.4-2 6.4h16S18 14 18 9z"/><path d="M13.7 19.4a2 2 0 0 1-3.4 0"/></svg></button>
+          <button class="iconbtn" id="home-bell" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 10.2a5.4 5.4 0 0 0-10.8 0c0 4.4-1.7 5.6-1.7 5.6h14.2s-1.7-1.2-1.7-5.6z"/><path d="M13.6 18.5a1.9 1.9 0 0 1-3.2 0"/></svg></button>
         </span>
       </div>
     </div>
@@ -1713,7 +1715,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       </div>
       <div class="cfield">
         <textarea id="cmt-input" rows="1" placeholder="Add a comment&hellip;" autocomplete="off"></textarea>
-        <button class="send" id="cmt-send" aria-label="Post comment">&uarr;</button>
+        <button class="send" id="cmt-send">Post</button>
       </div>
     </div>
   </section>
@@ -2234,7 +2236,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3058';
+  var APP_VERSION = '2.3059';
 
   /* =========================================================
      STORE
@@ -2420,6 +2422,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     people: {},                          // user_id -> profile row
     feed: [],                            // friends' workouts, newest first
     likes: {}, cmts: {},                 // "user|workout" -> [{by, at}] / [comment]
+    folls: [],                           // who followed me, newest first
     replies: []                          // answers to my comments, for the bell
   };
   var FEED_PAGE = 60, FR_PAGE = 30;
@@ -2559,12 +2562,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!sb || !me) return Promise.resolve();
     return Promise.all([
       sb.from('follows').select('followee').eq('follower', me.id),
-      sb.from('follows').select('follower').eq('followee', me.id)
+      sb.from('follows').select('follower,created_at').eq('followee', me.id)
     ]).then(function (res) {
       social.following = {}; social.followers = {};
       (res[0].data || []).forEach(function (f) { social.following[f.followee] = 1; });
       (res[1].data || []).forEach(function (f) { social.followers[f.follower] = 1; });
-      drawProfile();
+      social.folls = (res[1].data || []).map(function (f) {
+        return { by: f.follower, at: f.created_at };
+      });
+      drawProfile(); drawBell();
       return loadFeed();
     });
   }
@@ -5335,7 +5341,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return;
     }
     var d = e.target.closest('[data-cdel]');
-    if (d) { deleteComment(d.dataset.cdel); return; }
+    if (d) {
+      var cid = d.dataset.cdel;
+      askConfirm('Delete comment?', 'It will be gone for everyone.', 'Delete', function () {
+        deleteComment(cid);
+      });
+      return;
+    }
     var u = e.target.closest('[data-openu]');
     if (u && u.dataset.openu) openUser(u.dataset.openu);
   });
@@ -5359,13 +5371,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     social.replies.forEach(function (c) {
       out.push({ type: 'rep', by: c.by, at: c.at, k: postKey(c.pu, c.pi) });
     });
+    social.folls.forEach(function (f) {
+      out.push({ type: 'fol', by: f.by, at: f.at, k: '' });
+    });
     out.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
     return out.slice(0, 40);
   }
 
   var NOTE_TEXT = {
     like: ' liked your workout', cmt: ' commented on your workout',
-    rep: ' replied to your comment'
+    rep: ' replied to your comment', fol: ' started following you'
   };
 
   function drawBell() {
@@ -5379,7 +5394,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('notes-empty').hidden = list.length > 0;
     $('notes-list').hidden = !list.length;
     $('notes-list').innerHTML = list.map(function (n) {
-      return '<button class="nrow" data-note="' + esc(n.k) + '">' +
+      return '<button class="nrow" data-note="' + esc(n.k) + '" data-by="' + esc(n.by) + '">' +
         avatarTag(38, '', whoObj(n.by)) +
         '<span class="nb"><span class="nt"><b>' + esc(whoName(n.by)) + '</b>' +
         NOTE_TEXT[n.type] + '</span>' +
@@ -5397,7 +5412,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('notes-list').addEventListener('click', function (e) {
     var b = e.target.closest('[data-note]');
     if (!b) return;
-    var k = b.dataset.note, pu = keyUser(k), pi = keyPost(k);
+    var k = b.dataset.note;
+    if (!k) { openUser(b.dataset.by); return; }   // a follow opens the person
+    var pu = keyUser(k), pi = keyPost(k);
     if (me && pu === me.id) { openWorkout(pi); return; }
     openWorkout(pi, pu);
   });
