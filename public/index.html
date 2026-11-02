@@ -2124,7 +2124,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3054';
+  var APP_VERSION = '2.3055';
 
   /* =========================================================
      STORE
@@ -4569,6 +4569,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // Hevy awards a PR per exercise in three weight-based categories:
   // heaviest weight, best estimated 1RM (Epley) and best single-set volume.
   function epley(w, r) { return r > 0 ? w * (1 + r / 30) : 0; }
+  // RIR is how many reps were left in the tank, so 8 with 1 in reserve is the
+  // same strength as 9 to failure: the estimate counts the reps you held back.
+  // A blank RIR (and F) counts as nothing left, which is how it always read.
+  function effReps(st) { return num(st.reps) + num(st.rir); }
 
   // Exercises are matched by id; name is only the fallback for old entries.
   function exKey(e) { return e.exId || ('name:' + e.name); }
@@ -4609,7 +4613,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         e.sets.forEach(function (st) {
           var prs = [];
           if (live && logged(st)) {
-            var kg = num(st.weight), reps = num(st.reps), orm = epley(kg, reps), vol = kg * reps;
+            var kg = num(st.weight), reps = num(st.reps), orm = epley(kg, effReps(st)), vol = kg * reps;
             if (kg > 0) {
               if (kg > b.weight) { if (!first) prs.push('Weight'); b.weight = kg; }
               if (orm > b.orm) { if (!first) prs.push('1RM'); b.orm = orm; }
@@ -4634,7 +4638,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
           best.weight = Math.max(best.weight, kg);
-          best.orm = Math.max(best.orm, epley(kg, reps));
+          best.orm = Math.max(best.orm, epley(kg, effReps(st)));
           best.vol = Math.max(best.vol, kg * reps);
         });
       });
@@ -5007,7 +5011,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
-          var v = xMetric === 'orm' ? epley(kg, reps) : xMetric === 'vol' ? kg * reps : kg;
+          var v = xMetric === 'orm' ? epley(kg, effReps(st)) : xMetric === 'vol' ? kg * reps : kg;
           if (v > b.v) b.v = v;
         });
       });
@@ -5641,7 +5645,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         var o = out[e.name] || (out[e.name] = {});
         var kg = num(st.weight), reps = num(st.reps);
         st.prs.forEach(function (c) {
-          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(epley(kg, reps) * 100) / 100 : kg * reps;
+          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(epley(kg, effReps(st)) * 100) / 100 : kg * reps;
           if (!(c in o) || v > o[c]) o[c] = v;
         });
       });
