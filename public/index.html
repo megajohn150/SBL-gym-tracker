@@ -504,6 +504,12 @@ body.in-session .tabs{display:none}
   padding:.1rem calc(var(--cardpad) - 8px);border-top:var(--dash);
 }
 .wfoot:has(.likeline),.wfoot:has(.cline){padding-bottom:.5rem}
+/* the same row inside an open workout, where the page sets the margins */
+.dfoot{
+  margin:.9rem calc(var(--pad) * -1) 0;
+  padding:.1rem calc(var(--pad) - 8px);border-top:var(--dash);
+}
+div:has(> .dfoot) + .dsec{margin-top:0}
 .wacts{display:flex;gap:12px}
 .wacts button{
   background:none;border:0;padding:9px 8px;color:var(--fg-3);
@@ -2241,7 +2247,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '2.3061';
+  var APP_VERSION = '2.3062';
 
   /* =========================================================
      STORE
@@ -5143,7 +5149,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function actsBox(w, full) {
     if (!reactable(w)) return '';
     var k = wKey(w);
-    return '<div class="wfoot" data-acts="' + esc(k) + '"' + (full ? ' data-full="1"' : '') + '>' +
+    return '<div class="' + (full ? 'wfoot' : 'dfoot') + '" data-acts="' + esc(k) + '"' +
+      (full ? ' data-full="1"' : '') + '>' +
       actsInner(k, full) + '</div>';
   }
 
