@@ -2323,7 +2323,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4072';
+  var APP_VERSION = '3.4073';
 
   /* =========================================================
      STORE
@@ -2383,6 +2383,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var SB_URL = 'https://nzagghskfwdosmopiuuk.supabase.co';
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56YWdnaHNrZndkb3Ntb3BpdXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMTI3MTUsImV4cCI6MjEwODY4ODcxNX0.9RPmPbHmuZd7aAMM22Qn48kt2KOyoQ6JdpCHOEGnO9Y';
   // if the library cannot be reached the app still opens, local only
+  // The app may have been opened by a tap on a notification. Read that off the
+  // address first — the Supabase client wipes the hash while it looks for a
+  // sign-in token of its own.
+  var pendingGo = (function () {
+    var m = /^#go=(u|w|c):(.+)$/.exec(location.hash || '');
+    if (!m) return null;
+    history.replaceState(null, '', location.pathname + location.search);
+    var parts = m[2].split(':');
+    return m[1] === 'u'
+      ? { go: 'u', id: parts[0] }
+      : { go: m[1], pu: parts[0], pi: parts.slice(1).join(':') };
+  })();
+
   var sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
   var me = null;
   var cloud = { rev: 0, timer: null, dirty: false, pulled: false, dataSig: '', sessSig: '' };
@@ -2723,6 +2736,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         store.profile.handle = social.username;
         sigsLoad(); rqLoad();
         drawProfile(); drawHome();
+        if (pendingGo) setTimeout(function () { openPush(pendingGo); }, 0);
         return pushProfile().then(pushLibrary).then(syncPosts).then(loadFollows);
       });
   }
@@ -5753,6 +5767,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     // the profile link is left to the one handler that opens people
   });
+
+  /* --- a tap on a push notification lands where it points --- */
+  function openPush(d) {
+    if (!d || !d.go) return;
+    if (!me) { pendingGo = d; return; }      // the app is still waking up
+    pendingGo = null;
+    if (d.go === 'u') { openUser(d.id); return; }
+    if (!d.pu || !d.pi) return;
+    if (d.go === 'c') { openComments(postKey(d.pu, d.pi)); return; }
+    if (d.pu === me.id) openWorkout(d.pi); else openWorkout(d.pi, d.pu);
+  }
+
+  // the app was already open: the worker tells it where to go
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'tracker-go') openPush(e.data.go);
+    });
+  }
 
   /* --- the bell --- */
   function noteList() {

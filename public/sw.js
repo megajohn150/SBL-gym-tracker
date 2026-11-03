@@ -3,7 +3,7 @@
    basement with no signal. The Supabase API is never cached — stale
    training data would be worse than none. */
 
-var V = 'tracker-v7';
+var V = 'tracker-v8';
 
 var CORE = [
   './',
@@ -92,25 +92,36 @@ self.addEventListener('push', function (e) {
   var d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = {}; }
   var title = d.title || 'Tracker';
+  var go = d.go ? { go: d.go, pu: d.pu, pi: d.pi, id: d.id } : null;
   e.waitUntil(self.registration.showNotification(title, {
     body: d.body || '',
     icon: './logo/icon-192.png',
     badge: './logo/icon-192.png',
     tag: d.tag || 'tracker',
-    data: { url: d.url || './' }
+    data: { go: go, url: './' + goHash(go) }
   }));
 });
 
-// bring the app forward instead of opening a second copy of it
+// what the page reads on a cold start, when there is nobody to message yet
+function goHash(go) {
+  if (!go) return '';
+  if (go.go === 'u') return '#go=u:' + go.id;
+  return '#go=' + go.go + ':' + go.pu + ':' + go.pi;
+}
+
+// bring the app forward instead of opening a second copy of it, and tell it
+// what the notification was about
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
-  var url = (e.notification.data && e.notification.data.url) || './';
+  var data = e.notification.data || {};
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
       for (var i = 0; i < list.length; i++) {
-        if ('focus' in list[i]) return list[i].focus();
+        if (!('focus' in list[i])) continue;
+        if (data.go) list[i].postMessage({ type: 'tracker-go', go: data.go });
+        return list[i].focus();
       }
-      if (self.clients.openWindow) return self.clients.openWindow(url);
+      if (self.clients.openWindow) return self.clients.openWindow(data.url || './');
     })
   );
 });

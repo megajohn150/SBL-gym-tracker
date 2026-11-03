@@ -239,11 +239,15 @@ declare
   target uuid;
   actor  uuid;
   kind   text;
+  pu     uuid;
+  pi     text;
 begin
   if tg_table_name = 'likes' then
     target := new.post_user; actor := new.liker; kind := 'like';
+    pu := new.post_user; pi := new.post_id;
   elsif tg_table_name = 'comments' then
     actor := new.author;
+    pu := new.post_user; pi := new.post_id;
     if new.parent_author is not null and new.parent_author <> new.author then
       target := new.parent_author; kind := 'reply';
     else
@@ -261,7 +265,8 @@ begin
       'Content-Type', 'application/json',
       'x-push-secret', '<PUSH_SECRET>'
     ),
-    body := jsonb_build_object('kind', kind, 'target', target, 'actor', actor)
+    body := jsonb_build_object('kind', kind, 'target', target, 'actor', actor,
+                               'post_user', pu, 'post_id', pi)
   );
   return new;
 end $$;

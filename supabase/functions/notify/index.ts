@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     return new Response('no', { status: 401 });
   }
 
-  const { kind, target, actor } = await req.json();
+  const { kind, target, actor, post_user, post_id } = await req.json();
   if (!kind || !target || !actor || target === actor) {
     return new Response('skip', { status: 200 });
   }
@@ -44,7 +44,12 @@ Deno.serve(async (req) => {
   if (!subs?.length) return new Response('nobody listening', { status: 200 });
 
   const body = (who?.username ?? 'Someone') + (LINE[kind] ?? '');
-  const payload = JSON.stringify({ title: 'Tracker', body, tag: kind });
+  // where a tap should land: the session for a like, its comments for a
+  // comment or a reply, the person for a follow
+  const go = kind === 'follow'
+    ? { go: 'u', id: actor }
+    : { go: kind === 'like' ? 'w' : 'c', pu: post_user, pi: post_id };
+  const payload = JSON.stringify({ title: 'Tracker', body, tag: kind, ...go });
 
   // a subscription the browser has thrown away answers 404 or 410, and is
   // not worth keeping around
