@@ -214,7 +214,8 @@ create policy "comments write" on public.comments for insert to authenticated
 --      3. supabase secrets set VAPID_PUBLIC=... VAPID_PRIVATE=... \
 --           PUSH_SECRET=<długi losowy ciąg>
 --      4. supabase functions deploy notify --no-verify-jwt
---      5. w zapytaniu niżej podmień <REF> i <PUSH_SECRET>
+--      5. w zapytaniu niżej podmień <PUSH_SECRET> — w edytorze SQL,
+--         nie w tym pliku, żeby sekret nie trafił do repozytorium
 -- ------------------------------------------------------------------
 create table if not exists public.push_subs (
   endpoint   text primary key,
@@ -255,7 +256,7 @@ begin
   if target is null or target = actor then return new; end if;
 
   perform net.http_post(
-    url := 'https://<REF>.functions.supabase.co/notify',
+    url := 'https://nzagghskfwdosmopiuuk.functions.supabase.co/notify',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-push-secret', '<PUSH_SECRET>'
