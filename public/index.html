@@ -2323,7 +2323,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4070';
+  var APP_VERSION = '3.4071';
 
   /* =========================================================
      STORE
@@ -2379,7 +2379,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   // Web push needs a VAPID key pair. The public half lives here, the private
   // half in the Edge Function's secrets — see supabase-social.sql.
-  var VAPID_PUBLIC = '';
+  var VAPID_PUBLIC = 'BFNU9RdoJNiI_pkXnzGPvxDV_pwftw6HUJndTYsM26GaNU-gEocX5PHQ6yk_sC7HjjsDHZOi5PmfgxRqvzV4xkE';
   var SB_URL = 'https://nzagghskfwdosmopiuuk.supabase.co';
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56YWdnaHNrZndkb3Ntb3BpdXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMTI3MTUsImV4cCI6MjEwODY4ODcxNX0.9RPmPbHmuZd7aAMM22Qn48kt2KOyoQ6JdpCHOEGnO9Y';
   // if the library cannot be reached the app still opens, local only
