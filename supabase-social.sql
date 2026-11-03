@@ -202,3 +202,75 @@ create policy "comments read"  on public.comments for select to authenticated
   using (public.can_see_post(post_user, post_id) or auth.uid() = parent_author);
 create policy "comments write" on public.comments for insert to authenticated
   with check (auth.uid() = author and public.can_see_post(post_user, post_id));
+
+-- ------------------------------------------------------------------
+-- 8. Powiadomienia push. Przeglądarka oddaje subskrypcję, baza woła
+--    Edge Function "notify", ta wysyła powiadomienie na każde
+--    urządzenie odbiorcy.
+--
+--    Zanim to zadziała:
+--      1. npx web-push generate-vapid-keys
+--      2. klucz publiczny wklej do VAPID_PUBLIC w public/index.html
+--      3. supabase secrets set VAPID_PUBLIC=... VAPID_PRIVATE=... \
+--           PUSH_SECRET=<długi losowy ciąg>
+--      4. supabase functions deploy notify --no-verify-jwt
+--      5. w zapytaniu niżej podmień <REF> i <PUSH_SECRET>
+-- ------------------------------------------------------------------
+create table if not exists public.push_subs (
+  endpoint   text primary key,
+  user_id    uuid not null references auth.users on delete cascade,
+  p256dh     text not null,
+  auth       text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subs_user_idx on public.push_subs (user_id);
+alter table public.push_subs enable row level security;
+
+drop policy if exists "subs own" on public.push_subs;
+create policy "subs own" on public.push_subs for all to authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create extension if not exists pg_net with schema extensions;
+
+create or replace function public.notify_push() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  target uuid;
+  actor  uuid;
+  kind   text;
+begin
+  if tg_table_name = 'likes' then
+    target := new.post_user; actor := new.liker; kind := 'like';
+  elsif tg_table_name = 'comments' then
+    actor := new.author;
+    if new.parent_author is not null and new.parent_author <> new.author then
+      target := new.parent_author; kind := 'reply';
+    else
+      target := new.post_user; kind := 'comment';
+    end if;
+  else
+    target := new.followee; actor := new.follower; kind := 'follow';
+  end if;
+
+  if target is null or target = actor then return new; end if;
+
+  perform net.http_post(
+    url := 'https://<REF>.functions.supabase.co/notify',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-push-secret', '<PUSH_SECRET>'
+    ),
+    body := jsonb_build_object('kind', kind, 'target', target, 'actor', actor)
+  );
+  return new;
+end $$;
+
+drop trigger if exists push_on_like    on public.likes;
+drop trigger if exists push_on_comment on public.comments;
+drop trigger if exists push_on_follow  on public.follows;
+create trigger push_on_like    after insert on public.likes
+  for each row execute function public.notify_push();
+create trigger push_on_comment after insert on public.comments
+  for each row execute function public.notify_push();
+create trigger push_on_follow  after insert on public.follows
+  for each row execute function public.notify_push();

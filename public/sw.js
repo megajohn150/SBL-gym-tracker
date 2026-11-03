@@ -3,7 +3,7 @@
    basement with no signal. The Supabase API is never cached — stale
    training data would be worse than none. */
 
-var V = 'tracker-v6';
+var V = 'tracker-v7';
 
 var CORE = [
   './',
@@ -82,6 +82,35 @@ self.addEventListener('fetch', function (e) {
         }
         return r;
       });
+    })
+  );
+});
+
+
+/* --- push: a friend reacted while the app was closed --- */
+self.addEventListener('push', function (e) {
+  var d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = {}; }
+  var title = d.title || 'Tracker';
+  e.waitUntil(self.registration.showNotification(title, {
+    body: d.body || '',
+    icon: './logo/icon-192.png',
+    badge: './logo/icon-192.png',
+    tag: d.tag || 'tracker',
+    data: { url: d.url || './' }
+  }));
+});
+
+// bring the app forward instead of opening a second copy of it
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var url = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        if ('focus' in list[i]) return list[i].focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(url);
     })
   );
 });
