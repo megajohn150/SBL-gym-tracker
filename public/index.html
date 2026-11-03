@@ -516,6 +516,9 @@ div:has(> .dfoot) + .dsec{margin-top:0}
   background:none;border:0;padding:9px 8px;color:var(--fg-3);
   display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:700;
 }
+/* The bubble is drawn 1.2px lower in its square than the thumb is, so the
+   whole button rides up by that much and the two icons read as one line. */
+.wacts button:not(.lk){position:relative;top:-1.2px}
 /* The count is set against the ink of the icon beside it, not its box: the
    thumb is drawn high in its square and the bubble low, and every skin's
    font puts its digits at a different height. Measured, not guessed. */
@@ -2439,7 +2442,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4093';
+  var APP_VERSION = '3.4094';
 
   /* =========================================================
      STORE
