@@ -1032,6 +1032,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .trow .stepper{width:82px}
 .trow .stepper button{width:27px}
 .trow .stepper b{min-width:28px;font-size:.8rem}
+.strow.sub{padding-top:5px;padding-bottom:5px}
+.strow.sub .nm{padding-left:20px;font-size:.8rem;color:var(--fg-2)}
+.strow.sub .n{font-size:.8rem;font-weight:600;color:var(--fg-2)}
+.stdot.none{background:none}
 .strow .n.hit{color:var(--green)}
 .strow .n i{font-style:normal;color:var(--fg-3);font-weight:600}
 .psearch{display:flex;align-items:center;gap:8px;margin:0 var(--pad) .7rem;
@@ -1500,6 +1504,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <option>Hamstrings</option><option>Adductors</option><option>Calves</option>
         <option>Forearms</option>
       </select>
+    </div>
+
+    <div class="field" id="ex-headrow" hidden>
+      <label for="ex-head">Head</label>
+      <select id="ex-head">
+        <option value="">Not set</option>
+        <option>Front delt</option><option>Side delt</option><option>Rear delt</option>
+      </select>
+      <p class="hint" style="padding-left:0;padding-right:0">Statistics count the head on its own.
+        Everywhere else this exercise stays a shoulder exercise.</p>
     </div>
 
     <div class="field">
@@ -2397,7 +2411,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4082';
+  var APP_VERSION = '3.4083';
 
   /* =========================================================
      STORE
@@ -3639,12 +3653,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('ex-name').value = x ? x.name : '';
     $('ex-code').value = x ? (x.code || '') : '';
     $('ex-muscle').value = x ? x.muscle : 'Chest';
+    $('ex-head').value = (x && x.head) || '';
+    syncHeadRow();
     document.querySelectorAll('#ex-type button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.type === exType));
     });
     syncExForm();
   }
   function resetExForm() { fillExForm(null); }
+
+  // the three heads are only worth asking about on a shoulder exercise
+  function syncHeadRow() { $('ex-headrow').hidden = $('ex-muscle').value !== 'Shoulders'; }
+  $('ex-muscle').addEventListener('change', syncHeadRow);
 
   var histId = null;
 
@@ -3794,6 +3814,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       name: name,
       code: ($('ex-code').value.trim() || deriveCode(name)).toUpperCase().slice(0, 7),
       muscle: $('ex-muscle').value,
+      head: $('ex-muscle').value === 'Shoulders' ? $('ex-head').value : '',
       unilateral: exType === 'unilateral'
     };
 
@@ -6958,10 +6979,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
   function dmy(d) { return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
 
+  // A shoulder exercise may name the head it is really for. Nothing in a
+  // workout records it: the head is read off the exercise, so marking one
+  // re-reads every session you have ever logged.
+  var HEADS = ['Front delt', 'Side delt', 'Rear delt'];
+
+  function headOf(e) {
+    var x = e.exId && byId(e.exId);
+    return (x && x.head) || 'Shoulders';
+  }
+
   // everything a stretch of time holds, muscle by muscle
   function statsFor(from, to) {
     var by = {}, days = {}, total = 0, sets = 0, volume = 0, seconds = 0, count = 0;
+    var heads = {}, hdays = {};
     Object.keys(MUSCLE_CELL).forEach(function (m) { by[m] = 0; days[m] = 0; });
+    HEADS.concat(['Shoulders', 'Front+Side']).forEach(function (h) { heads[h] = 0; hdays[h] = 0; });
     store.workouts.forEach(function (w) {
       var d = new Date(w.date);
       if (d < from || d >= to) return;
@@ -6974,16 +7007,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         var key = by[e.muscle] != null ? e.muscle : 'Other';
         by[key] = (by[key] || 0) + n;
         hit[key] = 1;                        // this session counts once per muscle
+        if (key === 'Shoulders') {
+          var h = headOf(e);
+          heads[h] += n;
+          hit['@' + h] = 1;
+          if (h !== 'Rear delt') hit['@Front+Side'] = 1;   // one blob on the body map
+        }
         total += n;
         e.sets.forEach(function (st) {
           if (logged(st)) volume += num(st.weight) * num(st.reps);
         });
       });
-      Object.keys(hit).forEach(function (m) { days[m] = (days[m] || 0) + 1; });
+      Object.keys(hit).forEach(function (m) {
+        if (m.charAt(0) === '@') hdays[m.slice(1)]++;
+        else days[m] = (days[m] || 0) + 1;
+      });
     });
     sets = total;
-    return { by: by, days: days, total: total, sets: sets, volume: volume,
-             seconds: seconds, workouts: count };
+    return { by: by, days: days, heads: heads, hdays: hdays, total: total, sets: sets,
+             volume: volume, seconds: seconds, workouts: count };
   }
 
   function byGroup(by) {
@@ -7004,27 +7046,61 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function tgt(n) { return n ? '<i>/' + n + '</i>' : ''; }
   function hit(v, n) { return n && (v || 0) >= n ? ' hit' : ''; }
 
-  function muscleTable(by, total, head, days, sessions, goal) {
-    var max = 0;
-    Object.keys(by).forEach(function (m) { max = Math.max(max, by[m]); });
-    var names = Object.keys(by).sort(function (a, b) {
-      return by[b] - by[a] || a.localeCompare(b);
+  // One line of the table: a muscle, or a head standing in for the shoulders.
+  // `mode` is 'split' where the three heads each get their own line, or 'map'
+  // where the body map's two colours decide — the rear apart, the other two
+  // under Shoulders with their own numbers indented beneath it.
+  function muscleRows(r, mode) {
+    var out = [];
+    Object.keys(r.by).forEach(function (m) {
+      if (m === 'Shoulders' && mode) return;
+      out.push({ name: m, v: r.by[m], d: r.days[m] || 0 });
     });
+    if (mode === 'split') {
+      HEADS.forEach(function (h) { out.push({ name: h, v: r.heads[h], d: r.hdays[h] }); });
+      // sets logged under plain Shoulders still have to show up somewhere
+      if (r.heads['Shoulders'] || store.targets['Shoulders']) {
+        out.push({ name: 'Shoulders', v: r.heads['Shoulders'], d: r.hdays['Shoulders'] });
+      }
+    } else if (mode === 'map') {
+      var front = r.heads['Front delt'] + r.heads['Side delt'] + r.heads['Shoulders'];
+      out.push({ name: 'Shoulders', v: front, d: r.hdays['Front+Side'],
+        kids: ['Front delt', 'Side delt', 'Shoulders'].filter(function (h) {
+          return r.heads[h];
+        }).map(function (h) {
+          return { name: h === 'Shoulders' ? 'Unassigned' : h, v: r.heads[h], d: r.hdays[h] };
+        }) });
+      out.push({ name: 'Rear delt', v: r.heads['Rear delt'], d: r.hdays['Rear delt'] });
+    }
+    out.sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name); });
+    return out;
+  }
+
+  function muscleTable(r, head, days, goal, mode) {
+    var rows = muscleRows(r, mode), max = 0;
+    rows.forEach(function (x) { max = Math.max(max, x.v); });
+
+    function line(x, sub) {
+      var t = goal && !sub ? (store.targets[x.name] || {}) : {};
+      return '<div class="strow' + (sub ? ' sub' : '') + '">' +
+        (sub ? '<span class="stdot none"></span>'
+             : '<span class="stdot" style="background:' + heat(x.v, max) + '"></span>') +
+        '<span class="nm">' + esc(x.name) + '</span>' +
+        (days ? '<span class="n n2 dim' + hit(x.d, t.days) + '">' + (x.d || 0) +
+          tgt(t.days) + '</span>' : '') +
+        '<span class="n n2' + hit(x.v, t.sets) + '">' + x.v + tgt(t.sets) +
+        '</span></div>';
+    }
+
     return '<div class="sthead"><span style="flex:1">Muscle</span>' +
       (days ? '<span class="n2">Days</span>' : '') +
       '<span class="n2">' + head + '</span></div>' +
       '<div class="strow tot"><span class="nm">Total</span>' +
-      (days ? '<span class="n n2">' + (sessions || 0) + '</span>' : '') +
-      '<span class="n n2">' + total + '</span></div>' +
-      names.map(function (m) {
-        var t = goal ? (store.targets[m] || {}) : {};
-        return '<div class="strow">' +
-          '<span class="stdot" style="background:' + heat(by[m], max) + '"></span>' +
-          '<span class="nm">' + esc(m) + '</span>' +
-          (days ? '<span class="n n2 dim' + hit(days[m], t.days) + '">' + (days[m] || 0) +
-            tgt(t.days) + '</span>' : '') +
-          '<span class="n n2' + hit(by[m], t.sets) + '">' + by[m] + tgt(t.sets) +
-          '</span></div>';
+      (days ? '<span class="n n2">' + (r.workouts || 0) + '</span>' : '') +
+      '<span class="n n2">' + r.total + '</span></div>' +
+      rows.map(function (x) {
+        return line(x, false) + (x.kids && x.kids.length > 1
+          ? x.kids.map(function (k) { return line(k, true); }).join('') : '');
       }).join('');
   }
 
@@ -7034,7 +7110,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var r = statsFor(start, end);
     $('stsets-body').innerHTML =
       '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
-      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts, true);
+      muscleTable(r, 'Sets', true, true, 'split');
   }
 
   $('sts-menu').addEventListener('click', function () { $('sts-pop').hidden = false; });
@@ -7048,7 +7124,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   /* --- how much of each muscle a week should hold --- */
   function drawTargets() {
-    var ms = Object.keys(MUSCLE_CELL);
+    var ms = [];
+    Object.keys(MUSCLE_CELL).forEach(function (m) {
+      ms.push(m);
+      if (m === 'Shoulders') ms = ms.concat(HEADS);
+    });
     $('tg-body').innerHTML =
       '<div class="thead"><span class="nm">Muscle</span>' +
         '<span class="t2">Sets</span><span class="t2">Days</span></div>' +
@@ -7308,13 +7388,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     ]
   };
 
-  function bodyMap(by, max) {
-    var blobs = '';
+  // The shoulder's four shapes are the front body's two and the back body's
+  // two, so the rear head can take the back pair and be read on its own.
+  function shoulderN(r, d) {
+    return parseFloat(d.slice(1)) > 400
+      ? r.heads['Rear delt']
+      : r.heads['Front delt'] + r.heads['Side delt'] + r.heads['Shoulders'];
+  }
+
+  function bodyMap(r, max) {
+    var by = r.by, blobs = '';
     Object.keys(BODY_ART).forEach(function (m) {
       if (!by[m]) return;                       // an untouched muscle stays bare
-      var col = heat(by[m], max);
       BODY_ART[m].forEach(function (d) {
-        blobs += '<path d="' + d + '" fill="' + col + '" fill-opacity=".62"/>';
+        var n = m === 'Shoulders' ? shoulderN(r, d) : by[m];
+        if (!n) return;
+        blobs += '<path d="' + d + '" fill="' + heat(n, max) + '" fill-opacity=".62"/>';
       });
     });
     return '<div class="bodymap"><img src="imgs/body.svg" alt="">' +
@@ -7348,8 +7437,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '<button data-wk="1"' + (stWeek >= 0 ? ' disabled' : '') + '>&rsaquo;</button>' +
       '</div>' +
       '<div class="stdays">' + days + '</div>' +
-      bodyMap(r.by, max) +
-      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts, true);
+      bodyMap(r, max) +
+      muscleTable(r, 'Sets', true, true, 'map');
   }
 
   $('stbody-body').addEventListener('click', function (e) {
