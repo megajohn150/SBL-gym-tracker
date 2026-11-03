@@ -2429,7 +2429,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4087';
+  var APP_VERSION = '3.4088';
 
   /* =========================================================
      STORE
@@ -5942,22 +5942,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // A private workout was never published, so there is nothing to react to.
   function reactable(w) { return !!social.username && !w.private; }
 
-  var SHARE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M12 15V4m0 0L8.2 7.8M12 4l3.8 3.8"/>' +
-    '<path d="M5 13v5.5c0 .8.7 1.5 1.5 1.5h11c.8 0 1.5-.7 1.5-1.5V13"/></svg>';
-
-  function shareBtn(id) {
-    return '<button type="button" data-act="share" data-w="' + esc(id) +
-      '" aria-label="Share">' + SHARE + '</button>';
-  }
-
   function actsBox(w, full) {
-    // a private session has nothing to react to, but it is still yours to send
-    if (!reactable(w)) {
-      return w.by ? '' : '<div class="' + (full ? 'wfoot' : 'dfoot') + '">' +
-        '<div class="wacts">' + shareBtn(w.id) + '</div></div>';
-    }
+    if (!reactable(w)) return '';
     var k = wKey(w);
     return '<div class="' + (full ? 'wfoot' : 'dfoot') + '" data-acts="' + esc(k) + '"' +
       (full ? ' data-full="1"' : '') + '>' +
@@ -5975,7 +5961,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         (L.length ? '<span>' + L.length + '</span>' : '') + '</button>' +
       '<button type="button" data-act="cmt" data-k="' + esc(k) + '" aria-label="Comments">' +
         BUBBLE + (C.length ? '<span>' + C.length + '</span>' : '') + '</button>' +
-      (me && keyUser(k) === me.id ? shareBtn(keyPost(k)) : '') +
       '</div>';
     if (!full) return html;                      // the open workout keeps to counts
     if (L.length) {
@@ -6357,127 +6342,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]');
     if (!b) return;
-    if (b.dataset.act === 'share') { shareWorkout(b.dataset.w); return; }
     if (b.dataset.act !== 'like') { openComments(b.dataset.k); return; }
     if (lkHeld) { lkHeld = false; return; }      // the hold opened the list
     toggleLike(b.dataset.k);
   });
-
-  /* =========================================================
-     A session as a picture, for the people who are not here.
-     ========================================================= */
-  function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
-
-  function bestSet(e) {
-    var top = null;
-    e.sets.forEach(function (st) {
-      if (!logged(st)) return;
-      if (!top || num(st.weight) > num(top.weight)) top = st;
-    });
-    return top;
-  }
-
-  function shareCanvas(w) {
-    var W = 1080, pad = 76, fg = cssVar('--fg'), dim = cssVar('--fg-3');
-    var font = cssVar('--font'), disp = cssVar('--display') || font;
-    var ex = w.exercises.filter(function (e) { return countSets(e); });
-    var cv = document.createElement('canvas');
-    cv.width = W;
-    cv.height = 470 + (w.records ? 50 : 0) + ex.length * 64 + 130;
-    var c = cv.getContext('2d');
-
-    c.fillStyle = cssVar('--bg') || '#fff';
-    c.fillRect(0, 0, cv.width, cv.height);
-
-    var d = new Date(w.date), y = 110;
-    c.textBaseline = 'alphabetic';
-    c.fillStyle = dim;
-    c.font = '700 24px ' + font;
-    c.fillText('TRACKER', pad, y);
-    c.textAlign = 'right';
-    c.fillText(dmy(d) + '  \u00b7  ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()), W - pad, y);
-    c.textAlign = 'left';
-
-    y += 86;
-    c.fillStyle = fg;
-    c.font = '700 60px ' + disp;
-    c.fillText(String(w.name || 'Workout').slice(0, 24), pad, y);
-
-    if (w.records) {
-      y += 50;
-      c.fillStyle = dim;
-      c.font = '600 28px ' + font;
-      c.fillText(w.records + (w.records === 1 ? ' personal record' : ' personal records'), pad, y);
-    }
-
-    // the three numbers every card carries
-    var t = workoutTotals(w);
-    var cells = [['Time', fmtDuration(w.seconds)], ['Volume', fmtVolume(t.volume)],
-                 ['Sets', String(t.sets)]];
-    y += 96;
-    cells.forEach(function (cell, i) {
-      var x = pad + i * ((W - pad * 2) / 3);
-      c.fillStyle = dim;
-      c.font = '700 22px ' + font;
-      c.fillText(cell[0].toUpperCase(), x, y);
-      c.fillStyle = fg;
-      c.font = '700 46px ' + disp;
-      c.fillText(cell[1], x, y + 52);
-    });
-
-    y += 120;
-    c.strokeStyle = cssVar('--line');
-    c.setLineDash([7, 7]);
-    c.beginPath();
-    c.moveTo(pad, y);
-    c.lineTo(W - pad, y);
-    c.stroke();
-    c.setLineDash([]);
-
-    y += 58;
-    ex.forEach(function (e) {
-      var top = bestSet(e), n = countSets(e);
-      c.fillStyle = fg;
-      c.font = '600 30px ' + font;
-      c.fillText(String(e.name).slice(0, 30), pad, y);
-      c.fillStyle = dim;
-      c.font = '600 28px ' + font;
-      c.textAlign = 'right';
-      c.fillText(n + ' \u00d7 ' + (top && num(top.weight)
-        ? num(top.weight) + ' kg' : (top ? top.reps + ' reps' : 'set')), W - pad, y);
-      c.textAlign = 'left';
-      y += 64;
-    });
-
-    c.fillStyle = dim;
-    c.font = '600 26px ' + font;
-    c.fillText('@' + (social.username || store.profile.handle || 'you'), pad, cv.height - 70);
-    return cv;
-  }
-
-  function shareWorkout(id) {
-    var w = store.workouts.filter(function (x) { return x.id === id; })[0];
-    if (!w) return;
-    shareCanvas(w).toBlob(function (blob) {
-      if (!blob) return;
-      var name = (plainWord(w.name) || 'workout') + '-' + dayKey(new Date(w.date)) + '.png';
-      var file = null;
-      try { file = new File([blob], name, { type: 'image/png' }); } catch (e) {}
-      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-        navigator.share({ files: [file] }).catch(function () {});
-        return;
-      }
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-      toast('Image saved');
-    }, 'image/png');
-  }
 
   /* --- profile --- */
   var pMetric = 'reps', pPeriod = '3m', pFilter = '';
