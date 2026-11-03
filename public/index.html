@@ -864,6 +864,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   box-shadow:0 10px 26px -12px rgba(0,0,0,.6);
   font-size:.68rem;font-weight:700;letter-spacing:.04em;color:var(--fg-2);
 }
+/* a record points at the session it was set in */
+.ptip.go{pointer-events:auto;cursor:pointer;color:var(--fg)}
+.ptip.go::after{content:"\203a";margin-left:7px;color:var(--fg-3)}
 .pseg{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px;
   border:var(--border);border-radius:var(--radius);overflow:hidden}
 .pseg button{
@@ -2303,7 +2306,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4068';
+  var APP_VERSION = '3.4069';
 
   /* =========================================================
      STORE
@@ -3587,8 +3590,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         : '') +
       '<span class="pmark">' + marks + '</span>' +
       buckets.map(function (b) {
+        var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
         return '<button class="pbar" data-tip="' +
-          esc(String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + b.lab + (b.pr ? '  \u00b7  PR' : '')) + '">' +
+          esc(String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '')) +
+          '"' + (b.prW ? ' data-prw="' + esc(b.prW) + '"' : '') + '>' +
           '<i style="height:' + Math.max(2, Math.round(b.v / xmax * 100)) + '%"></i></button>';
       }).join('') + '</div>' +
       '<div class="pxlab">' + buckets.map(function (b, i) {
@@ -5780,7 +5785,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var out = bucketShell(xPeriod), cut = cutoffFor(key);
     store.workouts.forEach(function (w) {
       if (!afterCut(w, cut)) return;
-      var b = bucketAt(out, new Date(w.date).getTime());
+      var t = new Date(w.date).getTime();
+      var b = bucketAt(out, t);
       if (!b) return;
       w.exercises.forEach(function (e) {
         if (exKey(e) !== key) return;
@@ -5790,7 +5796,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           var v = xMetric === 'orm' ? epley(kg, effReps(st)) : xMetric === 'vol' ? kg * reps : kg;
           if (v > b.v) b.v = v;
           // the bucket is marked when the record in this very metric fell in it
-          if (st.prs && st.prs.indexOf(PR_CAT[xMetric]) >= 0) b.pr = true;
+          if (st.prs && st.prs.indexOf(PR_CAT[xMetric]) >= 0) {
+            b.pr = true;
+            if (!b.prAt || t >= b.prAt) { b.prAt = t; b.prW = w.id; }
+          }
         });
       });
     });
@@ -5834,6 +5843,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       bar.classList.add('on');
       tipBar = bar;
       tip.textContent = bar.dataset.tip;
+      if (bar.dataset.prw) { tip.dataset.prw = bar.dataset.prw; tip.classList.add('go'); }
+      else { delete tip.dataset.prw; tip.classList.remove('go'); }
     }
     tip.hidden = false;
     tip.style.left = Math.max(8,
@@ -6039,7 +6050,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (e.pointerType === 'mouse') showTip(e.target.closest('.pbar'), e.clientX, e.clientY);
     });
     host.addEventListener('pointerleave', function (e) {
-      if (e.pointerType === 'mouse') hideTip();
+      if (e.pointerType !== 'mouse') return;
+      var to = e.relatedTarget;
+      if (to && to.closest && to.closest('#p-tip')) return;   // heading for the bubble
+      hideTip();
     });
     host.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse') return;
@@ -6059,7 +6073,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   barTips($('xh-body'));
 
   document.addEventListener('pointerdown', function (e) {
-    if (tipBar && !e.target.closest('.pbar')) hideTip();
+    if (tipBar && !e.target.closest('.pbar') && !e.target.closest('#p-tip')) hideTip();
+  });
+  $('p-tip').addEventListener('click', function () {
+    var id = this.dataset.prw;
+    if (!id) return;
+    hideTip();
+    openWorkout(id);
   });
   document.addEventListener('scroll', hideTip, true);
 
