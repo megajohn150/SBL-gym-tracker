@@ -1011,7 +1011,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .strow .nm{flex:1;font-size:.88rem}
 .strow .n{font-size:.88rem;font-weight:700;font-family:var(--display)}
 /* sets on the right, how many sessions touched that muscle beside them */
-.sthead .n2,.strow .n2{width:44px;text-align:right;flex:none}
+.sthead .n2,.strow .n2{width:52px;text-align:right;flex:none}
 .strow .n.dim{color:var(--fg-3);font-weight:600}
 .strow.tot .nm,.strow.tot .n{font-weight:700;font-size:.95rem}
 .stdot{width:9px;height:9px;border-radius:50%;flex:none}
@@ -1022,6 +1022,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .stweek .lab{flex:1;text-align:center;font-size:.9rem;font-weight:700}
 .stweek button{color:var(--fg-2);font-size:1.1rem;padding:4px 10px}
 .stweek button[disabled]{opacity:.25}
+.thead{display:flex;gap:8px;align-items:center;padding:.9rem var(--pad) .35rem;
+  font-size:.6rem;letter-spacing:.1em;color:var(--fg-3);font-weight:700;text-transform:uppercase}
+.thead .nm{flex:1}
+.thead .t2{width:82px;text-align:center}
+.trow{display:flex;gap:8px;align-items:center;padding:6px var(--pad);border-bottom:var(--dash)}
+.trow:last-child{border-bottom:none}
+.trow .nm{flex:1;font-size:.85rem;font-weight:600}
+.trow .stepper{width:82px}
+.trow .stepper button{width:27px}
+.trow .stepper b{min-width:28px;font-size:.8rem}
+.strow .n.hit{color:var(--green)}
+.strow .n i{font-style:normal;color:var(--fg-3);font-weight:600}
+.psearch{display:flex;align-items:center;gap:8px;margin:0 var(--pad) .7rem;
+  padding:0 10px;border:var(--border);border-radius:var(--radius);background:var(--surface);
+  color:var(--fg-3)}
+.psearch input{flex:1;padding:9px 0;background:none;border:none;font-size:.85rem;color:var(--fg)}
+.psearch input::placeholder{color:var(--fg-3)}
+.psearch input::-webkit-search-cancel-button{display:none}
+.psearch button{padding:0 2px;font-size:1.1rem;line-height:1;color:var(--fg-3)}
 .stdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:.3rem var(--pad) .9rem}
 .stdays > div{
   padding:7px 0;text-align:center;background:var(--surface);
@@ -1670,7 +1689,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <span>Workouts</span>
         <button class="prange" id="p-filter">All</button>
       </div>
+      <div class="psearch" id="p-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="m16 16 4.4 4.4"/></svg>
+        <input type="search" id="p-q" placeholder="Workout, exercise or note"
+          autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button id="p-qx" aria-label="Clear" hidden>&times;</button>
+      </div>
       <div class="feed" id="p-feed"></div>
+      <div class="note" id="p-none" hidden>Nothing matches that.</div>
       <div class="note" id="p-empty" hidden>Nothing logged yet.</div>
     </div>
 
@@ -1809,6 +1835,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="scroll">
       <div class="statlist">
         <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
+        <button data-push="targets"><b>Weekly targets</b><span>Sets and days per muscle</span></button>
         <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
@@ -1824,6 +1851,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span></span>
     </div>
     <div class="scroll" id="stsets-body"></div>
+  </section>
+
+  <section class="screen" id="s-targets" data-tab="profile" data-title="Weekly targets">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Targets</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="tg-body"></div>
   </section>
 
   <section class="screen" id="s-stat-chart" data-tab="profile" data-title="Distribution">
@@ -2353,13 +2389,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4079';
+  var APP_VERSION = '3.4080';
 
   /* =========================================================
      STORE
      ========================================================= */
   var store = {
-    exercises: [], routines: [], workouts: [], gone: [],
+    exercises: [], routines: [], workouts: [], gone: [], targets: {},
     profile: { handle: 'you', name: 'your name', bio: '', pic: null }
   };
 
@@ -2373,6 +2409,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (Array.isArray(raw.routines)) store.routines = raw.routines.map(migrate);
       if (Array.isArray(raw.workouts)) store.workouts = raw.workouts;
       if (Array.isArray(raw.gone)) store.gone = raw.gone;
+      if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
       // workouts saved before exercises were linked by id
       store.workouts.forEach(function (w) {
         w.exercises.forEach(function (e) {
@@ -2451,6 +2488,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       exercises: (remote.exercises && remote.exercises.length) ? remote.exercises : local.exercises,
       routines: (remote.routines && remote.routines.length) ? remote.routines : local.routines,
       workouts: workouts,
+      targets: remote.targets || local.targets || {},
       gone: Object.keys(gone)
     };
   }
@@ -3398,6 +3436,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-notes') drawNotes();
     if (id === 's-calendar') drawCalendar();
     if (id === 's-stat-sets') drawStatSets();
+    if (id === 's-targets') drawTargets();
     if (id === 's-stat-chart') drawStatChart();
     if (id === 's-stat-body') drawStatBody();
     if (id === 's-stat-month') drawStatMonth();
@@ -5178,7 +5217,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var payload = {
       app: 'gym-tracker', version: 1, exportedAt: new Date().toISOString(),
       profile: store.profile, exercises: store.exercises,
-      routines: store.routines, workouts: store.workouts
+      routines: store.routines, workouts: store.workouts, targets: store.targets
     };
     var url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)],
       { type: 'application/json' }));
@@ -5209,6 +5248,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         store.exercises = raw.exercises;
         store.routines = (raw.routines || []).map(migrate);
         store.workouts = raw.workouts;
+        if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
         if (raw.profile) {
           ['handle', 'name', 'bio'].forEach(function (k) {
             if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
@@ -5837,8 +5877,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // A private workout was never published, so there is nothing to react to.
   function reactable(w) { return !!social.username && !w.private; }
 
+  var SHARE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M12 15V4m0 0L8.2 7.8M12 4l3.8 3.8"/>' +
+    '<path d="M5 13v5.5c0 .8.7 1.5 1.5 1.5h11c.8 0 1.5-.7 1.5-1.5V13"/></svg>';
+
+  function shareBtn(id) {
+    return '<button type="button" data-act="share" data-w="' + esc(id) +
+      '" aria-label="Share">' + SHARE + '</button>';
+  }
+
   function actsBox(w, full) {
-    if (!reactable(w)) return '';
+    // a private session has nothing to react to, but it is still yours to send
+    if (!reactable(w)) {
+      return w.by ? '' : '<div class="' + (full ? 'wfoot' : 'dfoot') + '">' +
+        '<div class="wacts">' + shareBtn(w.id) + '</div></div>';
+    }
     var k = wKey(w);
     return '<div class="' + (full ? 'wfoot' : 'dfoot') + '" data-acts="' + esc(k) + '"' +
       (full ? ' data-full="1"' : '') + '>' +
@@ -5856,6 +5910,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         (L.length ? '<span>' + L.length + '</span>' : '') + '</button>' +
       '<button type="button" data-act="cmt" data-k="' + esc(k) + '" aria-label="Comments">' +
         BUBBLE + (C.length ? '<span>' + C.length + '</span>' : '') + '</button>' +
+      (me && keyUser(k) === me.id ? shareBtn(keyPost(k)) : '') +
       '</div>';
     if (!full) return html;                      // the open workout keeps to counts
     if (L.length) {
@@ -6237,10 +6292,127 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   document.addEventListener('click', function (e) {
     var b = e.target.closest('[data-act]');
     if (!b) return;
+    if (b.dataset.act === 'share') { shareWorkout(b.dataset.w); return; }
     if (b.dataset.act !== 'like') { openComments(b.dataset.k); return; }
     if (lkHeld) { lkHeld = false; return; }      // the hold opened the list
     toggleLike(b.dataset.k);
   });
+
+  /* =========================================================
+     A session as a picture, for the people who are not here.
+     ========================================================= */
+  function cssVar(n) { return getComputedStyle(document.body).getPropertyValue(n).trim(); }
+
+  function bestSet(e) {
+    var top = null;
+    e.sets.forEach(function (st) {
+      if (!logged(st)) return;
+      if (!top || num(st.weight) > num(top.weight)) top = st;
+    });
+    return top;
+  }
+
+  function shareCanvas(w) {
+    var W = 1080, pad = 76, fg = cssVar('--fg'), dim = cssVar('--fg-3');
+    var font = cssVar('--font'), disp = cssVar('--display') || font;
+    var ex = w.exercises.filter(function (e) { return countSets(e); });
+    var cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = 470 + (w.records ? 50 : 0) + ex.length * 64 + 130;
+    var c = cv.getContext('2d');
+
+    c.fillStyle = cssVar('--bg') || '#fff';
+    c.fillRect(0, 0, cv.width, cv.height);
+
+    var d = new Date(w.date), y = 110;
+    c.textBaseline = 'alphabetic';
+    c.fillStyle = dim;
+    c.font = '700 24px ' + font;
+    c.fillText('TRACKER', pad, y);
+    c.textAlign = 'right';
+    c.fillText(dmy(d) + '  \u00b7  ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()), W - pad, y);
+    c.textAlign = 'left';
+
+    y += 86;
+    c.fillStyle = fg;
+    c.font = '700 60px ' + disp;
+    c.fillText(String(w.name || 'Workout').slice(0, 24), pad, y);
+
+    if (w.records) {
+      y += 50;
+      c.fillStyle = dim;
+      c.font = '600 28px ' + font;
+      c.fillText(w.records + (w.records === 1 ? ' personal record' : ' personal records'), pad, y);
+    }
+
+    // the three numbers every card carries
+    var t = workoutTotals(w);
+    var cells = [['Time', fmtDuration(w.seconds)], ['Volume', fmtVolume(t.volume)],
+                 ['Sets', String(t.sets)]];
+    y += 96;
+    cells.forEach(function (cell, i) {
+      var x = pad + i * ((W - pad * 2) / 3);
+      c.fillStyle = dim;
+      c.font = '700 22px ' + font;
+      c.fillText(cell[0].toUpperCase(), x, y);
+      c.fillStyle = fg;
+      c.font = '700 46px ' + disp;
+      c.fillText(cell[1], x, y + 52);
+    });
+
+    y += 120;
+    c.strokeStyle = cssVar('--line');
+    c.setLineDash([7, 7]);
+    c.beginPath();
+    c.moveTo(pad, y);
+    c.lineTo(W - pad, y);
+    c.stroke();
+    c.setLineDash([]);
+
+    y += 58;
+    ex.forEach(function (e) {
+      var top = bestSet(e), n = countSets(e);
+      c.fillStyle = fg;
+      c.font = '600 30px ' + font;
+      c.fillText(String(e.name).slice(0, 30), pad, y);
+      c.fillStyle = dim;
+      c.font = '600 28px ' + font;
+      c.textAlign = 'right';
+      c.fillText(n + ' \u00d7 ' + (top && num(top.weight)
+        ? num(top.weight) + ' kg' : (top ? top.reps + ' reps' : 'set')), W - pad, y);
+      c.textAlign = 'left';
+      y += 64;
+    });
+
+    c.fillStyle = dim;
+    c.font = '600 26px ' + font;
+    c.fillText('@' + (social.username || store.profile.handle || 'you'), pad, cv.height - 70);
+    return cv;
+  }
+
+  function shareWorkout(id) {
+    var w = store.workouts.filter(function (x) { return x.id === id; })[0];
+    if (!w) return;
+    shareCanvas(w).toBlob(function (blob) {
+      if (!blob) return;
+      var name = (plainWord(w.name) || 'workout') + '-' + dayKey(new Date(w.date)) + '.png';
+      var file = null;
+      try { file = new File([blob], name, { type: 'image/png' }); } catch (e) {}
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file] }).catch(function () {});
+        return;
+      }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      toast('Image saved');
+    }, 'image/png');
+  }
 
   /* --- profile --- */
   var pMetric = 'reps', pPeriod = '3m', pFilter = '';
@@ -6505,18 +6677,44 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return '<span>' + (p.unit === 'month' ? MONTHS[d.getMonth()] : dayLab(d)) + '</span>';
     }).join('');
 
+    $('p-filter').textContent = pFilter || 'All';
+    $('p-filter').hidden = !store.workouts.length;
+    $('p-search').hidden = store.workouts.length < 6;
+    drawPFeed();
+  }
+
+  // name, any exercise in it, or either note
+  function matches(w, q) {
+    if (!q) return true;
+    if (plainName(w.name || '').indexOf(q) >= 0) return true;
+    if (plainName(w.note || '').indexOf(q) >= 0) return true;
+    return w.exercises.some(function (e) {
+      return plainName(e.name || '').indexOf(q) >= 0 ||
+        plainName(e.note || '').indexOf(q) >= 0;
+    });
+  }
+
+  function drawPFeed() {
     // the number on a card is its place in the whole log, filter or not
     var total = store.workouts.length;
+    var q = plainName($('p-q').value.trim());
     var shown = store.workouts.map(function (w, i) { return { w: w, no: total - i }; })
-      .filter(function (x) { return !pFilter || x.w.name === pFilter; });
+      .filter(function (x) { return (!pFilter || x.w.name === pFilter) && matches(x.w, q); });
 
-    $('p-filter').textContent = pFilter || 'All';
-    $('p-filter').hidden = total === 0;
+    $('p-qx').hidden = !q;
     $('p-empty').hidden = total > 0;
+    $('p-none').hidden = !total || shown.length > 0;
     $('p-feed').innerHTML = shown.map(function (x) {
       return workoutCard(x.w, x.no);
     }).join('');
   }
+
+  $('p-q').addEventListener('input', drawPFeed);
+  $('p-qx').addEventListener('click', function () {
+    $('p-q').value = '';
+    drawPFeed();
+    $('p-q').focus();
+  });
 
   var pfPic = null;
 
@@ -6794,7 +6992,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return 'hsl(' + Math.round(125 - 125 * t) + ' 52% 46%)';
   }
 
-  function muscleTable(by, total, head, days, sessions) {
+  // a target is only worth printing where the period it is set for lines up
+  function tgt(n) { return n ? '<i>/' + n + '</i>' : ''; }
+  function hit(v, n) { return n && (v || 0) >= n ? ' hit' : ''; }
+
+  function muscleTable(by, total, head, days, sessions, goal) {
     var max = 0;
     Object.keys(by).forEach(function (m) { max = Math.max(max, by[m]); });
     var names = Object.keys(by).sort(function (a, b) {
@@ -6807,11 +7009,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       (days ? '<span class="n n2">' + (sessions || 0) + '</span>' : '') +
       '<span class="n n2">' + total + '</span></div>' +
       names.map(function (m) {
+        var t = goal ? (store.targets[m] || {}) : {};
         return '<div class="strow">' +
           '<span class="stdot" style="background:' + heat(by[m], max) + '"></span>' +
           '<span class="nm">' + esc(m) + '</span>' +
-          (days ? '<span class="n n2 dim">' + (days[m] || 0) + '</span>' : '') +
-          '<span class="n n2">' + by[m] + '</span></div>';
+          (days ? '<span class="n n2 dim' + hit(days[m], t.days) + '">' + (days[m] || 0) +
+            tgt(t.days) + '</span>' : '') +
+          '<span class="n n2' + hit(by[m], t.sets) + '">' + by[m] + tgt(t.sets) +
+          '</span></div>';
       }).join('');
   }
 
@@ -6821,8 +7026,42 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var r = statsFor(start, end);
     $('stsets-body').innerHTML =
       '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
-      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts);
+      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts, true);
   }
+
+  /* --- how much of each muscle a week should hold --- */
+  function drawTargets() {
+    var ms = Object.keys(MUSCLE_CELL);
+    $('tg-body').innerHTML =
+      '<div class="thead"><span class="nm">Muscle</span>' +
+        '<span class="t2">Sets</span><span class="t2">Days</span></div>' +
+      '<div class="rows">' + ms.map(function (m) {
+        var t = store.targets[m] || {};
+        return '<div class="trow"><span class="nm">' + esc(m) + '</span>' +
+          ['sets', 'days'].map(function (f) {
+            var v = t[f] || 0, by2 = f === 'sets' ? 2 : 1;
+            return '<span class="stepper">' +
+              '<button data-tgt="' + m + '" data-f="' + f + '" data-by="' + (-by2) + '"' +
+                (v ? '' : ' disabled') + ' aria-label="Less">&minus;</button>' +
+              '<b>' + (v || '\u2013') + '</b>' +
+              '<button data-tgt="' + m + '" data-f="' + f + '" data-by="' + by2 +
+                '" aria-label="More">+</button></span>';
+          }).join('') + '</div>';
+      }).join('') + '</div>' +
+      '<div class="note">A week runs Monday to Sunday. Set count and the body map both ' +
+      'read these, and a muscle you leave blank is simply not counted against anything.</div>';
+  }
+
+  $('tg-body').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tgt]');
+    if (!b || b.disabled) return;
+    var m = b.dataset.tgt, f = b.dataset.f;
+    var t = store.targets[m] || (store.targets[m] = {});
+    t[f] = Math.max(0, Math.min(f === 'sets' ? 40 : 7, (t[f] || 0) + Number(b.dataset.by)));
+    if (!t.sets && !t.days) delete store.targets[m];
+    saveStore();
+    drawTargets();
+  });
 
   /* --- lifts that have not moved in a month --- */
   var STALL_DAYS = 28, DROPPED_DAYS = 42;
@@ -7093,7 +7332,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '</div>' +
       '<div class="stdays">' + days + '</div>' +
       bodyMap(r.by, max) +
-      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts);
+      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts, true);
   }
 
   $('stbody-body').addEventListener('click', function (e) {
