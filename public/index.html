@@ -1029,7 +1029,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 }
 .stdays .d{display:block;font-size:.55rem;letter-spacing:.1em;color:var(--fg-3);font-weight:700}
 .stdays .n{display:block;margin-top:4px;font-size:.85rem;font-weight:700}
-.stdays .on{background:var(--accent);border-color:var(--accent)}
+.stdays .on{background:var(--accent);border-color:var(--accent);cursor:pointer}
 .stdays .on .d{color:var(--accent-ink);opacity:.7}
 .stdays .on .n{color:var(--accent-ink)}
 /* which session it was, under the date */
@@ -2353,7 +2353,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4078';
+  var APP_VERSION = '3.4079';
 
   /* =========================================================
      STORE
@@ -7074,14 +7074,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
 
     var byDay = {};
-    store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = w.name; });
+    store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = w; });
 
     var days = '';
     for (var i = 0; i < 7; i++) {
       var d = addDays(start, i), on = byDay[dayKey(d)];
-      days += '<div class="' + (on ? 'on' : '') + '"><span class="d">' +
+      days += '<div class="' + (on ? 'on' : '') + '"' +
+        (on ? ' data-w="' + esc(on.id) + '"' : '') + '><span class="d">' +
         'MTWTFSS'.charAt(i) + '</span><span class="n">' + d.getDate() + '</span>' +
-        '<span class="w">' + (on ? esc(on) : '&nbsp;') + '</span></div>';
+        '<span class="w">' + (on ? esc(on.name) : '&nbsp;') + '</span></div>';
     }
 
     $('stbody-body').innerHTML =
@@ -7096,6 +7097,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('stbody-body').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-w]');
+    if (c) { openWorkout(c.dataset.w); return; }
     var b = e.target.closest('[data-wk]');
     if (!b || b.disabled) return;
     stWeek += Number(b.dataset.wk);
