@@ -868,6 +868,26 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 }
 .pseg button:last-child{border-right:none}
 .pseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+/* bars or a line, and where the records fell */
+.phead-r{display:flex;align-items:center;gap:10px;flex:none}
+.pstyle{display:flex;border:var(--border);border-radius:calc(var(--radius) - 3px);overflow:hidden}
+.pstyle button{padding:5px 8px;line-height:0;color:var(--fg-3)}
+.pstyle button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.pbars{position:relative}
+.pline{position:absolute;inset:0;width:100%;height:100%;color:var(--fg);opacity:.85}
+.pmark{position:absolute;inset:0;pointer-events:none}
+/* the bar rule paints every span in here, and these are not bars */
+.pbars .pmark,.pbars .pflag{background:none;flex:none;border-radius:0;min-height:0;opacity:1}
+.pbars.aline .pbar i{opacity:0}
+.pdot{
+  position:absolute;width:6px;height:6px;border-radius:50%;background:var(--fg);
+  transform:translate(-50%,50%);
+}
+.pdot.pr{background:var(--accent);width:8px;height:8px}
+.pflag{
+  position:absolute;line-height:0;color:var(--accent);
+  transform:translate(-50%,0);margin-bottom:9px;
+}
 .pxlab{display:flex;gap:4px;margin-top:6px}
 .pxlab span{flex:1;text-align:center;font-size:9px;color:var(--fg-3);white-space:nowrap;overflow:hidden}
 .dash{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 var(--pad)}
@@ -2266,7 +2286,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4066';
+  var APP_VERSION = '3.4067';
 
   /* =========================================================
      STORE
@@ -3507,14 +3527,50 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var xstep = Math.ceil(buckets.length / 4);
     var head = xLabel(buckets[buckets.length - 1].v);
 
+    var n = buckets.length;
+    var at = function (i) { return (i + 0.5) / n * 100; };
+    // Bars are read against zero. A line is read against itself, so it starts
+    // a little below the lightest session instead — otherwise every week of
+    // work is a flat line glued to the top of the box.
+    var seen = buckets.filter(function (b) { return b.v > 0; }).map(function (b) { return b.v; });
+    var vmin = seen.length ? Math.min.apply(null, seen) : 0;
+    var base = (xStyle === 'line' && seen.length > 1 && vmin < xmax)
+      ? vmin - (xmax - vmin) * 0.35 : 0;
+    var hOf = function (v) { return (v - base) / (xmax - base) * 100; };
+    var pts = buckets.map(function (b, i) {
+      return b.v > 0 ? at(i).toFixed(2) + ',' + (100 - hOf(b.v)).toFixed(2) : null;
+    }).filter(Boolean).join(' ');
+
+    var marks = buckets.map(function (b, i) {
+      if (!b.v) return '';
+      var pos = 'left:' + at(i).toFixed(2) + '%;bottom:' + hOf(b.v).toFixed(2) + '%';
+      return (xStyle === 'line'
+        ? '<i class="pdot' + (b.pr ? ' pr' : '') + '" style="' + pos + '"></i>' : '') +
+        (b.pr ? '<span class="pflag" style="' + pos + '">' + CUP_SM + '</span>' : '');
+    }).join('');
+
     var chart = '<div class="pchart" style="padding-top:.9rem">' +
       '<div class="pchart-h"><span><b>' + head[0] + '</b> ' + head[1] + ' <i>' +
         (xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month') +
       '</i></span>' +
-      '<button class="prange" id="xh-range">' + xp.short + '</button></div>' +
-      '<div class="pbars">' + buckets.map(function (b) {
+      '<span class="phead-r">' +
+        '<span class="pstyle">' +
+          '<button data-xstyle="line" aria-pressed="' + (xStyle === 'line') + '" aria-label="Line">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5l5.5-6 4 3.5L21 6"/></svg></button>' +
+          '<button data-xstyle="bars" aria-pressed="' + (xStyle === 'bars') + '" aria-label="Bars">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4.6" height="9" rx="1"/><rect x="9.7" y="7" width="4.6" height="14" rx="1"/><rect x="16.4" y="3" width="4.6" height="18" rx="1"/></svg></button>' +
+        '</span>' +
+        '<button class="prange" id="xh-range">' + xp.short + '</button></span></div>' +
+      '<div class="pbars' + (xStyle === 'line' ? ' aline' : '') + '">' +
+      (xStyle === 'line' && pts
+        ? '<svg class="pline" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'
+        : '') +
+      '<span class="pmark">' + marks + '</span>' +
+      buckets.map(function (b) {
         return '<button class="pbar" data-tip="' +
-          esc(String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + b.lab) + '">' +
+          esc(String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + b.lab + (b.pr ? '  \u00b7  PR' : '')) + '">' +
           '<i style="height:' + Math.max(2, Math.round(b.v / xmax * 100)) + '%"></i></button>';
       }).join('') + '</div>' +
       '<div class="pxlab">' + buckets.map(function (b, i) {
@@ -5616,6 +5672,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   /* --- profile --- */
   var pMetric = 'reps', pPeriod = '3m', pFilter = '';
   var xMetric = 'weight', xPeriod = '3m';
+  var xStyle = load('xstyle') || 'line';          // line or bars
+  var CUP_SM = '<svg width="11" height="11" viewBox="0 0 24 24"><path fill="currentColor" ' +
+    'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
+    '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
+    '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>';
+  var PR_CAT = { weight: 'Weight', orm: '1RM', vol: 'Volume' };
 
   // short spans are read day by day, long ones month by month
   var PERIODS = [
@@ -5708,6 +5770,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           var kg = num(st.weight), reps = num(st.reps);
           var v = xMetric === 'orm' ? epley(kg, effReps(st)) : xMetric === 'vol' ? kg * reps : kg;
           if (v > b.v) b.v = v;
+          // the bucket is marked when the record in this very metric fell in it
+          if (st.prs && st.prs.indexOf(PR_CAT[xMetric]) >= 0) b.pr = true;
         });
       });
     });
@@ -5984,6 +6048,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('xh-body').addEventListener('click', function (e) {
     var m = e.target.closest('[data-xmetric]');
     if (m) { xMetric = m.dataset.xmetric; drawHistory(); return; }
+    var sty = e.target.closest('[data-xstyle]');
+    if (sty) { xStyle = sty.dataset.xstyle; save('xstyle', xStyle); drawHistory(); return; }
     var r = e.target.closest('#xh-range');
     if (r) openPeriod(r, 'exercise');
   });
