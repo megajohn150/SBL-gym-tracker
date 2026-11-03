@@ -2429,7 +2429,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4088';
+  var APP_VERSION = '3.4089';
 
   /* =========================================================
      STORE
@@ -2474,6 +2474,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     store.exercises.forEach(function (x) {
       if (x.muscle === 'Shoulders' && !x.head) { x.head = 'Front delt'; n++; }
     });
+    if (store.targets['Shoulders']) {           // set before the heads existed
+      delete store.targets['Shoulders'];
+      n++;
+    }
     return n;
   }
 
@@ -7028,8 +7032,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function drawTargets() {
     var ms = [];
     Object.keys(MUSCLE_CELL).forEach(function (m) {
-      ms.push(m);
+      // the shoulder stands for its three heads and nothing of its own
       if (m === 'Shoulders') ms = ms.concat(HEADS);
+      else ms.push(m);
     });
     $('tg-body').innerHTML =
       '<div class="thead"><span class="nm">Muscle</span>' +
