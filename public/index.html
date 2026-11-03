@@ -628,6 +628,15 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .avagrid button{display:grid;place-items:center}
 .avagrid .avatar{width:50px;height:50px}
 .avagrid button[aria-pressed="true"] .avatar{outline:2px solid var(--accent);outline-offset:2px}
+/* while editing, the exercise keeps its tools on the same line */
+.dexline{display:flex;align-items:center;gap:10px}
+.dexline .dexhead{flex:1;min-width:0;margin-bottom:0}
+.dex.edit .drow,.dex.edit .dhead{grid-template-columns:42px 1fr 1fr 56px 26px}
+.addrow{
+  width:100%;margin-top:.7rem;padding:10px;border:var(--dash);border-radius:calc(var(--radius) - 2px);
+  font-size:.74rem;letter-spacing:var(--labtrack);text-transform:uppercase;
+  font-weight:700;color:var(--fg-3);background:none;
+}
 .dext{min-width:0}
 .dex .nm{
   display:block;font-family:var(--display);font-size:1.05rem;font-weight:var(--namew);
@@ -2256,7 +2265,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4064';
+  var APP_VERSION = '3.4065';
 
   /* =========================================================
      STORE
@@ -3261,7 +3270,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-chart') drawStatChart();
     if (id === 's-stat-body') drawStatBody();
     if (id === 's-stat-month') drawStatMonth();
-    if (id !== 's-detail' && detailEdit) { detailEdit = false; detailDirty = false; }
+    // picking an exercise leaves the screen without leaving the edit
+    if (id !== 's-detail' && detailEdit && !(id === 's-exercises' && pickFor === 'detail')) {
+      revertEdit();
+      detailEdit = false;
+      detailDirty = false;
+      if (pickFor === 'detail') pickFor = null;
+    }
     $('save-bar').hidden = !((id === 's-detail' && detailEdit && detailDirty) ||
       (id === 's-routine-form' && rtDirty));
     drawDock();
@@ -3330,7 +3345,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('pick-hint').hidden = !(pickFor && has);
     $('pick-hint').textContent = pickFor === 'swap'
       ? 'Pick what you are doing instead \u2014 same muscle, this workout only.'
-      : 'Tap an exercise to add it to the ' + (pickFor === 'session' ? 'workout.' : 'routine.');
+      : 'Tap an exercise to add it to the ' +
+        (pickFor === 'session' || pickFor === 'detail' ? 'workout.' : 'routine.');
     $('ex-bar-title').textContent = pickFor ? 'Choose exercise' : 'Exercises';
 
     $('ex-search-wrap').hidden = !has;
@@ -3372,6 +3388,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       addToSession(row.dataset.ex);
       popTo('session');
       drawSession();
+      return;
+    }
+    if (pickFor === 'detail') {
+      pickFor = null;
+      addExToDetail(row.dataset.ex);
+      popTo('detail');
+      drawDetail(detailW);
+      drawSaveBar();
       return;
     }
     if (pickFor === 'swap') {
@@ -6796,17 +6820,29 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           : '') + '</div>'
       : '';
 
+    var last = w.exercises.length - 1;
     var body = '<div class="dsec">Workout</div>' + w.exercises.map(function (e, ei) {
-      var rows = e.sets.filter(logged);
+      // while editing, blank sets have to show up — they are what you type into
+      var rows = detailEdit ? e.sets : e.sets.filter(logged);
       // the head opens that exercise's own page, unless it is one of the old
       // movements that no longer lives in the library
       var known = !detailEdit && e.exId && byId(e.exId);
       var tag = known ? 'button' : 'div';
-      return '<div class="dex"><' + tag + ' class="dexhead"' +
+      return '<div class="dex' + (detailEdit ? ' edit' : '') + '">' +
+        '<div class="dexline"><' + tag + ' class="dexhead"' +
         (known ? ' data-ex-open="' + esc(e.exId) + '"' : '') + '>' + muscleArt(e.muscle) +
         '<span class="dext"><span class="nm">' + esc(e.name) + '</span>' +
         '<span class="meta">' + esc(e.muscle || '') + (e.unilateral ? ' &middot; unilateral' : '') +
         '</span></span></' + tag + '>' +
+        (detailEdit
+          ? '<span class="tools">' +
+              '<button class="kill" data-dmove="-1" data-i="' + ei + '" aria-label="Move up"' +
+                (ei === 0 ? ' disabled' : '') + '>&uarr;</button>' +
+              '<button class="kill" data-dmove="1" data-i="' + ei + '" aria-label="Move down"' +
+                (ei === last ? ' disabled' : '') + '>&darr;</button>' +
+              '<button class="kill" data-ddrop="' + ei + '" aria-label="Remove">&times;</button>' +
+            '</span>'
+          : '') + '</div>' +
         (detailEdit
           ? '<div class="notebox' + (e.note ? ' has' : '') + '" style="margin:.35rem 0 .2rem">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>' +
@@ -6816,7 +6852,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             ? '<div class="wmore noteline">' + NOTE_SVG + '<span>' + esc(e.note) + '</span></div>'
             : '')) +
         (rows.length
-          ? '<div class="dhead"><span></span><span>Weight</span><span>Reps</span><span>RIR</span></div>' +
+          ? '<div class="dhead"><span></span><span>Weight</span><span>Reps</span><span>RIR</span>' +
+            (detailEdit ? '<span></span>' : '') + '</div>' +
             rows.map(function (st, si) {
               if (!detailEdit) {
                 return '<div class="drow"><span class="no">' + esc(st.label) + medal(st) + '</span>' +
@@ -6836,11 +6873,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
                 '</span>' +
                 '<input class="cell" inputmode="numeric" data-f="reps"' + at + ' value="' + esc(st.reps) + '">' +
                 '<input class="cell" data-f="rir"' + at + ' value="' + esc(st.rir) + '">' +
+                '<button class="kill" data-xset="' + ei + '-' + si + '" aria-label="Remove set">&times;</button>' +
                 '</div>';
             }).join('')
           : '<div class="wmore">Nothing logged</div>') +
+        (detailEdit
+          ? '<button class="addrow" data-addset="' + ei + '">+ Add set</button>'
+          : '') +
         '</div>';
-    }).join('');
+    }).join('') +
+      (detailEdit
+        ? '<div style="padding:0 var(--pad) .5rem">' +
+          '<button class="btn" data-addex>+ Add exercise</button></div>'
+        : '');
 
     $('detail-body').innerHTML = head + muscles + body + '<div style="height:1.5rem"></div>';
     $('detail-body').querySelectorAll('[data-note-e]').forEach(grow);
@@ -6866,7 +6911,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     closeDetailPop();
     var act = b.dataset.dact;
 
-    if (act === 'edit') { detailEdit = true; detailDirty = false; drawDetail(detailW); return; }
+    if (act === 'edit') {
+      detailEdit = true;
+      detailDirty = false;
+      // sets and order are changed in place, so keep a copy to fall back on
+      editBase = JSON.parse(JSON.stringify(detailW.exercises));
+      drawDetail(detailW);
+      return;
+    }
     if (act === 'cancel') { leaveEdit(); return; }
 
     if (act === 'routine') { routineFromWorkout(detailW); return; }
@@ -6962,13 +7014,83 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('d-date').textContent = fullDate(pendingDate);
   });
 
+  var editBase = null;
+
+  // sets and order change in place, so walking away has to put them back
+  function revertEdit() {
+    if (editBase && detailW) { detailW.exercises = editBase; recomputeRecords(); }
+    editBase = null;
+  }
+
   function leaveEdit() {
+    revertEdit();
     detailEdit = false;
     detailDirty = false;
     pendingDate = null;
     drawSaveBar();
     if (detailW) drawDetail(detailW);
   }
+  // Everything typed lives in the DOM until it is read back. Any change to the
+  // shape of the workout redraws it, so the fields are collected first.
+  function harvestDetail() {
+    if (!detailEdit || !detailW) return;
+    var name = $('d-name') ? $('d-name').value.trim() : '';
+    if (name) detailW.name = name;
+    if ($('d-h')) {
+      detailW.seconds = Math.max(60,
+        (Number($('d-h').value) || 0) * 3600 + (Number($('d-m').value) || 0) * 60);
+    }
+    if ($('d-wnote')) detailW.note = $('d-wnote').value.trim();
+    document.querySelectorAll('#detail-body [data-note-e]').forEach(function (ta) {
+      detailW.exercises[Number(ta.dataset.noteE)].note = ta.value.trim();
+    });
+    document.querySelectorAll('#detail-body [data-f]').forEach(function (inp) {
+      var e2 = detailW.exercises[Number(inp.dataset.e)];
+      var st = e2 && e2.sets[Number(inp.dataset.s)];
+      if (st) st[inp.dataset.f] = inp.value.trim();
+    });
+    document.querySelectorAll('#detail-body [data-plate]').forEach(function (b) {
+      var at = b.dataset.plate.split('-');
+      var e2 = detailW.exercises[Number(at[0])];
+      var st = e2 && e2.sets[Number(at[1])];
+      if (!st) return;
+      var n = Number(b.dataset.n);
+      if (n) st.plate = n; else delete st.plate;
+    });
+  }
+
+  // a change to the shape of the workout: keep the typing, redraw, stay dirty
+  function reshapeDetail(fn) {
+    harvestDetail();
+    fn();
+    detailDirty = true;
+    drawDetail(detailW);
+    drawSaveBar();
+  }
+
+  function addSetTo(e2) {
+    if (e2.unilateral) {
+      var n = e2.sets.length / 2 + 1;
+      var first = e2.side === 'L' ? 'L' : 'R', second = first === 'L' ? 'R' : 'L';
+      e2.sets.push(blankSet(first + n));
+      e2.sets.push(blankSet(second + n));
+    } else {
+      e2.sets.push(blankSet(pad2(e2.sets.length + 1)));
+    }
+    relabel(e2);
+  }
+
+  // an exercise picked for a workout that is already in the book
+  function addExToDetail(exId) {
+    var x = byId(exId);
+    if (!x || !detailW) return;
+    detailW.exercises.push({
+      exId: x.id, name: x.name, muscle: x.muscle, unilateral: !!x.unilateral,
+      note: '', sets: buildSets(1, x.unilateral, 'R')
+    });
+    detailDirty = true;
+  }
+
   function saveDetail() {
     var name = $('d-name') ? $('d-name').value.trim() : '';
     if (name) detailW.name = name;
@@ -6987,12 +7109,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
     document.querySelectorAll('#detail-body [data-f]').forEach(function (inp) {
       var e2 = detailW.exercises[Number(inp.dataset.e)];
-      var st = e2.sets.filter(logged)[Number(inp.dataset.s)];
+      var st = e2 && e2.sets[Number(inp.dataset.s)];
       if (st) st[inp.dataset.f] = inp.value.trim();
     });
     document.querySelectorAll('#detail-body [data-plate]').forEach(function (b) {
       var at = b.dataset.plate.split('-');
-      var st = detailW.exercises[Number(at[0])].sets.filter(logged)[Number(at[1])];
+      var e2 = detailW.exercises[Number(at[0])];
+      var st = e2 && e2.sets[Number(at[1])];
       if (!st) return;
       var n = Number(b.dataset.n);
       if (n) st.plate = n; else delete st.plate;
@@ -7003,6 +7126,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     recomputeRecords();
     saveStore();
     drawHome();
+    editBase = null;                       // the edit is the truth now
     leaveEdit();
   }
 
@@ -7023,6 +7147,46 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   $('detail-body').addEventListener('click', function (e) {
+    if (detailEdit) {
+      var mv = e.target.closest('[data-dmove]');
+      if (mv) {
+        var i = Number(mv.dataset.i), j = i + Number(mv.dataset.dmove);
+        if (j < 0 || j >= detailW.exercises.length) return;
+        reshapeDetail(function () {
+          var arr = detailW.exercises, moved = arr[i];
+          arr[i] = arr[j]; arr[j] = moved;
+        });
+        return;
+      }
+      var dd = e.target.closest('[data-ddrop]');
+      if (dd) {
+        var di = Number(dd.dataset.ddrop);
+        reshapeDetail(function () { detailW.exercises.splice(di, 1); });
+        return;
+      }
+      var xs = e.target.closest('[data-xset]');
+      if (xs) {
+        var sat = xs.dataset.xset.split('-');
+        reshapeDetail(function () {
+          var e2 = detailW.exercises[Number(sat[0])];
+          e2.sets.splice(Number(sat[1]), 1);
+          relabel(e2);
+        });
+        return;
+      }
+      var as = e.target.closest('[data-addset]');
+      if (as) {
+        var ai = Number(as.dataset.addset);
+        reshapeDetail(function () { addSetTo(detailW.exercises[ai]); });
+        return;
+      }
+      if (e.target.closest('[data-addex]')) {
+        harvestDetail();
+        pickFor = 'detail';
+        push('exercises');
+        return;
+      }
+    }
     var pl = e.target.closest('[data-plate]');
     if (pl) {
       var n = (Number(pl.dataset.n) + 1) % 3;
