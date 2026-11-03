@@ -644,6 +644,10 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   letter-spacing:var(--nametrack);text-transform:var(--namecase);
 }
 .dex .meta{display:block;font-size:.78rem;color:var(--fg-3);margin-top:3px}
+/* the row in an exercise's history opens the session it came from */
+.xwgo{display:block;width:100%;text-align:left}
+.xwgo .meta{display:flex;align-items:center;gap:6px}
+.xwgo .meta i{font-style:normal;font-size:1rem;line-height:1;color:var(--line)}
 .drow{
   display:grid;grid-template-columns:50px 1fr 1fr 62px;gap:8px;align-items:center;
   padding:.7rem 0;border-bottom:1px solid var(--line);
@@ -981,6 +985,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
 .statlist b{font-size:.9rem;font-weight:600}
+.statlist .stl{min-width:0;white-space:normal;color:var(--fg);font-weight:400}
+.statlist .stl .m{display:block;font-size:.7rem;color:var(--fg-3);font-weight:400;margin-top:3px;white-space:normal}
+.stnote{padding:1.1rem var(--pad) 0;font-size:.8rem;color:var(--fg-3);line-height:1.45}
 .statlist span{font-size:.7rem;color:var(--fg-3);font-weight:700;white-space:nowrap}
 .strange{
   display:block;width:calc(100% - 2 * var(--pad));margin:1rem var(--pad) .4rem;
@@ -1781,6 +1788,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
         <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
+        <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
         <button data-push="stat-month"><b>Monthly report</b><span id="stats-month"></span></button>
       </div>
     </div>
@@ -1811,6 +1819,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span></span>
     </div>
     <div class="scroll" id="stbody-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-stall" data-tab="profile" data-title="No recent records">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>No records</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="ststall-body"></div>
   </section>
 
   <section class="screen" id="s-stat-month" data-tab="profile" data-title="Monthly report">
@@ -2286,7 +2303,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4067';
+  var APP_VERSION = '3.4068';
 
   /* =========================================================
      STORE
@@ -3295,6 +3312,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-chart') drawStatChart();
     if (id === 's-stat-body') drawStatBody();
     if (id === 's-stat-month') drawStatMonth();
+    if (id === 's-stat-stall') drawStatStall();
     // picking an exercise leaves the screen without leaving the edit
     if (id !== 's-detail' && detailEdit && !(id === 's-exercises' && pickFor === 'detail')) {
       revertEdit();
@@ -3591,8 +3609,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           var line = (!r.live && (i === 0 || rows[i - 1].live))
             ? '<div class="dcut">Reset</div>' : '';
           return line + '<div class="dex' + (r.live ? '' : ' before') + '">' +
+            '<button class="xwgo" data-wopen="' + esc(r.w.id) + '">' +
             '<span class="nm">' + relDate(r.w.date) + '</span>' +
-            '<span class="meta">' + esc(r.w.name) + '</span>' +
+            '<span class="meta">' + esc(r.w.name) + '<i>\u203a</i></span></button>' +
             r.e.sets.filter(logged).map(function (st) {
               return '<div class="drow"><span class="no">' + esc(st.label) + medal(st) + '</span>' +
                 '<span class="c">' + esc(st.weight) + '</span>' +
@@ -6050,6 +6069,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (m) { xMetric = m.dataset.xmetric; drawHistory(); return; }
     var sty = e.target.closest('[data-xstyle]');
     if (sty) { xStyle = sty.dataset.xstyle; save('xstyle', xStyle); drawHistory(); return; }
+    var w = e.target.closest('[data-wopen]');
+    if (w) { openWorkout(w.dataset.wopen); return; }
     var r = e.target.closest('#xh-range');
     if (r) openPeriod(r, 'exercise');
   });
@@ -6166,6 +6187,67 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
       muscleTable(r.by, r.total, 'Sets');
   }
+
+  /* --- lifts that have not moved in a month --- */
+  var STALL_DAYS = 28, DROPPED_DAYS = 42;
+
+  function stallList() {
+    var now = Date.now(), seen = {}, out = [];
+    store.exercises.forEach(function (x) {
+      seen[x.id] = { x: x, n: 0, first: 0, done: 0, pr: 0 };
+    });
+    store.workouts.forEach(function (w) {
+      var t = new Date(w.date).getTime();
+      w.exercises.forEach(function (e) {
+        var st2 = e.exId && seen[e.exId];
+        if (!st2 || !afterCut(w, cutoffFor(exKey(e)))) return;
+        var any = false, pr = false;
+        e.sets.forEach(function (x2) {
+          if (!logged(x2)) return;
+          any = true;
+          if (x2.prs && x2.prs.length) pr = true;
+        });
+        if (!any) return;
+        st2.n++;
+        if (!st2.first || t < st2.first) st2.first = t;
+        if (t > st2.done) st2.done = t;
+        if (pr && t > st2.pr) st2.pr = t;
+      });
+    });
+    Object.keys(seen).forEach(function (id) {
+      var r = seen[id];
+      // it has to be something you still do, and have done more than once
+      if (r.n < 2 || now - r.done > DROPPED_DAYS * 864e5) return;
+      if (r.pr && now - r.pr < STALL_DAYS * 864e5) return;
+      var since = r.pr || r.first;
+      if (now - since < STALL_DAYS * 864e5) return;
+      out.push({ x: r.x, ever: !!r.pr, weeks: Math.floor((now - since) / (7 * 864e5)),
+                 done: r.done, n: r.n });
+    });
+    out.sort(function (a, b) { return b.weeks - a.weeks; });
+    return out;
+  }
+
+  function drawStatStall() {
+    var list = stallList();
+    $('ststall-body').innerHTML = !list.length
+      ? '<p class="stnote">Every lift you still train has set a record in the last four weeks.</p>'
+      : '<p class="stnote">Still in the rotation, but no record for a month or more. ' +
+        'A tap opens the exercise.</p>' +
+        '<div class="statlist">' + list.map(function (r) {
+          return '<button data-stall="' + esc(r.x.id) + '">' +
+            '<span class="stl"><b>' + esc(r.x.name) + '</b>' +
+            '<span class="m">' + esc(r.x.muscle || '') + ' \u00b7 last done ' +
+            relDate(new Date(r.done).toISOString()).toLowerCase() + '</span></span>' +
+            '<span>' + (r.ever ? r.weeks + (r.weeks === 1 ? ' week' : ' weeks') : 'no record yet') +
+            '</span></button>';
+        }).join('') + '</div>';
+  }
+
+  $('ststall-body').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-stall]');
+    if (b) openHistory(b.dataset.stall);
+  });
 
   /* --- the radar, this period against the one before it --- */
   var ST_RANGES = [
