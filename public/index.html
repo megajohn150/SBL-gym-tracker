@@ -1512,11 +1512,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="field" id="ex-headrow" hidden>
       <label for="ex-head">Head</label>
       <select id="ex-head">
-        <option value="">Not set</option>
+        <option value="">Pick one</option>
         <option>Front delt</option><option>Side delt</option><option>Rear delt</option>
       </select>
       <p class="hint" style="padding-left:0;padding-right:0">Statistics count the head on its own.
-        Everywhere else this exercise stays a shoulder exercise.</p>
+        Everywhere else this exercise stays a shoulder exercise. A shoulder exercise
+        cannot be saved without one.</p>
     </div>
 
     <div class="field">
@@ -2428,7 +2429,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4086';
+  var APP_VERSION = '3.4087';
 
   /* =========================================================
      STORE
@@ -2465,9 +2466,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           store.profile.pic = raw.profile.pic;
         }
       }
+      fixHeads();
     } catch (e) {}
   }
-  function saveStore() { save('data', JSON.stringify(store)); queuePush(); queueSocial(); }
+  function fixHeads() {
+    var n = 0;
+    store.exercises.forEach(function (x) {
+      if (x.muscle === 'Shoulders' && !x.head) { x.head = 'Front delt'; n++; }
+    });
+    return n;
+  }
+
+  function saveStore() { fixHeads(); save('data', JSON.stringify(store)); queuePush(); queueSocial(); }
   function saveLocalSession() {
     try {
       if (session) localStorage.setItem('tracker-session', JSON.stringify(session));
@@ -2533,6 +2543,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   function redrawAll() {
+    if (fixHeads()) saveStore();
     recomputeRecords();
     drawExercises();
     drawRoutines();
@@ -3640,7 +3651,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
   function codeOf(x) { return (x && x.code) || deriveCode(x ? x.name : '') || '?'; }
 
-  function exValid() { return $('ex-name').value.trim().length > 0; }
+  // a shoulder exercise without a head would vanish from the set count
+  function exValid() {
+    if (!$('ex-name').value.trim()) return false;
+    return $('ex-muscle').value !== 'Shoulders' || !!$('ex-head').value;
+  }
   function syncExForm() {
     var ok = exValid();
     $('ex-save').disabled = !ok;
@@ -3680,8 +3695,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function resetExForm() { fillExForm(null); }
 
   // the three heads are only worth asking about on a shoulder exercise
-  function syncHeadRow() { $('ex-headrow').hidden = $('ex-muscle').value !== 'Shoulders'; }
+  function syncHeadRow() {
+    $('ex-headrow').hidden = $('ex-muscle').value !== 'Shoulders';
+    syncExForm();
+  }
   $('ex-muscle').addEventListener('change', syncHeadRow);
+  $('ex-head').addEventListener('change', syncExForm);
 
   var histId = null;
 
