@@ -2432,7 +2432,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4090';
+  var APP_VERSION = '3.4091';
 
   /* =========================================================
      STORE
@@ -6973,11 +6973,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       HEADS.forEach(function (h) { out.push({ name: h, v: r.heads[h], d: r.hdays[h] }); });
     } else if (mode === 'map') {
       var front = r.heads['Front delt'] + r.heads['Side delt'] + r.heads['Shoulders'];
+      // the map paints front and side as one shape, so the line above them
+      // carries both targets: sets add up, while days cannot — two heads
+      // trained on one day are still one day
+      var ft = store.targets['Front delt'] || {}, sd = store.targets['Side delt'] || {};
       out.push({ name: 'Shoulders', v: front, d: r.hdays['Front+Side'],
+        t: { sets: (ft.sets || 0) + (sd.sets || 0),
+             days: Math.max(ft.days || 0, sd.days || 0) },
         kids: ['Front delt', 'Side delt', 'Shoulders'].filter(function (h) {
           return r.heads[h];
         }).map(function (h) {
-          return { name: h === 'Shoulders' ? 'Unassigned' : h, v: r.heads[h], d: r.hdays[h] };
+          return { name: h === 'Shoulders' ? 'Unassigned' : h, key: h,
+                   v: r.heads[h], d: r.hdays[h] };
         }) });
       out.push({ name: 'Rear delt', v: r.heads['Rear delt'], d: r.hdays['Rear delt'] });
     }
@@ -6990,7 +6997,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     rows.forEach(function (x) { max = Math.max(max, x.v); });
 
     function line(x, sub) {
-      var t = goal && !sub ? (store.targets[x.name] || {}) : {};
+      var t = goal ? (x.t || store.targets[x.key || x.name] || {}) : {};
       return '<div class="strow' + (sub ? ' sub' : '') + '">' +
         (sub ? '<span class="stdot none"></span>'
              : '<span class="stdot" style="background:' + heat(x.v, max) + '"></span>') +
