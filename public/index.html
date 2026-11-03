@@ -2351,7 +2351,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4075';
+  var APP_VERSION = '3.4076';
 
   /* =========================================================
      STORE
@@ -5355,24 +5355,28 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      Hevy's own export, read straight into the log. One row is one
      set; the rows of a session arrive together, in order.
      ========================================================= */
+  // The names come from whatever language the exercise was written in, so the
+  // guess reads both. Order matters: the first pattern that fits wins, and
+  // "uginanie nog" has to be tried before "uginanie ramion".
   var HEVY_MUSCLE = [
-    [/calf|calves/i, 'Calves'],
-    [/hamstring|leg curl|rdl|romanian|good morning|nordic/i, 'Hamstrings'],
-    [/glute|hip thrust|kickback/i, 'Glutes'],
-    [/adduct|abduct/i, 'Adductors'],
-    [/squat|leg press|leg extension|lunge|hack/i, 'Quads'],
-    [/crunch|sit.?up|plank|\babs?\b|oblique|leg raise/i, 'Abs'],
-    [/lat pulldown|pull.?up|chin.?up|pullover|\blats?\b/i, 'Lats'],
-    [/\brow\b|shrug|face pull|rear delt|back extension|deadlift|pull.?down/i, 'Upper back'],
-    [/tricep|pushdown|skull|\bdip\b|jm press|close grip bench/i, 'Triceps'],
-    [/bicep|curl|preacher|hammer/i, 'Biceps'],
-    [/forearm|wrist curl|grip strength|farmer/i, 'Forearms'],
-    [/shoulder|overhead press|\bohp\b|lateral raise|front raise|delt|arnold|upright/i, 'Shoulders'],
-    [/bench|chest|\bfly\b|push.?up|\bpec\b/i, 'Chest']
+    [/calf|calves|lydk|wspiec/, 'Calves'],
+    [/hamstring|leg curl|rdl|romanian|good morning|nordic|uginanie nog|dwuglowe uda|rumunsk/, 'Hamstrings'],
+    [/glute|hip thrust|kickback|poslad|odwodzenie/, 'Glutes'],
+    [/adduct|abduct|przywodz/, 'Adductors'],
+    [/squat|leg press|leg extension|lunge|hack|przysiad|wykrok|prostowanie nog|suwnic|wypychanie/, 'Quads'],
+    [/crunch|sit.?up|plank|\babs?\b|oblique|leg raise|brzuch|brzuszk|spiecia|deska|allah/, 'Abs'],
+    [/lat pulldown|pull.?up|chin.?up|pullover|\blats?\b|sciaganie drazka|wyciagu gorn|podciaganie/, 'Lats'],
+    [/\brow\b|shrug|face pull|rear delt|back extension|deadlift|pull.?down|wioslowanie|martwy ciag|kaptur|szrug|wyciagu doln/, 'Upper back'],
+    [/tricep|pushdown|skull|\bdip\b|jm press|close grip bench|prostowanie ramion|francusk|poreczach|waskim uchwytem/, 'Triceps'],
+    [/bicep|curl|preacher|hammer|uginanie ramion|modlitewnik/, 'Biceps'],
+    [/forearm|wrist curl|grip strength|farmer|przedramion|nadgarstk/, 'Forearms'],
+    [/shoulder|overhead press|\bohp\b|lateral raise|front raise|delt|arnold|upright|bark|unoszenie|wznos|zoliersk|nad glowa/, 'Shoulders'],
+    [/bench|chest|\bfly\b|push.?up|\bpec\b|klatk|rozpietk|wyciskanie|pompk/, 'Chest']
   ];
   function hevyMuscle(name) {
+    var n = plainName(name);
     for (var i = 0; i < HEVY_MUSCLE.length; i++) {
-      if (HEVY_MUSCLE[i][0].test(name)) return HEVY_MUSCLE[i][1];
+      if (HEVY_MUSCLE[i][0].test(n)) return HEVY_MUSCLE[i][1];
     }
     return '';
   }
@@ -5396,16 +5400,44 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return rows;
   }
 
-  var HEVY_MONTH = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-                     jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  // Hevy writes the month in the phone's own language, so the short names of a
+  // few come along: English, Polish, German, Spanish, French, Italian.
+  var HEVY_MONTH = {};
+  [['jan sty ene janv gen', 0], ['feb lut fevr', 1], ['mar mrz marz mars', 2],
+   ['apr kwi abr avr', 3], ['may maj mai mag', 4], ['jun cze juin giu', 5],
+   ['jul lip juil lug', 6], ['aug sie ago aout ag', 7], ['sep wrz sept set', 8],
+   ['oct paz okt ott', 9], ['nov lis', 10], ['dec gru dez dic', 11]
+  ].forEach(function (row) {
+    row[0].split(' ').forEach(function (k) { HEVY_MONTH[k] = row[1]; });
+  });
 
-  // "27 Oct 2026, 09:22"
+  // lower case, no accents — so one pattern matches "paź" and "paz" alike.
+  // A few letters are their own thing rather than an accent on another, and
+  // have to be swapped by hand.
+  function plainName(v) {
+    v = String(v).toLowerCase();
+    if (v.normalize) v = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return v.replace(/\u0142/g, 'l').replace(/\u00f8/g, 'o')
+      .replace(/\u0111/g, 'd').replace(/\u00df/g, 'ss');
+  }
+
+  function plainWord(v) { return plainName(v).replace(/[^a-z]/g, ''); }
+
+  // "27 Oct 2026, 09:22" — or "27 paź 2026, 09:30"
   function hevyDate(v) {
-    var m = /^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})(?:,\s*(\d{1,2}):(\d{2}))?/.exec(String(v).trim());
-    if (!m) return null;
-    var mo = HEVY_MONTH[m[2].toLowerCase()];
-    if (mo == null) return null;
-    return new Date(Number(m[3]), mo, Number(m[1]), Number(m[4] || 0), Number(m[5] || 0));
+    var t = String(v).trim();
+    var m = /^(\d{1,2})\s+([^\s,]+)\s+(\d{4})(?:,?\s*(\d{1,2}):(\d{2}))?/.exec(t);
+    if (m) {
+      var w = plainWord(m[2]);
+      var mo = HEVY_MONTH[w];
+      if (mo == null) mo = HEVY_MONTH[w.slice(0, 3)];
+      if (mo != null) {
+        return new Date(Number(m[3]), mo, Number(m[1]),
+          Number(m[4] || 0), Number(m[5] || 0));
+      }
+    }
+    var d = new Date(t.replace(',', ''));          // anything the browser knows
+    return isFinite(d.getTime()) ? d : null;
   }
 
   function hevyParse(text) {
