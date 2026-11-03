@@ -1835,7 +1835,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="scroll">
       <div class="statlist">
         <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
-        <button data-push="targets"><b>Weekly targets</b><span>Sets and days per muscle</span></button>
         <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
@@ -1848,7 +1847,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
       <h1>Set count</h1>
-      <span></span>
+      <button class="dmenu" id="sts-menu" aria-label="Set count menu">&#8942;</button>
     </div>
     <div class="scroll" id="stsets-body"></div>
   </section>
@@ -2106,6 +2105,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <div class="pop-wrap">
     <div class="pop-menu">
       <button id="rv-edit">Edit routine</button>
+    </div>
+  </div>
+</div>
+
+<div class="pop" id="sts-pop" hidden>
+  <div class="pop-bg" data-sts-close></div>
+  <div class="pop-wrap">
+    <div class="pop-menu">
+      <button id="sts-targets">Weekly targets</button>
     </div>
   </div>
 </div>
@@ -2389,7 +2397,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4081';
+  var APP_VERSION = '3.4082';
 
   /* =========================================================
      STORE
@@ -7028,6 +7036,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
       muscleTable(r.by, r.total, 'Sets', r.days, r.workouts, true);
   }
+
+  $('sts-menu').addEventListener('click', function () { $('sts-pop').hidden = false; });
+  document.querySelector('[data-sts-close]').addEventListener('click', function () {
+    $('sts-pop').hidden = true;
+  });
+  $('sts-targets').addEventListener('click', function () {
+    $('sts-pop').hidden = true;
+    push('targets');
+  });
 
   /* --- how much of each muscle a week should hold --- */
   function drawTargets() {
