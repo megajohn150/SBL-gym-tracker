@@ -1010,6 +1010,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 }
 .strow .nm{flex:1;font-size:.88rem}
 .strow .n{font-size:.88rem;font-weight:700;font-family:var(--display)}
+/* sets on the right, how many sessions touched that muscle beside them */
+.sthead .n2,.strow .n2{width:44px;text-align:right;flex:none}
+.strow .n.dim{color:var(--fg-3);font-weight:600}
 .strow.tot .nm,.strow.tot .n{font-weight:700;font-size:.95rem}
 .stdot{width:9px;height:9px;border-radius:50%;flex:none}
 .stlegend{display:flex;gap:16px;justify-content:center;padding:.2rem 0 .9rem;font-size:.7rem;color:var(--fg-3)}
@@ -1700,6 +1703,25 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
   </section>
 
+  <section class="screen" id="s-rtview" data-tab="workout" data-title="Routine">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1 id="rv-title">Routine</h1>
+      <button class="dmenu" id="rv-menu" aria-label="Routine menu">&#8942;</button>
+    </div>
+    <div class="scroll" id="rv-body"></div>
+    <div class="footbar">
+      <button class="btn btn-primary" id="rv-start">Start routine</button>
+    </div>
+  </section>
+
+  <div class="pop" id="rv-pop" hidden>
+    <div class="pop-bg" data-rv-close></div>
+    <div class="pop-menu">
+      <button id="rv-edit">Edit routine</button>
+    </div>
+  </div>
+
   <section class="screen" id="s-frroutine" data-tab="home" data-title="Routine">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
@@ -1891,10 +1913,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="val">JSON</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <button class="row" id="set-hevy">
+          <span class="lab">Import from Hevy</span>
+          <span class="val">CSV</span>
+          <span class="chev">&rsaquo;</span>
+        </button>
       </div>
     </div>
 
     <input type="file" id="set-file" accept="application/json,.json" hidden>
+    <input type="file" id="set-csv" accept="text/csv,.csv" hidden>
 
     <div class="group">
       <h2>Reset</h2>
@@ -2323,7 +2351,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4074';
+  var APP_VERSION = '3.4075';
 
   /* =========================================================
      STORE
@@ -3373,6 +3401,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-month') drawStatMonth();
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') drawPushRow();
+    if (id === 's-rtview') drawRtView();
     // picking an exercise leaves the screen without leaving the edit
     if (id !== 's-detail' && detailEdit && !(id === 's-exercises' && pickFor === 'detail')) {
       revertEdit();
@@ -3601,63 +3630,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     hideTip();
     var xp = periodOf(xPeriod), buckets = exerciseBuckets(key);
-    var xmax = Math.max.apply(null, buckets.map(function (b) { return b.v; }).concat([1]));
-    var xstep = Math.ceil(buckets.length / 4);
     var head = xLabel(buckets[buckets.length - 1].v);
-
-    var n = buckets.length;
-    var at = function (i) { return (i + 0.5) / n * 100; };
-    // Bars are read against zero. A line is read against itself, so it starts
-    // a little below the lightest session instead — otherwise every week of
-    // work is a flat line glued to the top of the box.
-    var seen = buckets.filter(function (b) { return b.v > 0; }).map(function (b) { return b.v; });
-    var vmin = seen.length ? Math.min.apply(null, seen) : 0;
-    var base = (xStyle === 'line' && seen.length > 1 && vmin < xmax)
-      ? vmin - (xmax - vmin) * 0.35 : 0;
-    var hOf = function (v) { return (v - base) / (xmax - base) * 100; };
-    var pts = buckets.map(function (b, i) {
-      return b.v > 0 ? at(i).toFixed(2) + ',' + (100 - hOf(b.v)).toFixed(2) : null;
-    }).filter(Boolean).join(' ');
-
-    var marks = buckets.map(function (b, i) {
-      if (!b.v) return '';
-      var pos = 'left:' + at(i).toFixed(2) + '%;bottom:' + hOf(b.v).toFixed(2) + '%';
-      return (xStyle === 'line'
-        ? '<i class="pdot' + (b.pr ? ' pr' : '') + '" style="' + pos + '"></i>' : '') +
-        (b.pr ? '<span class="pflag" style="' + pos + '">' + CUP_SM + '</span>' : '');
-    }).join('');
 
     var chart = '<div class="pchart" style="padding-top:.9rem">' +
       '<div class="pchart-h"><span><b>' + head[0] + '</b> ' + head[1] + ' <i>' +
         (xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month') +
       '</i></span>' +
-      '<span class="phead-r">' +
-        '<span class="pstyle">' +
-          '<button data-xstyle="line" aria-pressed="' + (xStyle === 'line') + '" aria-label="Line">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5l5.5-6 4 3.5L21 6"/></svg></button>' +
-          '<button data-xstyle="bars" aria-pressed="' + (xStyle === 'bars') + '" aria-label="Bars">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4.6" height="9" rx="1"/><rect x="9.7" y="7" width="4.6" height="14" rx="1"/><rect x="16.4" y="3" width="4.6" height="18" rx="1"/></svg></button>' +
-        '</span>' +
+      '<span class="phead-r">' + styleToggle(xStyle) +
         '<button class="prange" id="xh-range">' + xp.short + '</button></span></div>' +
-      '<div class="pbars' + (xStyle === 'line' ? ' aline' : '') + '">' +
-      (xStyle === 'line' && pts
-        ? '<svg class="pline" viewBox="0 0 100 100" preserveAspectRatio="none">' +
-          '<polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="2" ' +
-          'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'
-        : '') +
-      '<span class="pmark">' + marks + '</span>' +
-      buckets.map(function (b) {
+      chartBody(buckets, xStyle, xp, function (b) {
         var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
-        return '<button class="pbar" data-tip="' +
-          esc(String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '')) +
-          '"' + (b.prW ? ' data-prw="' + esc(b.prW) + '"' : '') + '>' +
-          '<i style="height:' + Math.max(2, Math.round(b.v / xmax * 100)) + '%"></i></button>';
-      }).join('') + '</div>' +
-      '<div class="pxlab">' + buckets.map(function (b, i) {
-        if ((buckets.length - 1 - i) % xstep) return '<span></span>';
-        var d = new Date(b.from);
-        return '<span>' + (xp.unit === 'month' ? MONTHS[d.getMonth()] : dayLab(d)) + '</span>';
-      }).join('') + '</div>' +
+        return String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
+      }) +
       '<div class="pseg">' +
         '<button data-xmetric="weight" aria-pressed="' + (xMetric === 'weight') + '">Heaviest</button>' +
         '<button data-xmetric="orm" aria-pressed="' + (xMetric === 'orm') + '">Est. 1RM</button>' +
@@ -4229,8 +4213,112 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return;
     }
     var b = e.target.closest('[data-routine]');
-    if (b) openRoutine(b.dataset.routine);
+    if (b) openRtView(b.dataset.routine);
   });
+
+  /* =========================================================
+     One routine: how it has gone over time, and what is in it.
+     ========================================================= */
+  var rvId = null, rvMetric = 'vol', rvPeriod = '3m';
+
+  function openRtView(id) {
+    rvId = id;
+    push('rtview');
+    drawRtView();
+  }
+
+  // every run of this routine, bucket by bucket, best session of each
+  function routineBuckets() {
+    var out = bucketShell(rvPeriod);
+    store.workouts.forEach(function (w) {
+      if (w.routineId !== rvId) return;
+      var b = bucketAt(out, new Date(w.date).getTime());
+      if (!b) return;
+      var t = workoutTotals(w);
+      var v = rvMetric === 'reps' ? t.reps : t.volume;
+      if (v > b.v) { b.v = v; b.prW = w.id; }
+    });
+    return out;
+  }
+
+  function rvLabel(v) {
+    if (!v) return ['\u2013', ''];
+    return rvMetric === 'reps' ? [String(Math.round(v)), 'reps'] : [fmtVolume(v), ''];
+  }
+
+  function drawRtView() {
+    var r = routineById(rvId);
+    if (!r) { pop(); return; }
+    $('rv-title').textContent = r.name || 'Routine';
+    hideTip();
+
+    var runs = store.workouts.filter(function (w) { return w.routineId === r.id; });
+    var xp = periodOf(rvPeriod), buckets = routineBuckets();
+    var head = rvLabel(buckets[buckets.length - 1].v);
+
+    var chart = !runs.length ? '' :
+      '<div class="pchart" style="padding-top:.9rem">' +
+      '<div class="pchart-h"><span><b>' + head[0] + '</b> ' + head[1] + ' <i>' +
+        (xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month') +
+      '</i></span>' +
+      '<span class="phead-r">' + styleToggle(xStyle) +
+        '<button class="prange" id="rv-range">' + xp.short + '</button></span></div>' +
+      chartBody(buckets, xStyle, xp, function (b) {
+        return String(rvLabel(b.v).join(' ')).trim() + '  \u00b7  ' + b.lab;
+      }) +
+      '<div class="pseg">' +
+        '<button data-rvmetric="vol" aria-pressed="' + (rvMetric === 'vol') + '">Volume</button>' +
+        '<button data-rvmetric="reps" aria-pressed="' + (rvMetric === 'reps') + '">Reps</button>' +
+      '</div></div>';
+
+    var rows = r.items.map(function (it) {
+      var x = byId(it.exId);
+      if (!x) return '';
+      var uni = !!x.unilateral;
+      return '<div class="exitem">' +
+        '<div class="exitem-h">' + muscleArt(x.muscle, 34) +
+          '<span class="lab"><span class="nm">' + esc(x.name) + '</span>' +
+          '<span class="meta">' + esc(x.muscle || '') + (uni ? ' &middot; unilateral' : '') +
+          '</span></span></div>' +
+        '<div class="ctl"><span class="ctl-lab">Sets</span><span class="val">' + it.sets + '</span></div>' +
+        (it.reps ? '<div class="ctl"><span class="ctl-lab">Rep range</span>' +
+          '<span class="val">' + esc(it.reps) + '</span></div>' : '') +
+        (uni ? '<div class="ctl"><span class="ctl-lab">Starts with</span>' +
+          '<span class="val">' + (it.side === 'L' ? 'Left' : 'Right') + '</span></div>' : '') +
+        (it.note ? '<p class="rocue">' + esc(it.note) + '</p>' : '') +
+        '</div>';
+    }).join('');
+
+    $('rv-body').innerHTML = chart +
+      '<div class="group" style="margin-top:1rem">' +
+      '<h2>' + r.items.length + ' exercise' + (r.items.length === 1 ? '' : 's') +
+      (runs.length ? ' &middot; done ' + runs.length + (runs.length === 1 ? ' time' : ' times') : '') +
+      '</h2><div class="rows">' + rows + '</div></div>' +
+      '<div style="height:1rem"></div>';
+  }
+
+  $('rv-menu').addEventListener('click', function () { $('rv-pop').hidden = false; });
+  document.querySelector('[data-rv-close]').addEventListener('click', function () {
+    $('rv-pop').hidden = true;
+  });
+  $('rv-edit').addEventListener('click', function () {
+    $('rv-pop').hidden = true;
+    openRoutine(rvId);
+  });
+  $('rv-start').addEventListener('click', function () {
+    var r = routineById(rvId);
+    if (r) startSession(r);
+  });
+
+  $('rv-body').addEventListener('click', function (e) {
+    var m = e.target.closest('[data-rvmetric]');
+    if (m) { rvMetric = m.dataset.rvmetric; drawRtView(); return; }
+    var sty = e.target.closest('[data-xstyle]');
+    if (sty) { xStyle = sty.dataset.xstyle; save('xstyle', xStyle); drawRtView(); return; }
+    var r2 = e.target.closest('#rv-range');
+    if (r2) openPeriod(r2, 'routine');
+  });
+  barTips($('rv-body'));
 
   function routineById(id) {
     for (var i = 0; i < store.routines.length; i++) {
@@ -5263,6 +5351,185 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   $('set-export').addEventListener('click', exportData);
+  /* =========================================================
+     Hevy's own export, read straight into the log. One row is one
+     set; the rows of a session arrive together, in order.
+     ========================================================= */
+  var HEVY_MUSCLE = [
+    [/calf|calves/i, 'Calves'],
+    [/hamstring|leg curl|rdl|romanian|good morning|nordic/i, 'Hamstrings'],
+    [/glute|hip thrust|kickback/i, 'Glutes'],
+    [/adduct|abduct/i, 'Adductors'],
+    [/squat|leg press|leg extension|lunge|hack/i, 'Quads'],
+    [/crunch|sit.?up|plank|\babs?\b|oblique|leg raise/i, 'Abs'],
+    [/lat pulldown|pull.?up|chin.?up|pullover|\blats?\b/i, 'Lats'],
+    [/\brow\b|shrug|face pull|rear delt|back extension|deadlift|pull.?down/i, 'Upper back'],
+    [/tricep|pushdown|skull|\bdip\b|jm press|close grip bench/i, 'Triceps'],
+    [/bicep|curl|preacher|hammer/i, 'Biceps'],
+    [/forearm|wrist curl|grip strength|farmer/i, 'Forearms'],
+    [/shoulder|overhead press|\bohp\b|lateral raise|front raise|delt|arnold|upright/i, 'Shoulders'],
+    [/bench|chest|\bfly\b|push.?up|\bpec\b/i, 'Chest']
+  ];
+  function hevyMuscle(name) {
+    for (var i = 0; i < HEVY_MUSCLE.length; i++) {
+      if (HEVY_MUSCLE[i][0].test(name)) return HEVY_MUSCLE[i][1];
+    }
+    return '';
+  }
+
+  // quoted fields, doubled quotes inside them, newlines inside them too
+  function csvRows(text) {
+    var rows = [], row = [], cell = '', q = false, i, c;
+    text = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    for (i = 0; i < text.length; i++) {
+      c = text.charAt(i);
+      if (q) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') { cell += '"'; i++; } else q = false;
+        } else cell += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  }
+
+  var HEVY_MONTH = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+                     jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+
+  // "27 Oct 2026, 09:22"
+  function hevyDate(v) {
+    var m = /^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})(?:,\s*(\d{1,2}):(\d{2}))?/.exec(String(v).trim());
+    if (!m) return null;
+    var mo = HEVY_MONTH[m[2].toLowerCase()];
+    if (mo == null) return null;
+    return new Date(Number(m[3]), mo, Number(m[1]), Number(m[4] || 0), Number(m[5] || 0));
+  }
+
+  function hevyParse(text) {
+    var rows = csvRows(text);
+    if (!rows.length) return null;
+    var head = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+    var at = {};
+    head.forEach(function (h, i) { at[h] = i; });
+    if (at.exercise_title == null || at.start_time == null) return null;
+
+    var out = [], byKey = {}, skippedWarm = 0;
+    rows.slice(1).forEach(function (r) {
+      if (!r || r.length < 3) return;
+      var when = hevyDate(r[at.start_time]);
+      if (!when) return;
+      var type = String(r[at.set_type] || 'normal').toLowerCase();
+      if (type === 'warmup') { skippedWarm++; return; }
+      var reps = num(r[at.reps]);
+      if (!(reps > 0)) return;                       // cardio and empty rows
+
+      var key = when.getTime() + '|' + (r[at.title] || '');
+      var w = byKey[key];
+      if (!w) {
+        var end = at.end_time != null ? hevyDate(r[at.end_time]) : null;
+        w = byKey[key] = {
+          name: String(r[at.title] || 'Workout').trim() || 'Workout',
+          note: String((at.description != null && r[at.description]) || '').trim(),
+          date: when,
+          seconds: end ? Math.max(60, Math.round((end - when) / 1000)) : 0,
+          ex: [], byName: {}
+        };
+        out.push(w);
+      }
+      var name = String(r[at.exercise_title] || '').trim();
+      if (!name) return;
+      var e = w.byName[name];
+      if (!e) {
+        e = w.byName[name] = {
+          name: name,
+          note: String((at.exercise_notes != null && r[at.exercise_notes]) || '').trim(),
+          sets: []
+        };
+        w.ex.push(e);
+      }
+      var rpe = at.rpe != null ? num(r[at.rpe]) : 0;
+      var rir = rpe > 0 ? String(Math.max(0, Math.min(4, 10 - rpe))) : (type === 'failure' ? 'F' : '');
+      if (rir === '0.5') rir = '0.5';
+      e.sets.push({ weight: String(num(r[at.weight_kg]) || ''), reps: String(reps), rir: rir });
+    });
+    return { workouts: out, warmups: skippedWarm };
+  }
+
+  function hevyImport(text) {
+    var parsed = hevyParse(text);
+    if (!parsed || !parsed.workouts.length) {
+      toast('That file is not a Hevy export');
+      return;
+    }
+    var have = {};
+    store.workouts.forEach(function (w) { have[new Date(w.date).getTime()] = 1; });
+    var fresh = parsed.workouts.filter(function (w) { return !have[w.date.getTime()]; });
+    var dupes = parsed.workouts.length - fresh.length;
+    if (!fresh.length) {
+      toast('Already imported');
+      return;
+    }
+
+    var newEx = 0, noMuscle = 0;
+    askConfirm('Import ' + fresh.length + ' workout' + (fresh.length === 1 ? '' : 's') + '?',
+      'They join your history. ' +
+      (dupes ? dupes + ' already here ' + (dupes === 1 ? 'is' : 'are') + ' skipped. ' : '') +
+      (parsed.warmups ? parsed.warmups + ' warm-up sets are left out.' : ''),
+      'Import', function () {
+        fresh.forEach(function (w) {
+          var wo = {
+            id: uid(), name: w.name, note: w.note, date: w.date.toISOString(),
+            seconds: w.seconds, routineId: null, private: false, exercises: []
+          };
+          w.ex.forEach(function (e) {
+            var x = store.exercises.filter(function (y) {
+              return y.name.toLowerCase() === e.name.toLowerCase();
+            })[0];
+            if (!x) {
+              var muscle = hevyMuscle(e.name);
+              if (!muscle) noMuscle++;
+              x = { id: uid(), name: e.name, code: deriveCode(e.name),
+                    muscle: muscle, unilateral: false };
+              store.exercises.push(x);
+              newEx++;
+            }
+            wo.exercises.push({
+              exId: x.id, name: x.name, muscle: x.muscle, unilateral: !!x.unilateral,
+              note: e.note,
+              sets: e.sets.map(function (st, i) {
+                return { label: pad2(i + 1), weight: st.weight, reps: st.reps, rir: st.rir };
+              })
+            });
+          });
+          store.workouts.push(wo);
+        });
+        store.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+        recomputeRecords();
+        saveStore();
+        drawHome();
+        drawExercises();
+        toast(fresh.length + ' workouts, ' + newEx + ' new exercises');
+        if (noMuscle) {
+          setTimeout(function () {
+            toast(noMuscle + ' exercises need a muscle set');
+          }, 2200);
+        }
+      });
+  }
+
+  $('set-hevy').addEventListener('click', function () { $('set-csv').click(); });
+  $('set-csv').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { hevyImport(String(r.result)); };
+    r.readAsText(f);
+    this.value = '';
+  });
+
   $('set-import').addEventListener('click', function () { $('set-file').click(); });
   $('set-file').addEventListener('change', function () {
     var f = this.files && this.files[0];
@@ -6045,6 +6312,60 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return out;
   }
 
+  /* One chart body — the line or the bars, the dots, the cups and the labels.
+     The exercise chart and the routine chart share it. */
+  function styleToggle(style) {
+    return '<span class="pstyle">' +
+      '<button data-xstyle="line" aria-pressed="' + (style === 'line') + '" aria-label="Line">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.5l5.5-6 4 3.5L21 6"/></svg></button>' +
+      '<button data-xstyle="bars" aria-pressed="' + (style === 'bars') + '" aria-label="Bars">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4.6" height="9" rx="1"/><rect x="9.7" y="7" width="4.6" height="14" rx="1"/><rect x="16.4" y="3" width="4.6" height="18" rx="1"/></svg></button>' +
+      '</span>';
+  }
+
+  function chartBody(buckets, style, xp, tipOf) {
+    var xmax = Math.max.apply(null, buckets.map(function (b) { return b.v; }).concat([1]));
+    var n = buckets.length, step = Math.ceil(n / 4);
+    var at = function (i) { return (i + 0.5) / n * 100; };
+    // Bars are read against zero. A line is read against itself, so it starts
+    // a little below the lightest session instead — otherwise every week of
+    // work is a flat line glued to the top of the box.
+    var seen = buckets.filter(function (b) { return b.v > 0; }).map(function (b) { return b.v; });
+    var vmin = seen.length ? Math.min.apply(null, seen) : 0;
+    var base = (style === 'line' && seen.length > 1 && vmin < xmax)
+      ? vmin - (xmax - vmin) * 0.35 : 0;
+    var hOf = function (v) { return (v - base) / (xmax - base) * 100; };
+    var pts = buckets.map(function (b, i) {
+      return b.v > 0 ? at(i).toFixed(2) + ',' + (100 - hOf(b.v)).toFixed(2) : null;
+    }).filter(Boolean).join(' ');
+
+    var marks = buckets.map(function (b, i) {
+      if (!b.v) return '';
+      var pos = 'left:' + at(i).toFixed(2) + '%;bottom:' + hOf(b.v).toFixed(2) + '%';
+      return (style === 'line'
+        ? '<i class="pdot' + (b.pr ? ' pr' : '') + '" style="' + pos + '"></i>' : '') +
+        (b.pr ? '<span class="pflag" style="' + pos + '">' + CUP_SM + '</span>' : '');
+    }).join('');
+
+    return '<div class="pbars' + (style === 'line' ? ' aline' : '') + '">' +
+      (style === 'line' && pts
+        ? '<svg class="pline" viewBox="0 0 100 100" preserveAspectRatio="none">' +
+          '<polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="2" ' +
+          'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'
+        : '') +
+      '<span class="pmark">' + marks + '</span>' +
+      buckets.map(function (b) {
+        return '<button class="pbar" data-tip="' + esc(tipOf(b)) + '"' +
+          (b.prW ? ' data-prw="' + esc(b.prW) + '"' : '') + '>' +
+          '<i style="height:' + Math.max(2, Math.round(b.v / xmax * 100)) + '%"></i></button>';
+      }).join('') + '</div>' +
+      '<div class="pxlab">' + buckets.map(function (b, i) {
+        if ((n - 1 - i) % step) return '<span></span>';
+        var d = new Date(b.from);
+        return '<span>' + (xp.unit === 'month' ? MONTHS[d.getMonth()] : dayLab(d)) + '</span>';
+      }).join('') + '</div>';
+  }
+
   function xLabel(v) {
     if (!v) return ['\u2013', ''];
     if (xMetric === 'orm') return [Math.round(v) + ' kg', ''];
@@ -6221,7 +6542,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   function openPeriod(btn, which) {
     perFor = which;
-    var cur = which === 'profile' ? pPeriod : xPeriod;
+    var cur = which === 'profile' ? pPeriod : which === 'routine' ? rvPeriod : xPeriod;
     var r = btn.getBoundingClientRect();
     $('per-wrap').style.top = (r.bottom + 6) + 'px';
     document.querySelectorAll('[data-period]').forEach(function (b) {
@@ -6278,6 +6599,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     b.addEventListener('click', function () {
       closePer();
       if (perFor === 'profile') { pPeriod = b.dataset.period; drawProfile(); }
+      else if (perFor === 'routine') { rvPeriod = b.dataset.period; drawRtView(); }
       else { xPeriod = b.dataset.period; drawHistory(); }
     });
   });
@@ -6386,26 +6708,30 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   // everything a stretch of time holds, muscle by muscle
   function statsFor(from, to) {
-    var by = {}, total = 0, sets = 0, volume = 0, seconds = 0, count = 0;
-    Object.keys(MUSCLE_CELL).forEach(function (m) { by[m] = 0; });
+    var by = {}, days = {}, total = 0, sets = 0, volume = 0, seconds = 0, count = 0;
+    Object.keys(MUSCLE_CELL).forEach(function (m) { by[m] = 0; days[m] = 0; });
     store.workouts.forEach(function (w) {
       var d = new Date(w.date);
       if (d < from || d >= to) return;
       count++;
       seconds += w.seconds || 0;
+      var hit = {};
       w.exercises.forEach(function (e) {
         var n = countSets(e);
         if (!n) return;
         var key = by[e.muscle] != null ? e.muscle : 'Other';
         by[key] = (by[key] || 0) + n;
+        hit[key] = 1;                        // this session counts once per muscle
         total += n;
         e.sets.forEach(function (st) {
           if (logged(st)) volume += num(st.weight) * num(st.reps);
         });
       });
+      Object.keys(hit).forEach(function (m) { days[m] = (days[m] || 0) + 1; });
     });
     sets = total;
-    return { by: by, total: total, sets: sets, volume: volume, seconds: seconds, workouts: count };
+    return { by: by, days: days, total: total, sets: sets, volume: volume,
+             seconds: seconds, workouts: count };
   }
 
   function byGroup(by) {
@@ -6422,19 +6748,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return 'hsl(' + Math.round(125 - 125 * t) + ' 52% 46%)';
   }
 
-  function muscleTable(by, total, head) {
+  function muscleTable(by, total, head, days, sessions) {
     var max = 0;
     Object.keys(by).forEach(function (m) { max = Math.max(max, by[m]); });
     var names = Object.keys(by).sort(function (a, b) {
       return by[b] - by[a] || a.localeCompare(b);
     });
-    return '<div class="sthead"><span style="flex:1">Muscle</span><span>' + head + '</span></div>' +
-      '<div class="strow tot"><span class="nm">Total</span><span class="n">' + total + '</span></div>' +
+    return '<div class="sthead"><span style="flex:1">Muscle</span>' +
+      (days ? '<span class="n2">Days</span>' : '') +
+      '<span class="n2">' + head + '</span></div>' +
+      '<div class="strow tot"><span class="nm">Total</span>' +
+      (days ? '<span class="n n2">' + (sessions || 0) + '</span>' : '') +
+      '<span class="n n2">' + total + '</span></div>' +
       names.map(function (m) {
         return '<div class="strow">' +
           '<span class="stdot" style="background:' + heat(by[m], max) + '"></span>' +
           '<span class="nm">' + esc(m) + '</span>' +
-          '<span class="n">' + by[m] + '</span></div>';
+          (days ? '<span class="n n2 dim">' + (days[m] || 0) + '</span>' : '') +
+          '<span class="n n2">' + by[m] + '</span></div>';
       }).join('');
   }
 
@@ -6444,7 +6775,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var r = statsFor(start, end);
     $('stsets-body').innerHTML =
       '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
-      muscleTable(r.by, r.total, 'Sets');
+      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts);
   }
 
   /* --- lifts that have not moved in a month --- */
@@ -6715,7 +7046,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '</div>' +
       '<div class="stdays">' + days + '</div>' +
       bodyMap(r.by, max) +
-      muscleTable(r.by, r.total, 'Sets');
+      muscleTable(r.by, r.total, 'Sets', r.days, r.workouts);
   }
 
   $('stbody-body').addEventListener('click', function (e) {
