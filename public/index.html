@@ -1715,13 +1715,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
   </section>
 
-  <div class="pop" id="rv-pop" hidden>
-    <div class="pop-bg" data-rv-close></div>
-    <div class="pop-menu">
-      <button id="rv-edit">Edit routine</button>
-    </div>
-  </div>
-
   <section class="screen" id="s-frroutine" data-tab="home" data-title="Routine">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
@@ -2072,6 +2065,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="pop" id="rv-pop" hidden>
+  <div class="pop-bg" data-rv-close></div>
+  <div class="pop-wrap">
+    <div class="pop-menu">
+      <button id="rv-edit">Edit routine</button>
+    </div>
+  </div>
+</div>
+
 <div class="pop" id="rt-pop" hidden>
   <div class="pop-bg" data-rt-close></div>
   <div class="pop-wrap" style="top:calc(env(safe-area-inset-top) + 56px)">
@@ -2351,7 +2353,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4076';
+  var APP_VERSION = '3.4077';
 
   /* =========================================================
      STORE
@@ -4221,6 +4223,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   var rvId = null, rvMetric = 'vol', rvPeriod = '3m';
 
+  // A routine keeps its id, but a session saved before it existed — or
+  // imported from elsewhere — only carries the name it ran under.
+  function runsOf(r) {
+    var nm = (r.name || '').trim().toLowerCase();
+    return store.workouts.filter(function (w) {
+      return w.routineId === r.id || (nm && (w.name || '').trim().toLowerCase() === nm);
+    });
+  }
+
   function openRtView(id) {
     rvId = id;
     push('rtview');
@@ -4230,8 +4241,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // every run of this routine, bucket by bucket, best session of each
   function routineBuckets() {
     var out = bucketShell(rvPeriod);
-    store.workouts.forEach(function (w) {
-      if (w.routineId !== rvId) return;
+    var r = routineById(rvId);
+    (r ? runsOf(r) : []).forEach(function (w) {
       var b = bucketAt(out, new Date(w.date).getTime());
       if (!b) return;
       var t = workoutTotals(w);
@@ -4252,7 +4263,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('rv-title').textContent = r.name || 'Routine';
     hideTip();
 
-    var runs = store.workouts.filter(function (w) { return w.routineId === r.id; });
+    var runs = runsOf(r);
     var xp = periodOf(rvPeriod), buckets = routineBuckets();
     var head = rvLabel(buckets[buckets.length - 1].v);
 
@@ -6366,7 +6377,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var vmin = seen.length ? Math.min.apply(null, seen) : 0;
     var base = (style === 'line' && seen.length > 1 && vmin < xmax)
       ? vmin - (xmax - vmin) * 0.35 : 0;
-    var hOf = function (v) { return (v - base) / (xmax - base) * 100; };
+    // one session alone has nothing to be read against, so it sits mid-box
+    // rather than pinned to the ceiling
+    var top = (style === 'line' && seen.length === 1) ? xmax * 2 : xmax;
+    var hOf = function (v) { return (v - base) / (top - base) * 100; };
     var pts = buckets.map(function (b, i) {
       return b.v > 0 ? at(i).toFixed(2) + ',' + (100 - hOf(b.v)).toFixed(2) : null;
     }).filter(Boolean).join(' ');
