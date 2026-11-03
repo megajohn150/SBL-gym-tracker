@@ -1011,7 +1011,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .strow .nm{flex:1;font-size:.88rem}
 .strow .n{font-size:.88rem;font-weight:700;font-family:var(--display)}
 /* sets on the right, how many sessions touched that muscle beside them */
-.sthead .n2,.strow .n2{width:52px;text-align:right;flex:none}
+.sthead .n2,.strow .n2{width:56px;flex:none}
+.strow .n2{display:flex;align-items:baseline;justify-content:center}
+.strow .n2 b{width:24px;text-align:right;font-weight:inherit}
+.strow .n2 i{width:28px;text-align:left;font-style:normal;font-size:.72em;
+  font-weight:600;color:var(--fg-3);padding-left:2px;opacity:.75}
+.sthead .n2{display:block;text-align:right;padding-right:28px}
 .strow .n.dim{color:var(--fg-3);font-weight:600}
 .strow.tot .nm,.strow.tot .n{font-weight:700;font-size:.95rem}
 .stdot{width:9px;height:9px;border-radius:50%;flex:none}
@@ -1029,15 +1034,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .trow{display:flex;gap:8px;align-items:center;padding:6px var(--pad);border-bottom:var(--dash)}
 .trow:last-child{border-bottom:none}
 .trow .nm{flex:1;font-size:.85rem;font-weight:600}
-.trow .stepper{width:82px}
-.trow .stepper button{width:27px}
-.trow .stepper b{min-width:28px;font-size:.8rem}
+.trow .cell{width:82px;flex:none;text-align:center}
+.trow button.cell.blank{color:var(--fg-3);font-weight:400}
 .strow.sub{padding-top:5px;padding-bottom:5px}
 .strow.sub .nm{padding-left:20px;font-size:.8rem;color:var(--fg-2)}
 .strow.sub .n{font-size:.8rem;font-weight:600;color:var(--fg-2)}
 .stdot.none{background:none}
 .strow .n.hit{color:var(--green)}
-.strow .n i{font-style:normal;color:var(--fg-3);font-weight:600}
 .psearch{display:flex;align-items:center;gap:8px;margin:0 var(--pad) .7rem;
   padding:0 10px;border:var(--border);border-radius:var(--radius);background:var(--surface);
   color:var(--fg-3)}
@@ -2361,6 +2364,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <button class="x" id="rest-dismiss" aria-label="Cancel rest">&times;</button>
 </div>
 
+<div class="sheet" id="days-sheet" hidden>
+  <div class="sheet-bg" data-days-close></div>
+  <div class="sheet-card">
+    <h3>Days a week</h3>
+    <div class="rir-grid" id="days-grid" style="grid-template-columns:repeat(5,1fr)">
+      <button data-day="0">&ndash;</button>
+      <button data-day="1">1</button>
+      <button data-day="2">2</button>
+      <button data-day="3">3</button>
+      <button data-day="4">4</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="rir-sheet" hidden>
   <div class="sheet-bg" data-sheet-close></div>
   <div class="sheet-card">
@@ -2411,7 +2428,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4084';
+  var APP_VERSION = '3.4085';
 
   /* =========================================================
      STORE
@@ -7043,7 +7060,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   // a target is only worth printing where the period it is set for lines up
-  function tgt(n) { return n ? '<i>/' + n + '</i>' : ''; }
+  function tgt(n) { return '<i>' + (n ? '/' + n : '') + '</i>'; }
   function hit(v, n) { return n && (v || 0) >= n ? ' hit' : ''; }
 
   // One line of the table: a muscle, or a head standing in for the shoulders.
@@ -7086,9 +7103,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         (sub ? '<span class="stdot none"></span>'
              : '<span class="stdot" style="background:' + heat(x.v, max) + '"></span>') +
         '<span class="nm">' + esc(x.name) + '</span>' +
-        (days ? '<span class="n n2 dim' + hit(x.d, t.days) + '">' + (x.d || 0) +
+        (days ? '<span class="n n2 dim' + hit(x.d, t.days) + '"><b>' + (x.d || 0) + '</b>' +
           tgt(t.days) + '</span>' : '') +
-        '<span class="n n2' + hit(x.v, t.sets) + '">' + x.v + tgt(t.sets) +
+        '<span class="n n2' + hit(x.v, t.sets) + '"><b>' + x.v + '</b>' + tgt(t.sets) +
         '</span></div>';
     }
 
@@ -7096,8 +7113,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       (days ? '<span class="n2">Days</span>' : '') +
       '<span class="n2">' + head + '</span></div>' +
       '<div class="strow tot"><span class="nm">Total</span>' +
-      (days ? '<span class="n n2">' + (r.workouts || 0) + '</span>' : '') +
-      '<span class="n n2">' + r.total + '</span></div>' +
+      (days ? '<span class="n n2"><b>' + (r.workouts || 0) + '</b><i></i></span>' : '') +
+      '<span class="n n2"><b>' + r.total + '</b><i></i></span></div>' +
       rows.map(function (x) {
         return line(x, false) + (x.kids && x.kids.length > 1
           ? x.kids.map(function (k) { return line(k, true); }).join('') : '');
@@ -7135,29 +7152,58 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       '<div class="rows">' + ms.map(function (m) {
         var t = store.targets[m] || {};
         return '<div class="trow"><span class="nm">' + esc(m) + '</span>' +
-          ['sets', 'days'].map(function (f) {
-            var v = t[f] || 0, by2 = 1;
-            return '<span class="stepper">' +
-              '<button data-tgt="' + m + '" data-f="' + f + '" data-by="' + (-by2) + '"' +
-                (v ? '' : ' disabled') + ' aria-label="Less">&minus;</button>' +
-              '<b>' + (v || '\u2013') + '</b>' +
-              '<button data-tgt="' + m + '" data-f="' + f + '" data-by="' + by2 +
-                '" aria-label="More">+</button></span>';
-          }).join('') + '</div>';
+          '<input class="cell" type="text" inputmode="numeric" maxlength="2" ' +
+            'data-tset="' + esc(m) + '" value="' + (t.sets || '') + '" placeholder="&ndash;" ' +
+            'autocomplete="off">' +
+          '<button class="cell' + (t.days ? '' : ' blank') + '" data-tday="' + esc(m) + '">' +
+            (t.days || '&ndash;') + '</button></div>';
       }).join('') + '</div>' +
       '<div class="note">A week runs Monday to Sunday. Set count and the body map both ' +
       'read these, and a muscle you leave blank is simply not counted against anything.</div>';
   }
 
-  $('tg-body').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-tgt]');
-    if (!b || b.disabled) return;
-    var m = b.dataset.tgt, f = b.dataset.f;
+  function setTarget(m, f, v) {
     var t = store.targets[m] || (store.targets[m] = {});
-    t[f] = Math.max(0, Math.min(f === 'sets' ? 40 : 7, (t[f] || 0) + Number(b.dataset.by)));
+    if (v) t[f] = v; else delete t[f];
     if (!t.sets && !t.days) delete store.targets[m];
     saveStore();
+  }
+
+  // typing straight into the field, so only digits and only up to twenty
+  $('tg-body').addEventListener('input', function (e) {
+    var i = e.target.closest('[data-tset]');
+    if (!i) return;
+    var v = i.value.replace(/[^0-9]/g, '').replace(/^0+/, '').slice(0, 2);
+    if (Number(v) > 20) v = '20';
+    if (v !== i.value) i.value = v;
+    setTarget(i.dataset.tset, 'sets', Number(v));
+  });
+
+  var dayFor = null;
+
+  $('tg-body').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-tday]');
+    if (!b) return;
+    dayFor = b.dataset.tday;
+    var cur = (store.targets[dayFor] || {}).days || 0;
+    document.querySelectorAll('#days-grid button').forEach(function (x) {
+      x.setAttribute('aria-pressed', String(Number(x.dataset.day) === cur));
+    });
+    $('days-sheet').hidden = false;
+  });
+
+  $('days-grid').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-day]');
+    if (!b || !dayFor) return;
+    setTarget(dayFor, 'days', Number(b.dataset.day));
+    $('days-sheet').hidden = true;
+    dayFor = null;
     drawTargets();
+  });
+
+  document.querySelector('[data-days-close]').addEventListener('click', function () {
+    $('days-sheet').hidden = true;
+    dayFor = null;
   });
 
   /* --- lifts that have not moved in a month --- */
