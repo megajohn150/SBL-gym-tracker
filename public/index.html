@@ -2323,7 +2323,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4073';
+  var APP_VERSION = '3.4074';
 
   /* =========================================================
      STORE
@@ -5466,6 +5466,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       social.replies = (res[4].data || []).map(cmtRow).filter(function (c) { return c.by !== me.id; });
       social.replies.forEach(function (c) { names.push(c.by); });
       return ensureNames(names).then(function () {
+        if (goClear) { clearNotesFor(goClear); goClear = null; }
         drawBell();
         if (current() === 's-home') drawHome();
         if (current() === 's-comments') drawComments();
@@ -5769,10 +5770,33 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   /* --- a tap on a push notification lands where it points --- */
+  var goClear = null;
+
+  // Opening a notification is reading it, wherever it was tapped. The bell
+  // keeps its own list, so the matching rows go with it.
+  function clearNotesFor(d) {
+    if (!d) return;
+    var k = d.pu && d.pi ? postKey(d.pu, d.pi) : '';
+    var hit = 0;
+    noteList().forEach(function (n) {
+      var same = d.go === 'u'
+        ? (n.type === 'fol' && n.by === d.id)
+        : (n.k === k && (d.go === 'w' ? n.type === 'like'
+            : n.type === 'cmt' || n.type === 'rep'));
+      if (same) { dropNote(n); hit++; }
+    });
+    if (!hit) return;
+    drawBell();
+    if (current() === 's-notes') drawNotes();
+  }
+
   function openPush(d) {
     if (!d || !d.go) return;
     if (!me) { pendingGo = d; return; }      // the app is still waking up
     pendingGo = null;
+    // on a cold start the reactions are not in yet, so clear them once they are
+    goClear = d;
+    clearNotesFor(d);
     if (d.go === 'u') { openUser(d.id); return; }
     if (!d.pu || !d.pi) return;
     if (d.go === 'c') { openComments(postKey(d.pu, d.pi)); return; }
