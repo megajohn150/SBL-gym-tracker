@@ -516,9 +516,14 @@ div:has(> .dfoot) + .dsec{margin-top:0}
   background:none;border:0;padding:9px 8px;color:var(--fg-3);
   display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:700;
 }
-/* a digit has no descender, so its line box hangs it above the icon's middle */
-.wacts button span{line-height:1;margin-top:1px}
-.wacts button svg{display:block}
+/* Both icons are drawn off-centre inside their own square — the thumb about
+   a pixel high, the bubble half a pixel low because of its tail — and a digit
+   keeps empty descender room under it. Each is nudged onto the same line. */
+.wacts button svg{display:block;transform:translateY(-.4px)}
+.wacts button.lk svg{transform:translateY(.8px)}
+.wacts button span{line-height:1;position:relative}
+[data-skin="receipt"] .wacts button span{top:.4px}
+[data-skin="editorial"] .wacts button span{top:1.2px}
 .wacts button.on{color:var(--accent)}
 .likeline,.cline{display:flex;gap:9px;padding:.15rem 8px .3rem;font-size:.76rem}
 .likeline{align-items:center;color:var(--fg-2)}
@@ -2432,7 +2437,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4091';
+  var APP_VERSION = '3.4092';
 
   /* =========================================================
      STORE
