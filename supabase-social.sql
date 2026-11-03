@@ -167,3 +167,38 @@ create policy "comments drop"  on public.comments for delete to authenticated
 do $$ begin
   alter table public.follows add constraint follows_not_self check (follower <> followee);
 exception when duplicate_object then null; end $$;
+
+-- ------------------------------------------------------------------
+-- 7. Prywatny trening zostaje w chmurze, tylko znajomi go nie widzą.
+--    Dzięki temu lajki i komentarze przeżywają przełączenie tam i z
+--    powrotem — wcześniej wiersz znikał i kaskada je zabierała.
+-- ------------------------------------------------------------------
+alter table public.posts add column if not exists private boolean not null default false;
+
+drop policy if exists "posts read" on public.posts;
+create policy "posts read" on public.posts for select to authenticated
+  using (auth.uid() = user_id or (not private and public.friends_with(user_id)));
+
+-- Reakcje widzi ten, kto widzi sam trening — prywatny odcina też je.
+create or replace function public.can_see_post(pu uuid, pid text)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.posts p
+    where p.user_id = pu and p.id = pid
+      and (auth.uid() = p.user_id or (not p.private and public.friends_with(p.user_id)))
+  );
+$$;
+
+drop policy if exists "likes read"  on public.likes;
+drop policy if exists "likes write" on public.likes;
+create policy "likes read"  on public.likes for select to authenticated
+  using (public.can_see_post(post_user, post_id));
+create policy "likes write" on public.likes for insert to authenticated
+  with check (auth.uid() = liker and public.can_see_post(post_user, post_id));
+
+drop policy if exists "comments read"  on public.comments;
+drop policy if exists "comments write" on public.comments;
+create policy "comments read"  on public.comments for select to authenticated
+  using (public.can_see_post(post_user, post_id) or auth.uid() = parent_author);
+create policy "comments write" on public.comments for insert to authenticated
+  with check (auth.uid() = author and public.can_see_post(post_user, post_id));

@@ -364,6 +364,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px);
 }
 .cell::placeholder{color:var(--fg-3);font-weight:400}
+.rircell{color:var(--fg)}
 /* how far this set is from the last time, in the corner of its own box */
 .cellwrap{position:relative;min-width:0}
 .delta{
@@ -1743,7 +1744,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button class="x" id="cmt-replyx" aria-label="Cancel reply">&times;</button>
       </div>
       <div class="cfield">
-        <textarea id="cmt-input" rows="1" placeholder="Add a comment&hellip;" autocomplete="off"></textarea>
+        <textarea id="cmt-input" rows="1" maxlength="500" placeholder="Add a comment&hellip;" autocomplete="off"></textarea>
         <button class="send" id="cmt-send">Post</button>
       </div>
     </div>
@@ -2265,7 +2266,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4065';
+  var APP_VERSION = '3.4066';
 
   /* =========================================================
      STORE
@@ -2493,7 +2494,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return { workouts: pub.length, streak: weekStreak(pub) };
   }
   function postRow(w) {
-    return { user_id: me.id, id: w.id, date: w.date, data: w, updated_at: new Date().toISOString() };
+    return { user_id: me.id, id: w.id, date: w.date, data: w,
+             private: !!w.private, updated_at: new Date().toISOString() };
   }
 
   // a line that says what just happened, then gets out of the way
@@ -2537,8 +2539,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
   }
 
-  // the cloud copy follows the log: new workouts go up, private and
-  // deleted ones come down
+  // the cloud copy follows the log: every workout goes up, deleted ones come down
   function syncPosts() {
     if (!sb || !me || !social.username) return Promise.resolve();
     // the local copy has to be the real one before anything is deleted by it
@@ -2547,7 +2548,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (r.error) { social.dirty = true; return; }
       var have = {}, mine = {}, add = [];
       (r.data || []).forEach(function (row) { have[row.id] = 1; });
-      publicWorkouts().forEach(function (w) {
+      // Private ones go up too, flagged — friends cannot read them, and the
+      // likes and comments survive a trip through private and back.
+      store.workouts.forEach(function (w) {
         mine[w.id] = 1;
         var s = sigOf(w);
         if (!have[w.id] || sigs.posts[w.id] !== s) { add.push(postRow(w)); sigs.posts[w.id] = s; }
@@ -2609,13 +2612,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (!sb || !ids.length) { social.feed = []; social.more = false; drawHome(); return Promise.resolve(); }
     var from = more ? social.feed.length : 0;
     return Promise.all([
-      sb.from('posts').select('user_id,id,date,data').in('user_id', ids)
+      sb.from('posts').select('user_id,id,date,data,private').in('user_id', ids)
         .order('date', { ascending: false }).range(from, from + FEED_PAGE - 1),
       more ? Promise.resolve({ data: [] })
         : sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
     ]).then(function (res) {
       (res[1].data || []).forEach(function (p) { social.people[p.user_id] = p; });
-      var rows = (res[0].data || []).map(function (row) {
+      var rows = (res[0].data || []).filter(function (row) { return !row.private; })
+        .map(function (row) {
         var w = row.data || {};
         w.id = row.id; w.by = row.user_id; w.date = row.date;
         return w;
@@ -2635,7 +2639,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (!r.data || !r.data.username) { openUname(false); return; }
         social.username = r.data.username;
         store.profile.handle = social.username;
-        sigsLoad();
+        sigsLoad(); rqLoad();
         drawProfile(); drawHome();
         return pushProfile().then(pushLibrary).then(syncPosts).then(loadFollows);
       });
@@ -2844,13 +2848,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function loadUserPosts(more) {
     if (!userView || !sb) return Promise.resolve();
     var id = userView.id, from = more ? userView.posts.length : 0;
-    return sb.from('posts').select('id,date,data').eq('user_id', id)
+    return sb.from('posts').select('id,date,data,private').eq('user_id', id)
       .order('date', { ascending: false }).range(from, from + FR_PAGE - 1)
       .then(function (r) {
         if (!userView || userView.id !== id || r.error) return;
-        var rows = (r.data || []).map(function (row) {
-          var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
-        });
+        var rows = (r.data || []).filter(function (row) { return !row.private; })
+          .map(function (row) {
+            var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
+          });
         userView.posts = more ? userView.posts.concat(rows) : rows;
         userView.more = rows.length === FR_PAGE;
         if (more) drawUser();
@@ -4104,7 +4109,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      Nothing is saved to history yet — there is no finish step.
      ========================================================= */
   var session = null;
-  var rirTarget = -1;
+  var rirTarget = -1, rirWhere = 'session';   // the sheet serves the editor too
 
   function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
@@ -4612,17 +4617,31 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     var r = e.target.closest('[data-rir-open]');
     if (!r) return;
+    rirWhere = 'session';
     rirTarget = Number(r.dataset.rirOpen);
-    var cur = session.exercises[session.idx].sets[rirTarget].rir;
+    openRir(session.exercises[session.idx].sets[rirTarget].rir);
+  });
+
+  function openRir(cur) {
     document.querySelectorAll('#rir-grid button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.rir === cur));
     });
     $('rir-sheet').hidden = false;
-  });
+  }
 
   document.getElementById('rir-grid').addEventListener('click', function (e) {
     var b = e.target.closest('[data-rir]');
-    if (!b || rirTarget < 0) return;
+    if (!b) return;
+    if (rirWhere === 'detail') {
+      $('rir-sheet').hidden = true;
+      var at = String(rirTarget).split('-');
+      reshapeDetail(function () {
+        var st2 = detailW.exercises[Number(at[0])].sets[Number(at[1])];
+        st2.rir = st2.rir === b.dataset.rir ? '' : b.dataset.rir;
+      });
+      return;
+    }
+    if (rirTarget < 0) return;
     var st = session.exercises[session.idx].sets[rirTarget];
     st.rir = st.rir === b.dataset.rir ? '' : b.dataset.rir;
     if (!setFull(st)) st.done = false;
@@ -4633,6 +4652,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   document.querySelector('[data-sheet-close]').addEventListener('click', function () {
     $('rir-sheet').hidden = true;
     rirTarget = -1;
+    rirWhere = 'session';
   });
 
   $('sess-addset').addEventListener('click', function () {
@@ -5147,6 +5167,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // them. Friends' are narrowed to what the feed is actually showing.
   function loadReacts() {
     if (!sb || !me || !social.username) return Promise.resolve();
+    return rqFlush().then(loadReactsNow);
+  }
+
+  function loadReactsNow() {
     var fids = friendIds(), pids = {};
     social.feed.forEach(function (w) { pids[w.id] = 1; });
     var ids = Object.keys(pids), friendy = fids.length && ids.length;
@@ -5183,6 +5207,47 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         if (current() === 's-comments') drawComments();
       });
     });
+  }
+
+  /* A like or a comment made with no signal is kept and sent later. The ids
+     are made here so a retry writes the same row twice over, not twice. */
+  var rq = [];
+  function uuid4() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+    });
+  }
+  function rqLoad() {
+    try { rq = JSON.parse(load('react-q') || '[]'); } catch (e) { rq = []; }
+  }
+  function rqSave() { save('react-q', JSON.stringify(rq.slice(-50))); }
+  function rqAdd(job) { job.n = 0; rq.push(job); rqSave(); }
+
+  function rqRun(job) {
+    if (job.t === 'like') {
+      return sb.from('likes').upsert(job.row, { onConflict: 'post_user,post_id,liker' });
+    }
+    if (job.t === 'unlike') return sb.from('likes').delete().match(job.row);
+    if (job.t === 'cmt') return sb.from('comments').upsert(job.row, { onConflict: 'id' });
+    if (job.t === 'cdel') return sb.from('comments').delete().eq('id', job.row.id);
+    return Promise.resolve({ error: null });
+  }
+
+  // one at a time, in the order they were made; a job that keeps failing is
+  // dropped after a handful of tries so the rest can get through
+  function rqFlush() {
+    if (!sb || !me || !rq.length) return Promise.resolve();
+    var job = rq[0];
+    return rqRun(job).then(function (r) {
+      if (r && r.error) {
+        job.n = (job.n || 0) + 1;
+        if (job.n < 6) { rqSave(); return; }
+      }
+      rq.shift(); rqSave();
+      return rqFlush();
+    }, function () { return; });
   }
 
   function cmtRow(r) {
@@ -5260,18 +5325,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var L = social.likes[k] || (social.likes[k] = []);
     var i = -1, pu = keyUser(k), pi = keyPost(k);
     L.forEach(function (x, j) { if (x.by === me.id) i = j; });
-    var job;
-    if (i >= 0) {
-      L.splice(i, 1);
-      job = sb.from('likes').delete().match({ post_user: pu, post_id: pi, liker: me.id });
-    } else {
-      L.push({ by: me.id, at: new Date().toISOString() });
-      job = sb.from('likes').insert({ post_user: pu, post_id: pi, liker: me.id });
-    }
+    var row = { post_user: pu, post_id: pi, liker: me.id };
+    var job = { t: i >= 0 ? 'unlike' : 'like', row: row };
+    if (i >= 0) L.splice(i, 1); else L.push({ by: me.id, at: new Date().toISOString() });
     paintActs(k);
-    job.then(function (r) {
-      if (r && r.error) { toast('Could not save that'); loadReacts(); }
-    });
+    rqRun(job).then(function (r) {
+      if (r && r.error) rqAdd(job);
+    }, function () { rqAdd(job); });
   }
 
   /* --- the comments screen --- */
@@ -5308,9 +5368,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // a workout reached from the bell may not be in any list yet
   function fetchPost(uid2, id) {
     if (!sb) return Promise.resolve(null);
-    return sb.from('posts').select('user_id,id,date,data').eq('user_id', uid2).eq('id', id)
+    return sb.from('posts').select('user_id,id,date,data,private').eq('user_id', uid2).eq('id', id)
       .maybeSingle().then(function (r) {
-        if (!r.data) return null;
+        if (!r.data || (r.data.private && (!me || r.data.user_id !== me.id))) return null;
         var w = r.data.data || {};
         w.id = r.data.id; w.by = r.data.user_id; w.date = r.data.date;
         return w;
@@ -5380,18 +5440,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var el = $('cmt-input'), body = el.value.trim();
     if (!body || !sb || !me || !cmtKey) return;
     var row = {
+      id: uuid4(),
       post_user: keyUser(cmtKey), post_id: keyPost(cmtKey), author: me.id,
       parent: cmtReply ? cmtReply.id : null,
       parent_author: cmtReply ? cmtReply.to : (keyUser(cmtKey) === me.id ? null : keyUser(cmtKey)),
-      body: body
+      body: body.slice(0, 500),
+      created_at: new Date().toISOString()
     };
     el.value = ''; grow(el); cmtReply = null;
-    sb.from('comments').insert(row).select().single().then(function (r) {
-      if (r.error || !r.data) { toast('Could not post that'); el.value = body; return; }
-      (social.cmts[cmtKey] || (social.cmts[cmtKey] = [])).push(cmtRow(r.data));
-      drawComments();
-      paintActs(cmtKey);
-    });
+    (social.cmts[cmtKey] || (social.cmts[cmtKey] = [])).push(cmtRow(row));
+    drawComments();
+    paintActs(cmtKey);
+    var job = { t: 'cmt', row: row };
+    rqRun(job).then(function (r) {
+      if (r && r.error) rqAdd(job);
+    }, function () { rqAdd(job); });
   }
 
   function deleteComment(id) {
@@ -5399,9 +5462,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var C = social.cmts[cmtKey] || [];
     social.cmts[cmtKey] = C.filter(function (c) { return c.id !== id && c.parent !== id; });
     drawComments(); paintActs(cmtKey);
-    sb.from('comments').delete().eq('id', id).then(function (r) {
-      if (r && r.error) { toast('Could not delete that'); loadReacts(); }
-    });
+    var job = { t: 'cdel', row: { id: id } };
+    rqRun(job).then(function (r) {
+      if (r && r.error) rqAdd(job);
+    }, function () { rqAdd(job); });
   }
 
   $('cmt-send').addEventListener('click', sendComment);
@@ -6872,7 +6936,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
                     (plateCount(st) > 1 ? '<b>2</b>' : '') + PLATE_SM + '</button>' +
                 '</span>' +
                 '<input class="cell" inputmode="numeric" data-f="reps"' + at + ' value="' + esc(st.reps) + '">' +
-                '<input class="cell" data-f="rir"' + at + ' value="' + esc(st.rir) + '">' +
+                '<button class="cell rircell" data-drir="' + ei + '-' + si + '">' +
+                  (st.rir === '' ? '&ndash;' : esc(st.rir)) + '</button>' +
                 '<button class="kill" data-xset="' + ei + '-' + si + '" aria-label="Remove set">&times;</button>' +
                 '</div>';
             }).join('')
@@ -7172,6 +7237,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           e2.sets.splice(Number(sat[1]), 1);
           relabel(e2);
         });
+        return;
+      }
+      var dr = e.target.closest('[data-drir]');
+      if (dr) {
+        rirWhere = 'detail';
+        rirTarget = dr.dataset.drir;
+        var rat = rirTarget.split('-');
+        openRir(detailW.exercises[Number(rat[0])].sets[Number(rat[1])].rir);
         return;
       }
       var as = e.target.closest('[data-addset]');
