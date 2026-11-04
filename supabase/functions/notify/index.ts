@@ -1,4 +1,5 @@
-// Sends one web push per device, when a friend reacts to something of yours.
+// Sends one web push per device: when a friend reacts to something of yours,
+// and when a deadline the app parked for itself comes due.
 // Called by the database triggers in supabase-social.sql, section 8.
 //
 //   supabase secrets set VAPID_PUBLIC=... VAPID_PRIVATE=... PUSH_SECRET=...
@@ -24,7 +25,18 @@ const LINE: Record<string, string> = {
   like: ' liked your workout',
   comment: ' commented on your workout',
   reply: ' replied to your comment',
+  thread: ' replied in a thread you are in',
   follow: ' started following you'
+};
+
+// A notification with nobody behind it: the app asked for this one itself,
+// because a sleeping phone cannot run its own timers.
+const SELF: Record<string, { title: string; body: string }> = {
+  rest: { title: 'Rest over', body: 'Back to it \u2014 next set.' },
+  stale: {
+    title: 'Tracker',
+    body: 'Finished your workout? You still have a session in progress.'
+  }
 };
 
 Deno.serve(async (req) => {
@@ -33,23 +45,30 @@ Deno.serve(async (req) => {
   }
 
   const { kind, target, actor, post_user, post_id } = await req.json();
-  if (!kind || !target || !actor || target === actor) {
+  const self = SELF[kind as string];
+  if (!kind || !target || (!self && (!actor || target === actor))) {
     return new Response('skip', { status: 200 });
   }
 
   const [{ data: who }, { data: subs }] = await Promise.all([
-    db.from('profiles').select('username').eq('user_id', actor).maybeSingle(),
+    self
+      ? Promise.resolve({ data: null })
+      : db.from('profiles').select('username').eq('user_id', actor).maybeSingle(),
     db.from('push_subs').select('endpoint,p256dh,auth').eq('user_id', target)
   ]);
   if (!subs?.length) return new Response('nobody listening', { status: 200 });
 
-  const body = (who?.username ?? 'Someone') + (LINE[kind] ?? '');
-  // where a tap should land: the session for a like, its comments for a
-  // comment or a reply, the person for a follow
-  const go = kind === 'follow'
-    ? { go: 'u', id: actor }
-    : { go: kind === 'like' ? 'w' : 'c', pu: post_user, pi: post_id };
-  const payload = JSON.stringify({ title: 'Tracker', body, tag: kind, ...go });
+  const body = self ? self.body : (who?.username ?? 'Someone') + (LINE[kind] ?? '');
+  // where a tap should land: the session for a like, its comments for a comment
+  // or a reply, the person for a follow. Its own notification opens the app.
+  const go = self
+    ? {}
+    : kind === 'follow'
+      ? { go: 'u', id: actor }
+      : { go: kind === 'like' ? 'w' : 'c', pu: post_user, pi: post_id };
+  const payload = JSON.stringify({
+    title: self ? self.title : 'Tracker', body, tag: kind, ...go
+  });
 
   // a subscription the browser has thrown away answers 404 or 410, and is
   // not worth keeping around

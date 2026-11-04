@@ -233,31 +233,15 @@ create policy "subs own" on public.push_subs for all to authenticated
 
 create extension if not exists pg_net with schema extensions;
 
-create or replace function public.notify_push() returns trigger
+-- Jedna wysyłka. Odpala się tylko z triggera albo z crona, więc
+-- użytkownik nie może nią wysłać powiadomienia komu chce.
+create or replace function public.push_send(
+  kind text, target uuid, actor uuid, pu uuid, pi text
+) returns void
 language plpgsql security definer set search_path = public, extensions as $$
-declare
-  target uuid;
-  actor  uuid;
-  kind   text;
-  pu     uuid;
-  pi     text;
 begin
-  if tg_table_name = 'likes' then
-    target := new.post_user; actor := new.liker; kind := 'like';
-    pu := new.post_user; pi := new.post_id;
-  elsif tg_table_name = 'comments' then
-    actor := new.author;
-    pu := new.post_user; pi := new.post_id;
-    if new.parent_author is not null and new.parent_author <> new.author then
-      target := new.parent_author; kind := 'reply';
-    else
-      target := new.post_user; kind := 'comment';
-    end if;
-  else
-    target := new.followee; actor := new.follower; kind := 'follow';
-  end if;
-
-  if target is null or target = actor then return new; end if;
+  if target is null then return; end if;
+  if actor is not null and target = actor then return; end if;
 
   perform net.http_post(
     url := 'https://nzagghskfwdosmopiuuk.functions.supabase.co/notify',
@@ -268,6 +252,46 @@ begin
     body := jsonb_build_object('kind', kind, 'target', target, 'actor', actor,
                                'post_user', pu, 'post_id', pi)
   );
+end $$;
+revoke execute on function public.push_send(text, uuid, uuid, uuid, text)
+  from public, anon, authenticated;
+
+create or replace function public.notify_push() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  t record;
+begin
+  if tg_table_name = 'likes' then
+    perform public.push_send('like', new.post_user, new.liker,
+                             new.post_user, new.post_id);
+
+  elsif tg_table_name = 'comments' then
+    -- właściciel treningu, chyba że to on odpisał albo odpowiedź leci do niego
+    if new.parent_author is distinct from new.post_user then
+      perform public.push_send('comment', new.post_user, new.author,
+                               new.post_user, new.post_id);
+    end if;
+    -- komentarz, na który ktoś odpowiedział
+    if new.parent_author is not null then
+      perform public.push_send('reply', new.parent_author, new.author,
+                               new.post_user, new.post_id);
+    end if;
+    -- i każdy, kto już jest w tym wątku — po jednym powiadomieniu
+    for t in
+      select distinct c.author from public.comments c
+      where c.post_user = new.post_user
+        and c.post_id = new.post_id
+        and c.author <> new.author
+        and c.author <> new.post_user
+        and (new.parent_author is null or c.author <> new.parent_author)
+    loop
+      perform public.push_send('thread', t.author, new.author,
+                               new.post_user, new.post_id);
+    end loop;
+
+  else
+    perform public.push_send('follow', new.followee, new.follower, null, null);
+  end if;
   return new;
 end $$;
 
@@ -280,3 +304,44 @@ create trigger push_on_comment after insert on public.comments
   for each row execute function public.notify_push();
 create trigger push_on_follow  after insert on public.follows
   for each row execute function public.notify_push();
+
+-- ------------------------------------------------------------------
+-- 9. Terminy, o które aplikacja prosi sama siebie: koniec przerwy
+--    między seriami i trening zostawiony w tle. Śpiący telefon
+--    zatrzymuje każdy licznik w stronie, więc termin leży tutaj,
+--    a push przychodzi z bazy. Jeden wiersz na rodzaj — nowa
+--    przerwa zastępuje poprzednią.
+--
+--    Potrzebny jest pg_cron (Database → Extensions w panelu).
+-- ------------------------------------------------------------------
+create table if not exists public.push_jobs (
+  user_id uuid not null references auth.users on delete cascade,
+  kind    text not null check (kind in ('rest', 'stale')),
+  due_at  timestamptz not null,
+  primary key (user_id, kind)
+);
+create index if not exists push_jobs_due_idx on public.push_jobs (due_at);
+alter table public.push_jobs enable row level security;
+
+drop policy if exists "jobs own" on public.push_jobs;
+create policy "jobs own" on public.push_jobs for all to authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Wysyła i od razu usuwa — każdy termin odzywa się raz.
+create or replace function public.drain_push_jobs() returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  j record;
+begin
+  for j in delete from public.push_jobs where due_at <= now() returning * loop
+    perform public.push_send(j.kind, j.user_id, null, null, null);
+  end loop;
+end $$;
+revoke execute on function public.drain_push_jobs() from public, anon, authenticated;
+
+create extension if not exists pg_cron;
+
+select cron.unschedule('drain-push') where exists (
+  select 1 from cron.job where jobname = 'drain-push'
+);
+select cron.schedule('drain-push', '10 seconds', $$select public.drain_push_jobs()$$);
