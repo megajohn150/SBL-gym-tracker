@@ -832,6 +832,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .ordrow .grip{color:var(--fg-3);font-size:.9rem;letter-spacing:-.1em}
 .ordrow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ordrow.drag{opacity:.75;pointer-events:none;position:relative;z-index:2}
+/* which session a reset starts from */
+.cutlist{max-height:46vh;overflow:auto;-webkit-overflow-scrolling:touch}
+.cutrow{
+  display:flex;align-items:center;gap:10px;width:100%;margin-bottom:6px;
+  padding:12px var(--cardpad);background:var(--surface);border:var(--border);
+  border-radius:calc(var(--radius) - 2px);font-size:.9rem;text-align:left;
+}
+.cutrow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cutrow .v{flex:none;color:var(--fg-3);font-size:.8rem}
+.cutrow.on{border-color:var(--accent);color:var(--accent)}
 .dmenu{flex:none;justify-self:end;width:30px;height:30px;display:grid;place-items:center;color:var(--fg-2);font-size:1.05rem}
 .dname{width:100%;padding:11px var(--cardpad);background:var(--surface);border:var(--border);border-radius:var(--radius);font-size:1rem;margin:.6rem 0}
 .drow .cell{padding:8px 4px;font-size:.95rem}
@@ -2347,6 +2357,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="sheet" id="cut-sheet" hidden>
+  <div class="sheet-bg" data-cut-close></div>
+  <div class="sheet-card">
+    <h3>Count from</h3>
+    <p class="hint" style="padding:0 0 11px;text-align:center">Sessions before the one you pick stay
+      in the history, but stop counting.</p>
+    <div class="cutlist" id="cut-list"></div>
+  </div>
+</div>
+
 <div class="sheet" id="ord-sheet" hidden>
   <div class="sheet-bg" data-ord-close></div>
   <div class="sheet-card">
@@ -2449,7 +2469,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4097';
+  var APP_VERSION = '3.4098';
 
   /* =========================================================
      STORE
@@ -3846,18 +3866,58 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   // draws the line: the old sessions stay in the history, they just stop counting
-  $('xh-reset').addEventListener('click', function () {
-    $('xh-pop').hidden = true;
+  /* The cut only has to fall between two sessions, so naming the first session
+     that should count says it exactly — and puts a reset back where it was. */
+  var cutRows = [];
+
+  function openCutSheet() {
     var x = byId(histId);
     if (!x) return;
-    var n = historyCount(x.id);
-    askConfirm('Reset ' + x.name + '?',
-      'Your ' + n + ' session' + (n === 1 ? '' : 's') + ' of it stay in the history, but stop counting: ' +
-      'records, the chart and previous values start again from your next one.',
-      'Reset', function () {
-        x.resetAt = new Date().toISOString();
-        afterReset();
-      });
+    var seen = {};
+    cutRows = [];
+    store.workouts.forEach(function (w) {
+      if (seen[w.id]) return;
+      var hit = w.exercises.filter(function (e) { return exKey(e) === x.id; })[0];
+      if (!hit) return;
+      seen[w.id] = 1;
+      var top = 0;
+      hit.sets.forEach(function (st) { if (logged(st)) top = Math.max(top, num(st.weight)); });
+      cutRows.push({ at: w.date, top: top });
+    });
+    cutRows.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+    cutRows = cutRows.slice(0, 24);
+
+    var cut = cutoffFor(x.id);
+    var newest = cutRows.length ? new Date(cutRows[0].at).getTime() : 0;
+    $('cut-list').innerHTML =
+      '<button class="cutrow' + (cut > newest ? ' on' : '') + '" data-cut="now">' +
+        '<span class="t">My next session</span>' +
+        '<span class="v">nothing counts yet</span></button>' +
+      cutRows.map(function (r, i) {
+        var on = Math.abs(cut - new Date(r.at).getTime()) < 1000;
+        return '<button class="cutrow' + (on ? ' on' : '') + '" data-cut="' + i + '">' +
+          '<span class="t">' + esc(relDate(r.at)) + '</span>' +
+          '<span class="v">' + (r.top ? fmtVolume(r.top) : '\u2013') + '</span></button>';
+      }).join('');
+    $('cut-sheet').hidden = false;
+  }
+
+  $('cut-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-cut]'), x = byId(histId);
+    if (!b || !x) return;
+    x.resetAt = b.dataset.cut === 'now'
+      ? new Date().toISOString()
+      : cutRows[Number(b.dataset.cut)].at;
+    $('cut-sheet').hidden = true;
+    afterReset();
+  });
+  document.querySelector('[data-cut-close]').addEventListener('click', function () {
+    $('cut-sheet').hidden = true;
+  });
+
+  $('xh-reset').addEventListener('click', function () {
+    $('xh-pop').hidden = true;
+    if (byId(histId) && historyCount(histId)) openCutSheet();
   });
 
   $('xh-unreset').addEventListener('click', function () {
@@ -3892,15 +3952,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('ex-error').hidden = !clash;
     if (clash) return;
 
-    var ex = {
-      id: exEditId || uid(),
-      name: name,
-      code: ($('ex-code').value.trim() || deriveCode(name)).toUpperCase().slice(0, 7),
-      muscle: $('ex-muscle').value,
-      head: $('ex-muscle').value === 'Shoulders' ? $('ex-head').value : '',
-      cue: $('ex-cue').value.trim().slice(0, 120),
-      unilateral: exType === 'unilateral'
-    };
+    // Start from the exercise as it is: a reset date is not on this form, and
+    // rebuilding the object from the fields alone threw it away.
+    var ex = {}, was = byId(exEditId);
+    if (was) Object.keys(was).forEach(function (k) { ex[k] = was[k]; });
+    ex.id = exEditId || uid();
+    ex.name = name;
+    ex.code = ($('ex-code').value.trim() || deriveCode(name)).toUpperCase().slice(0, 7);
+    ex.muscle = $('ex-muscle').value;
+    ex.head = ex.muscle === 'Shoulders' ? $('ex-head').value : '';
+    ex.cue = $('ex-cue').value.trim().slice(0, 120);
+    ex.unilateral = exType === 'unilateral';
 
     var editing = false;
     for (var i = 0; i < store.exercises.length; i++) {
