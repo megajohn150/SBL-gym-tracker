@@ -339,9 +339,6 @@ begin
 end $$;
 revoke execute on function public.drain_push_jobs() from public, anon, authenticated;
 
-create extension if not exists pg_cron;
-
-select cron.unschedule('drain-push') where exists (
-  select 1 from cron.job where jobname = 'drain-push'
-);
+-- pg_cron włącza się w panelu: Database -> Extensions. Zadanie o tej
+-- samej nazwie jest nadpisywane, więc to można puścić ponownie.
 select cron.schedule('drain-push', '10 seconds', $$select public.drain_push_jobs()$$);
