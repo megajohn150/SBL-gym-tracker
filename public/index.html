@@ -2494,7 +2494,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4105';
+  var APP_VERSION = '3.4106';
 
   /* =========================================================
      STORE
@@ -2984,10 +2984,30 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     liveWant = {};
     if (!sb || !me) return;
     if (want.data) liveData();
-    if (want.foll) { social.at = Date.now(); loadFollows(); }   // follows, feed, reactions
-    else if (want.post) loadFeed();                             // feed, then reactions
-    else if (want.react) loadReacts();
+    if (want.foll) {
+      social.at = Date.now();
+      loadFollows();                                  // follows, feed, reactions
+      syncFollowed(true);                             // a friendship that ended freezes them
+    } else if (want.post || want.prof) {
+      loadFeed();                                     // sessions and the names on them
+    } else if (want.react) {
+      loadReacts();
+    }
     if (want.lib) syncFollowed(false);
+    // a profile open on screen carries their sessions, routines and counts,
+    // none of which the feed's own refresh touches
+    if ((want.post || want.prof || want.lib || want.foll) && userView &&
+        (current() === 's-user' || current() === 's-frroutine')) liveUser();
+  }
+
+  function liveUser() {
+    var id = userView.id;
+    loadUser(id).then(function () {
+      if (current() !== 's-frroutine' || !userView || userView.id !== id) return;
+      var lib = userView.lib || {}, was = frRoutine && frRoutine.id;
+      var fresh = (lib.routines || []).filter(function (o) { return o.id === was; })[0];
+      if (fresh) { frRoutine = fresh; drawFrRoutine(); }
+    });
   }
 
   // Another device of yours wrote the log. Anything of your own still
@@ -3241,7 +3261,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     userView = { id: id, p: social.people[id] || null, posts: [], lib: null, fers: 0, fing: 0 };
     push('user');
     drawUser();
-    Promise.all([
+    loadUser(id);
+  }
+
+  // everything that profile shows, fetched again without moving screens
+  function loadUser(id) {
+    if (!sb) return Promise.resolve();
+    return Promise.all([
       sb.from('profiles').select('user_id,username,name,bio,pic,stats').eq('user_id', id).maybeSingle(),
       sb.from('follows').select('follower', { count: 'exact', head: true }).eq('followee', id),
       sb.from('follows').select('followee', { count: 'exact', head: true }).eq('follower', id)
@@ -3338,9 +3364,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             : (social.followers[id] ? 'Follow back' : 'Follow')) + '</button></div>');
 
     if (!friend) {
-      $('user-body').innerHTML = head +
+      paint($('user-body'), head +
         '<div class="note" style="padding:1.4rem var(--pad)">Follow each other to see ' +
-        esc(p.username || 'their') + '\u2019s training.</div>';
+        esc(p.username || 'their') + '\u2019s training.</div>');
       return;
     }
 
@@ -3379,10 +3405,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         (userView.more ? '<button class="mmore" data-postsmore>Older sessions</button>' : '')
       : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged yet.</div>';
 
-    $('user-body').innerHTML = head + chart +
+    paint($('user-body'), head + chart +
       '<div class="dsec">Routines</div>' + rts +
       '<div class="dsec">Recent workouts</div>' +
-      '<div class="feed">' + feed + '</div>';
+      '<div class="feed">' + feed + '</div>');
   }
 
   $('user-body').addEventListener('click', function (e) {
@@ -3836,6 +3862,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
     });
   }
+  // Writing a screen over while somebody is reading it must not throw them
+  // back to the top of it — and news now lands while they read.
+  function paint(el, html) {
+    var box = (el.closest && el.closest('.scroll')) || el;
+    var top = box.scrollTop;
+    el.innerHTML = html;
+    if (box.scrollTop !== top) box.scrollTop = top;
+  }
+
   function byId(id) {
     for (var i = 0; i < store.exercises.length; i++) if (store.exercises[i].id === id) return store.exercises[i];
     return null;
@@ -6378,10 +6413,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var has = rows.length > 0;
     $('home-empty').hidden = has;
     $('home-list').hidden = !has;
-    $('home-list').innerHTML = rows.map(function (r) {
+    paint($('home-list'), rows.map(function (r) {
       return workoutCard(r.w, r.n, r.who);
     }).join('') +
-      (social.more ? '<button class="mmore" data-feedmore>Older sessions from friends</button>' : '');
+      (social.more ? '<button class="mmore" data-feedmore>Older sessions from friends</button>' : ''));
   }
 
   function workoutCard(w, ordinal, who) {
@@ -6481,6 +6516,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function loadReactsNow() {
     var fids = friendIds(), pids = {};
     social.feed.forEach(function (w) { pids[w.id] = 1; });
+    // a profile you are reading shows older sessions than your feed has
+    if (userView) userView.posts.forEach(function (w) { pids[w.id] = 1; });
     var ids = Object.keys(pids), friendy = fids.length && ids.length;
     var LK = 'post_user,post_id,liker,created_at';
     var CM = 'id,post_user,post_id,author,parent,body,created_at';
@@ -6514,6 +6551,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         drawBell();
         if (current() === 's-home') drawHome();
         if (current() === 's-comments') drawComments();
+        if (current() === 's-user') drawUser();
+        // not while it is being edited: the redraw would take the typing with it
+        if (current() === 's-detail' && detailW && !detailEdit) drawDetail(detailW);
       });
     });
   }
@@ -8676,7 +8716,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           '<button class="btn" data-addex>+ Add exercise</button></div>'
         : '');
 
-    $('detail-body').innerHTML = head + muscles + body + '<div style="height:1.5rem"></div>';
+    paint($('detail-body'), head + muscles + body + '<div style="height:1.5rem"></div>');
     $('detail-body').querySelectorAll('[data-note-e]').forEach(grow);
     if ($('d-wnote')) grow($('d-wnote'));
   }

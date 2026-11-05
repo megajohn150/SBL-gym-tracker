@@ -293,7 +293,8 @@ begin
 
   else
     perform public.push_send('follow', new.followee, new.follower, null, null);
-    perform public.live_ping(new.followee, new.follower, 'foll');
+    perform public.live_ping(new.followee, null, 'foll');
+    perform public.live_ping(new.follower, null, 'foll');   -- i jego inne urządzenia
   end if;
   return new;
 end $$;
@@ -430,6 +431,25 @@ begin
   return old;
 end $$;
 
+-- nick, imię, bio, zdjęcie albo licznik treningów: wszystko, co znajomy
+-- widzi o Tobie, zanim w cokolwiek kliknie
+create or replace function public.live_prof() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform public.live_friends(new.user_id, 'prof', null);
+  return new;
+end $$;
+
+-- koniec znajomości: drugiej stronie znika feed, biblioteka i podgląd
+-- followowanych rutyn, więc musi się o tym dowiedzieć od razu
+create or replace function public.live_unfoll() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform public.live_ping(old.followee, null, 'foll');
+  perform public.live_ping(old.follower, null, 'foll');
+  return old;
+end $$;
+
 -- Twoje własne dane do Twoich pozostałych urządzeń. Sesja w trakcie
 -- treningu zapisuje się co parę sekund i nikogo nie obchodzi — liczy się
 -- tylko zmiana samego dziennika.
@@ -442,11 +462,17 @@ begin
   return new;
 end $$;
 
+drop trigger if exists live_on_prof      on public.profiles;
+drop trigger if exists live_on_unfollow  on public.follows;
 drop trigger if exists live_on_post      on public.posts;
 drop trigger if exists live_on_lib       on public.library;
 drop trigger if exists live_on_unlike    on public.likes;
 drop trigger if exists live_on_uncomment on public.comments;
 drop trigger if exists live_on_tracker   on public.tracker;
+create trigger live_on_prof after update on public.profiles
+  for each row execute function public.live_prof();
+create trigger live_on_unfollow after delete on public.follows
+  for each row execute function public.live_unfoll();
 create trigger live_on_post after insert or update or delete on public.posts
   for each row execute function public.live_post();
 create trigger live_on_lib after insert or update on public.library
