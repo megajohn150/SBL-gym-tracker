@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <style>
 /* ===========================================================
    TOKENS
@@ -2490,7 +2490,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4102';
+  var APP_VERSION = '3.4103';
 
   /* =========================================================
      STORE
@@ -2895,8 +2895,78 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     loadFollows().then(function () { return syncFollowed(true); });
   }
 
-  addEventListener('visibilitychange', function () { if (!document.hidden) refreshSocial(); });
-  addEventListener('online', function () { refreshSocial(true); });
+  /* =========================================================
+     LIVE
+     One private channel of your own, "u:<your id>", which the
+     database pings whenever something you can see has changed:
+     a reaction, a friend's session, a routine you follow, or
+     your own log written from another device. The ping carries
+     one letter and no content — the app answers it with the
+     same queries it has always used, so what you are allowed
+     to see is still decided by the database, not by the ping.
+     ========================================================= */
+  var liveCh = null, liveT = null, liveWant = {};
+
+  function liveOn() {
+    if (!sb || !me || liveCh) return;
+    var who = me.id;
+    liveCh = { id: who, ch: null };
+    // the socket authenticates with your token, or the channel is refused
+    Promise.resolve(sb.realtime.setAuth()).catch(function () {}).then(function () {
+      if (!liveCh || liveCh.id !== who || !me || me.id !== who) return;
+      liveCh.ch = sb.channel('u:' + who, { config: { private: true } })
+        .on('broadcast', { event: 'ping' }, function (m) {
+          liveHit((m && m.payload && m.payload.k) || 'react');
+        })
+        .subscribe();
+    });
+  }
+
+  function liveOff() {
+    if (!liveCh) return;
+    if (liveCh.ch) sb.removeChannel(liveCh.ch);
+    liveCh = null;
+    clearTimeout(liveT);
+    liveWant = {};
+  }
+
+  // a burst of news is still one look: the pings pile up for a moment,
+  // then each kind is answered once, by the widest answer that covers it
+  function liveHit(k) {
+    liveWant[k] = 1;
+    clearTimeout(liveT);
+    liveT = setTimeout(liveRun, 400);
+  }
+
+  function liveRun() {
+    var want = liveWant;
+    liveWant = {};
+    if (!sb || !me) return;
+    if (want.data) liveData();
+    if (want.foll) { social.at = Date.now(); loadFollows(); }   // follows, feed, reactions
+    else if (want.post) loadFeed();                             // feed, then reactions
+    else if (want.react) loadReacts();
+    if (want.lib) syncFollowed(false);
+  }
+
+  // Another device of yours wrote the log. Anything of your own still
+  // waiting to go up goes first, or the merge would take the older copy
+  // of a routine over the one being edited here.
+  function liveData(again) {
+    if (!cloud.pulled) return;
+    if (cloud.dirty) {
+      if (!again) setTimeout(function () { liveData(true); }, 2500);
+      return;
+    }
+    cloudPull();
+  }
+
+  addEventListener('visibilitychange', function () {
+    if (document.hidden) { liveOff(); return; }   // iOS drops the socket anyway
+    liveOn();
+    refreshSocial();
+  });
+  addEventListener('online', function () { liveOn(); refreshSocial(true); });
 
   function loadFollows() {
     if (!sb || !me) return Promise.resolve();
@@ -3574,8 +3644,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     me = u || null;
     document.getElementById('gate').hidden = !!me && !recovering;
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
-    if (!me) { social.fol = false; syncState('off'); return; }
+    if (!me) { social.fol = false; liveOff(); syncState('off'); return; }
     save('uid', me.id);
+    if (!liveCh || liveCh.id !== me.id) { liveOff(); liveOn(); }
     // somebody else's friend list must not decide what this account follows
     if (me.id !== was) { social.fol = false; cloud.rev = 0; cloudPull().then(loadSocial); }
   }
@@ -3710,7 +3781,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           setAuMode('recover');
           return;
         }
-        if (s && !recovering) setUser(s.user);
+        // out of the auth callback before anything asks for the session:
+        // the newer client holds a lock here and a query inside it deadlocks
+        if (s && !recovering) setTimeout(function () { setUser(s.user); }, 0);
       });
     }).catch(function () {
       if (load('uid')) offlineOpen(); else setUser(null);
