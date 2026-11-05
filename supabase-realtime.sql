@@ -2,6 +2,7 @@
 -- Nie ma tu żadnego sekretu do podmiany — push_send zostaje nietknięte.
 -- Źródłem prawdy jest supabase-social.sql; ten plik to dokładnie te dwa
 -- kawałki, które trzeba wykonać, żeby włączyć kanały na żywo.
+-- Można puszczać wielokrotnie, nic się nie zdubluje.
 
 -- ------------------------------------------------------------------
 -- 10. Na żywo. Ta sama nowina co push, tyle że do aplikacji, która
@@ -31,7 +32,8 @@ revoke execute on function public.live_ping(uuid, uuid, text)
   from public, anon, authenticated;
 
 -- jeden ping do każdego znajomego, czyli do obserwujących w obie strony
-create or replace function public.live_friends(owner uuid, kind text)
+drop function if exists public.live_friends(uuid, text);
+create or replace function public.live_friends(owner uuid, kind text, actor uuid)
 returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -43,17 +45,30 @@ begin
       and exists (select 1 from public.follows b
                   where b.follower = owner and b.followee = a.follower)
   loop
-    perform public.live_ping(f.id, null, kind);
+    perform public.live_ping(f.id, actor, kind);
   end loop;
 end $$;
-revoke execute on function public.live_friends(uuid, text)
+revoke execute on function public.live_friends(uuid, text, uuid)
+  from public, anon, authenticated;
+
+-- Powiadomienie idzie do właściciela treningu, bo to jego sprawa. Ale lajk
+-- albo komentarz widzi każdy, kto ma ten trening przed oczami — czyli autor
+-- i wszyscy jego znajomi. Bez tego własny lajk pod własnym treningiem nie
+-- ruszyłby u nikogo, bo ping do samego siebie jest pomijany.
+create or replace function public.live_react(pu uuid, actor uuid) returns void
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform public.live_ping(pu, actor, 'react');
+  perform public.live_friends(pu, 'react', actor);
+end $$;
+revoke execute on function public.live_react(uuid, uuid)
   from public, anon, authenticated;
 
 -- trening znajomego: doszedł, zmienił się albo zniknął
 create or replace function public.live_post() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 begin
-  perform public.live_friends(coalesce(new.user_id, old.user_id), 'post');
+  perform public.live_friends(coalesce(new.user_id, old.user_id), 'post', null);
   return coalesce(new, old);
 end $$;
 
@@ -61,7 +76,7 @@ end $$;
 create or replace function public.live_lib() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 begin
-  perform public.live_friends(new.user_id, 'lib');
+  perform public.live_friends(new.user_id, 'lib', null);
   return new;
 end $$;
 
@@ -69,7 +84,7 @@ end $$;
 create or replace function public.live_undo() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 begin
-  perform public.live_ping(old.post_user, auth.uid(), 'react');
+  perform public.live_react(old.post_user, auth.uid());
   return old;
 end $$;
 
@@ -102,7 +117,7 @@ create trigger live_on_tracker after update on public.tracker
   for each row execute function public.live_self();
 
 -- Te same powiadomienia co dotąd, plus ping do aplikacji, która jest
--- właśnie otwarta. Funkcja bez zmian poza pięcioma liniami live_ping.
+-- właśnie otwarta.
 create or replace function public.notify_push() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 declare
@@ -111,20 +126,18 @@ begin
   if tg_table_name = 'likes' then
     perform public.push_send('like', new.post_user, new.liker,
                              new.post_user, new.post_id);
-    perform public.live_ping(new.post_user, new.liker, 'react');
+    perform public.live_react(new.post_user, new.liker);
 
   elsif tg_table_name = 'comments' then
     -- właściciel treningu, chyba że to on odpisał albo odpowiedź leci do niego
     if new.parent_author is distinct from new.post_user then
       perform public.push_send('comment', new.post_user, new.author,
                                new.post_user, new.post_id);
-      perform public.live_ping(new.post_user, new.author, 'react');
     end if;
     -- komentarz, na który ktoś odpowiedział
     if new.parent_author is not null then
       perform public.push_send('reply', new.parent_author, new.author,
                                new.post_user, new.post_id);
-      perform public.live_ping(new.parent_author, new.author, 'react');
     end if;
     -- i każdy, kto już jest w tym wątku — po jednym powiadomieniu
     for t in
@@ -137,8 +150,8 @@ begin
     loop
       perform public.push_send('thread', t.author, new.author,
                                new.post_user, new.post_id);
-      perform public.live_ping(t.author, new.author, 'react');
     end loop;
+    perform public.live_react(new.post_user, new.author);
 
   else
     perform public.push_send('follow', new.followee, new.follower, null, null);
