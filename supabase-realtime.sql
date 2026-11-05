@@ -114,7 +114,9 @@ create or replace function public.live_self() returns trigger
 language plpgsql security definer set search_path = public, extensions as $$
 begin
   if new.data is distinct from old.data then
-    perform public.live_ping(new.user_id, null, 'data');
+    -- z numerem wersji, żeby urządzenie, które właśnie to zapisało, nie
+    -- pobierało z powrotem własnego zapisu
+    perform public.live_ping(new.user_id, null, 'data:' || new.rev::text);
   end if;
   return new;
 end $$;

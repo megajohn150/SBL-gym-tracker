@@ -2494,7 +2494,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4106';
+  var APP_VERSION = '3.4107';
 
   /* =========================================================
      STORE
@@ -2974,6 +2974,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // a burst of news is still one look: the pings pile up for a moment,
   // then each kind is answered once, by the widest answer that covers it
   function liveHit(k) {
+    // 'data:<rev>' says which revision of your own log it is about
+    var c = String(k).indexOf(':');
+    if (c > 0) {
+      liveWant.rev = Math.max(liveWant.rev || 0, Number(k.slice(c + 1)) || 0);
+      k = k.slice(0, c);
+    }
     liveWant[k] = 1;
     clearTimeout(liveT);
     liveT = setTimeout(liveRun, 400);
@@ -2983,7 +2989,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var want = liveWant;
     liveWant = {};
     if (!sb || !me) return;
-    if (want.data) liveData();
+    if (want.data) liveData(false, want.rev);
     if (want.foll) {
       social.at = Date.now();
       loadFollows();                                  // follows, feed, reactions
@@ -3013,10 +3019,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // Another device of yours wrote the log. Anything of your own still
   // waiting to go up goes first, or the merge would take the older copy
   // of a routine over the one being edited here.
-  function liveData(again) {
+  function liveData(again, rev) {
     if (!cloud.pulled) return;
-    if (cloud.dirty) {
-      if (!again) setTimeout(function () { liveData(true); }, 2500);
+    if (rev && rev <= cloud.rev) return;          // our own write, coming back
+    // anything of ours still in the air goes first, and a sync of followed
+    // routines must not have the store swapped under it half way through
+    if (cloud.dirty || fsyncing) {
+      if (!again) setTimeout(function () { liveData(true, rev); }, 2500);
       return;
     }
     cloudPull();
@@ -3579,9 +3588,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // Their routine written in your own exercise ids, with the pairing kept on
   // the routine: a movement they rename stays the same one here instead of
   // forking your library in two. Anything you are missing joins your list.
+  // Did one of your own routines ask for this movement? Then it is yours,
+  // whoever first brought it in, and its name is not theirs to change.
+  function ownUses(exId) {
+    return store.routines.some(function (r) {
+      return !r.follow && (r.items || []).some(function (it) { return it.exId === exId; });
+    });
+  }
+
   function applyFollow(r, src, theirEx) {
     var f = r.follow, before = sigOf([r.name, r.items]), items = [];
     f.side = f.side || {};                      // whichever sides you picked
+    f.born = f.born || {};                      // and which movements they lent you
     (src.items || []).forEach(function (it) {
       var their = theirEx.filter(function (e) { return e.id === it.exId; })[0];
       if (!their) return;                       // gone from their library
@@ -3599,6 +3617,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           store.exercises.push(mine);
         }
         f.map[it.exId] = mine.id;
+      }
+      // A movement this routine brought in answers to their name as well,
+      // right up until you rename it or put it in a routine of your own.
+      var lent = !ownUses(mine.id);
+      if (lent && !(mine.id in f.born) &&
+          mine.name.toLowerCase() === String(their.name).toLowerCase()) {
+        f.born[mine.id] = mine.name;
+      }
+      if (lent && f.born[mine.id] === mine.name && mine.name !== their.name) {
+        mine.name = their.name;
+        mine.code = their.code || mine.code;
+        f.born[mine.id] = their.name;
       }
       // what is in the routine is theirs; how you log it is yours, so the
       // side you start on survives every change they make
@@ -3661,7 +3691,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (!res || res.error) return;
       var libs = {}, changed = [], ended = [], touched = 0;
       (res.data || []).forEach(function (row) { libs[row.user_id] = row.data || {}; });
-      mine.forEach(function (r) {
+      // The whole store can have been replaced while the answer was on its
+      // way — a pull from another device does exactly that — and the routines
+      // with it. Writing to the ones read before would write to objects that
+      // nothing holds any more: the change would be announced, saved nowhere,
+      // and found again on the next look, for ever.
+      store.routines.filter(isFollowed).forEach(function (r) {
         var f = r.follow, lib = libs[f.by], src = null, who = social.people[f.by];
         if (who && who.username && who.username !== f.user) { f.user = who.username; touched++; }
         if (lib) {
