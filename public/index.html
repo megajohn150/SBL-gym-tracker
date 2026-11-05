@@ -66,6 +66,21 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .screen.on{display:flex;flex-direction:column;flex:1;min-height:0}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
+/* pull down on a tab and the app comes back as if newly opened */
+.pullring{
+  position:fixed;left:50%;top:env(safe-area-inset-top);z-index:70;
+  width:34px;height:34px;margin-left:-17px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:var(--border);
+  opacity:0;transform:translateY(-44px);pointer-events:none;
+}
+.pullring i{
+  display:block;width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--line,var(--fg-3));border-top-color:var(--fg);
+}
+.pullring.go i{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 /* --- top bar --- */
 .bar{
   flex:none;z-index:5;background:var(--bg);
@@ -2258,6 +2273,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="pullring" id="pull-ring" hidden><i></i></div>
+
 <div class="toast" id="toast" hidden></div>
 
 <div class="gate" id="uname" hidden>
@@ -2501,7 +2518,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4116';
+  var APP_VERSION = '3.4117';
 
   /* =========================================================
      STORE
@@ -4067,6 +4084,100 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   document.querySelectorAll('.tabs button').forEach(function (b) {
     b.addEventListener('click', function () { goTab(b.dataset.tab); });
+  });
+
+  /* =========================================================
+     PULL TO START OVER
+     On the three tabs, dragging down from the top brings the
+     whole app back as if it had been closed and opened again —
+     which is also the surest way onto a version that has just
+     gone out — and it opens on the tab you pulled.
+     ========================================================= */
+  var PULL_GO = 74, pullFrom = -1, pullX = 0, pullPane = null, pullNow = 0;
+
+  function pullable() {
+    return stack.length === 1 && /^s-(home|workout|profile)$/.test(current());
+  }
+
+  function pullDraw(y) {
+    var ring = $('pull-ring');
+    pullNow = y;
+    if (y <= 0) {
+      ring.hidden = true;
+      ring.className = 'pullring';
+      ring.style.cssText = '';
+      return;
+    }
+    var k = Math.min(1, y / PULL_GO);
+    ring.hidden = false;
+    ring.className = 'pullring' + (k === 1 ? ' go' : '');
+    ring.style.opacity = Math.min(1, k * 1.5);
+    ring.style.transform =
+      'translateY(' + Math.round(y * 0.62) + 'px) rotate(' + Math.round(k * 300) + 'deg)';
+  }
+
+  // back from cold: the worker is asked for a fresh copy first, so a version
+  // that went out a minute ago is the one that opens
+  function startOver() {
+    var on = document.querySelector('.screen.on');
+    save('reopen', (on && on.dataset.tab) || 'home');
+    if (cloud.dirty) cloudPush();
+    var go = function () { location.reload(); };
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+        navigator.serviceWorker.getRegistration().then(function (reg) {
+          if (reg) { try { reg.update(); } catch (e) {} }
+          setTimeout(go, 200);
+        }, go);
+        return;
+      }
+    } catch (e) {}
+    go();
+  }
+
+  document.addEventListener('touchstart', function (e) {
+    pullFrom = -1;
+    if (e.touches.length !== 1 || !pullable()) return;
+    var pane = document.querySelector('.screen.on .scroll');
+    if (!pane || pane.scrollTop > 0) return;
+    pullPane = pane;
+    pullFrom = e.touches[0].clientY;
+    pullX = e.touches[0].clientX;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', function (e) {
+    if (pullFrom < 0) return;
+    var dy = e.touches[0].clientY - pullFrom;
+    var dx = Math.abs(e.touches[0].clientX - pullX);
+    // a sideways swipe belongs to whatever it started on, and so does any
+    // move once the pane has scrolled away from the top
+    if (dy <= 0 || dx > dy || pullPane.scrollTop > 0) {
+      if (pullNow > 0) pullDraw(0);
+      pullFrom = -1;
+      return;
+    }
+    e.preventDefault();
+    pullDraw(Math.min(dy, 130));
+  }, { passive: false });
+
+  document.addEventListener('touchend', function () {
+    if (pullFrom < 0) return;
+    pullFrom = -1;
+    if (pullNow >= PULL_GO) {
+      var ring = $('pull-ring');
+      ring.className = 'pullring go';
+      ring.style.transform = 'translateY(46px)';
+      ring.style.opacity = 1;
+      startOver();
+      return;
+    }
+    pullDraw(0);
+  });
+
+  document.addEventListener('touchcancel', function () {
+    if (pullFrom < 0) return;
+    pullFrom = -1;
+    pullDraw(0);
   });
   document.querySelectorAll('[data-tabgo]').forEach(function (b) {
     b.addEventListener('click', function () { goTab(b.dataset.tabgo); });
@@ -9638,6 +9749,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   resetExForm();
   newRoutine();
   syncExForm();
+  // a pull-to-refresh asked for this tab on the way out
+  var reopen = load('reopen');
+  if (reopen) {
+    save('reopen', '');
+    if (document.getElementById('s-' + reopen)) stack = ['s-' + reopen];
+  }
   render(current());
 
   // keep the exercise list in sync whenever that screen is opened
