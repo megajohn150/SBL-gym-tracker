@@ -135,6 +135,13 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .rtfrom.off{
   color:var(--fg-3);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;
 }
+.rtfrom.tap{cursor:pointer}
+.rtfrom.tap:active{background:var(--surface)}
+.frbtn{
+  display:inline-block;margin-top:10px;padding:5px 11px;
+  font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--fg-2);background:none;border:var(--border);border-radius:999px;
+}
 .rtname{
   display:block;margin:.35rem 0 .7rem;line-height:1.08;font-family:var(--display);
   font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
@@ -2494,7 +2501,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4114';
+  var APP_VERSION = '3.4115';
 
   /* =========================================================
      STORE
@@ -2849,7 +2856,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // without the flag that makes a routine followable.
   function libRoutine(r) {
     if (!r.follow) return r;
-    return { id: r.id, name: r.name, items: r.items, from: r.follow.user || '' };
+    // `by` and `src` are what let whoever wrote it see who is following it
+    return { id: r.id, name: r.name, items: r.items,
+             from: r.follow.user || '', by: r.follow.by, src: r.follow.rid };
   }
 
   function pushLibrary() {
@@ -3166,7 +3175,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   /* --- lists of people: followers, following, friends --- */
   var peopleMode = 'friends', peopleList = null;
   var PEOPLE_TITLE = { followers: 'Followers', following: 'Following', friends: 'Friends',
-    likes: 'Likes' };
+    likes: 'Likes', fans: 'Followers' };
 
   function peopleIds() {
     if (peopleList) return peopleList;
@@ -3181,7 +3190,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('people-note').hidden = ids.length > 0;
     $('people-note').textContent = peopleMode === 'friends'
       ? 'Follow each other and they show up here.'
-      : 'Nobody yet.';
+      : peopleMode === 'fans'
+        ? 'Nobody follows this routine yet.'
+        : 'Nobody yet.';
     var own = !peopleList;              // somebody else's list is only for looking at
     $('people-list').innerHTML = ids.map(function (id) {
       var p = social.people[id] || { username: '\u2026' };
@@ -3194,6 +3205,28 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         (kick ? '<button class="followbtn off" data-kick="' + id + '">Remove</button>'
           : (rel ? '<span class="rel">' + rel + '</span>' : '')) + '</div>';
     }).join('');
+  }
+
+  // Nobody writes down who follows a routine: the answer is in your friends'
+  // own libraries, where a routine they follow carries whose it is.
+  function routineFans(rid) {
+    var ids = friendIds();
+    if (!sb || !me || !ids.length) return Promise.resolve([]);
+    return sb.from('library').select('user_id,data').in('user_id', ids).then(function (r) {
+      if (r.error) return [];
+      return (r.data || []).filter(function (row) {
+        return (((row.data || {}).routines) || []).some(function (o) {
+          return o.by === me.id && o.src === rid;
+        });
+      }).map(function (row) { return row.user_id; });
+    });
+  }
+
+  function openFans(rid) {
+    routineFans(rid).then(function (ids) {
+      if (!ids.length) { toast('Nobody follows this one yet'); return; }
+      openPeople('fans', ids);
+    });
   }
 
   function openPeople(mode, ids) {
@@ -4881,10 +4914,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             '<i>&middot;</i>' +
             '<span>' + t + ' set' + (t === 1 ? '' : 's') + '</span>' +
             (f
-              ? '<i>&middot;</i><span class="rtfrom' + (f.dead ? ' off' : '') + '">' +
+              ? '<i>&middot;</i><span class="rtfrom' + (f.dead ? ' off' : ' tap') +
+                '" data-whose="' + esc(f.by) + '">' +
                 (f.dead ? 'Not shared' : '@' + esc(f.user)) + '</span>'
               : r.shared
-                ? '<i>&middot;</i><span class="rtfrom off">Shared</span>'
+                ? '<i>&middot;</i><span class="rtfrom off tap" data-fans="' + r.id +
+                  '">Shared &rsaquo;</span>'
                 : '') +
           '</span>' +
           '<span class="rtname">' + esc(r.name) + '</span>' +
@@ -4906,6 +4941,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('routine-list').addEventListener('click', function (e) {
+    // these two sit inside the card's own button, so they are looked for first
+    var fans = e.target.closest('[data-fans]');
+    if (fans) { e.stopPropagation(); openFans(fans.dataset.fans); return; }
+    var whose = e.target.closest('[data-whose]');
+    if (whose) { e.stopPropagation(); openUser(whose.dataset.whose); return; }
     var go = e.target.closest('[data-start]');
     if (go) {
       var r = routineById(go.dataset.start);
@@ -4976,7 +5016,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           'is yours. Make it yours to change the rest.</span></div>')
       : r.shared
         ? '<div class="frbar"><b>Open to your friends</b><span>They can follow this one ' +
-          'from your profile, and what you change here changes it for them.</span></div>'
+          'from your profile, and what you change here changes it for them.</span>' +
+          '<button class="frbtn" data-fans="' + r.id + '">Who follows it</button></div>'
         : '';
 
     var runs = runsOf(r);
@@ -5109,6 +5150,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   $('rv-body').addEventListener('click', function (e) {
+    var fans = e.target.closest('[data-fans]');
+    if (fans) { openFans(fans.dataset.fans); return; }
     var u = e.target.closest('[data-rvuni]');
     if (u) { rvOwn('uni', Number(u.dataset.i), u.dataset.rvuni === '1'); return; }
     var sd = e.target.closest('[data-rvside]');
