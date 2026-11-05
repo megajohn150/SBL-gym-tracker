@@ -128,6 +128,13 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .rtopen{display:block;width:100%;padding:16px 14px 0;text-align:center}
 .rtmeta{display:block;font-size:.8rem;color:var(--fg-3)}
 .rtmeta i{font-style:normal;opacity:.4;margin:0 .2ch}
+.rtfrom{
+  display:inline-block;padding:0 6px;border:var(--dash);border-radius:999px;
+  font-size:.72rem;color:var(--fg-2);
+}
+.rtfrom.off{
+  color:var(--fg-3);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;
+}
 .rtname{
   display:block;margin:.35rem 0 .7rem;line-height:1.08;font-family:var(--display);
   font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
@@ -942,6 +949,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   margin-top:10px;padding:9px 11px;font-size:.85rem;color:var(--fg-2);
   background:var(--bg);border:var(--dash);border-radius:calc(var(--radius) - 3px);
 }
+
+/* whose routine this is, and what following it means */
+.frbar{
+  margin:1rem var(--pad) 0;padding:11px 13px;
+  background:var(--surface);border:var(--border);border-radius:var(--radius);
+}
+.frbar b{display:block;font-size:.8rem;font-weight:700;letter-spacing:.03em}
+.frbar span{display:block;margin-top:4px;font-size:.78rem;line-height:1.35;color:var(--fg-3)}
 
 /* the username is the one thing on this sheet that other people see */
 .unrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:5px}
@@ -2153,6 +2168,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <div class="pop-wrap">
     <div class="pop-menu">
       <button id="rv-edit">Edit routine</button>
+      <button id="rv-mine" hidden>Make it mine</button>
+      <button id="rv-unfollow" class="danger" hidden>Unfollow routine</button>
     </div>
   </div>
 </div>
@@ -2171,6 +2188,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   <div class="pop-wrap" style="top:calc(env(safe-area-inset-top) + 56px)">
     <div class="pop-menu">
       <button id="rt-save">Save routine</button>
+      <button id="rt-share" hidden>Enable following</button>
       <button id="rt-delete" class="danger" hidden>Delete routine</button>
     </div>
   </div>
@@ -2222,7 +2240,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 <div class="pop" id="frrt-pop" hidden>
   <div class="pop-bg" data-frrt-close></div>
   <div class="pop-wrap">
-    <div class="pop-menu"><button id="frrt-save">Save routine</button></div>
+    <div class="pop-menu">
+      <button id="frrt-follow" hidden>Follow routine</button>
+      <button id="frrt-save">Copy routine</button>
+    </div>
   </div>
 </div>
 
@@ -2469,7 +2490,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4098';
+  var APP_VERSION = '3.4099';
 
   /* =========================================================
      STORE
@@ -2704,6 +2725,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   var social = {
     username: '', timer: null, at: 0, dirty: false, more: false,
+    fol: false,                          // the follow lists have landed
     following: {}, followers: {},        // user_id -> 1
     people: {},                          // user_id -> profile row
     feed: [],                            // friends' workouts, newest first
@@ -2804,9 +2826,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
   }
 
+  // A routine you follow still shows on your profile, under the name of
+  // whoever wrote it — but it is not yours to hand on, so it goes up
+  // without the flag that makes a routine followable.
+  function libRoutine(r) {
+    if (!r.follow) return r;
+    return { id: r.id, name: r.name, items: r.items, from: r.follow.user || '' };
+  }
+
   function pushLibrary() {
     if (!sb || !me || !social.username) return Promise.resolve();
-    var data = { routines: store.routines, exercises: store.exercises };
+    var data = { routines: store.routines.map(libRoutine), exercises: store.exercises };
     var s = sigOf(data);
     if (s === sigs.lib) return Promise.resolve();
     return sb.from('library').upsert({
@@ -2880,6 +2910,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       social.folls = (res[1].data || []).map(function (f) {
         return { by: f.follower, at: f.created_at };
       });
+      social.fol = true;
       drawProfile(); drawBell();
       return loadFeed();
     });
@@ -2920,7 +2951,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         sigsLoad(); rqLoad();
         drawProfile(); drawHome();
         if (pendingGo) setTimeout(function () { openPush(pendingGo); }, 0);
-        return pushProfile().then(pushLibrary).then(syncPosts).then(loadFollows);
+        return pushProfile().then(pushLibrary).then(syncPosts).then(loadFollows)
+          .then(function () { return syncFollowed(false); });
       });
   }
 
@@ -3220,7 +3252,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           var sets = (rt.items || []).reduce(function (a, it) { return a + (it.sets || 0); }, 0);
           return '<button class="frcard" data-openrt="' + i + '"><b>' +
             esc(rt.name || 'Routine') + '</b><span>' + n + ' exercise' + (n === 1 ? '' : 's') +
-            ' \u00b7 ' + sets + ' set' + (sets === 1 ? '' : 's') + '</span></button>';
+            ' \u00b7 ' + sets + ' set' + (sets === 1 ? '' : 's') + '</span>' +
+            (rt.from
+              ? '<span>from @' + esc(rt.from) + '</span>'
+              : rt.shared ? '<span>Open to follow</span>' : '') + '</button>';
         }).join('') + '</div>'
       : '<div class="note" style="padding:0 var(--pad) .6rem">No routines shared.</div>';
 
@@ -3272,7 +3307,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var rt = frRoutine;
     if (!rt) return;
     var theirEx = ((userView && userView.lib) || {}).exercises || [];
+    var who = ((userView && userView.p) || {}).username || 'a friend';
+    var had = userView ? followedRt(userView.id, rt.id) : null;
     $('frrt-title').textContent = rt.name || 'Routine';
+    $('frrt-follow').hidden = !(rt.shared && !had);
+
+    var bar = rt.from
+      ? '<div class="frbar"><b>Written by @' + esc(rt.from) + '</b><span>@' + esc(who) +
+        ' follows this one, so it is not theirs to hand on. A copy is yours to ' +
+        'change.</span></div>'
+      : had
+        ? '<div class="frbar"><b>You follow this routine</b><span>It sits in your ' +
+          'routines as \u201c' + esc(had.name) + '\u201d and keeps up with every change @' +
+          esc(who) + ' makes.</span></div>'
+        : rt.shared
+          ? '<div class="frbar"><b>Open to follow</b><span>Follow it and it stays @' +
+            esc(who) + '\u2019s: their changes land in yours, which you can run and ' +
+            'track but not edit.</span></div>'
+          : '';
 
     var rows = (rt.items || []).map(function (it) {
       var x = theirEx.filter(function (e) { return e.id === it.exId; })[0];
@@ -3292,7 +3344,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '</div>';
     }).join('');
 
-    $('frrt-body').innerHTML = '<div class="group" style="margin-top:1rem">' +
+    $('frrt-body').innerHTML = bar + '<div class="group" style="margin-top:1rem">' +
       '<h2>' + (rt.items || []).length + ' exercise' +
       ((rt.items || []).length === 1 ? '' : 's') + '</h2>' +
       '<div class="rows">' + rows + '</div></div>';
@@ -3306,6 +3358,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('frrt-pop').hidden = true;
     copyRoutine(frRoutine, ((userView && userView.lib) || {}).exercises || []);
     pop();
+  });
+  $('frrt-follow').addEventListener('click', function () {
+    $('frrt-pop').hidden = true;
+    var rt = frRoutine, who = ((userView && userView.p) || {}).username || 'your friend';
+    if (!rt || !userView) return;
+    askConfirm('Follow this routine?',
+      'It joins your routines and you run and track it like any other \u2014 but it ' +
+      'stays @' + who + '\u2019s. Every change they make to it, from the order to the ' +
+      'sets, shows up in yours, and you cannot edit it yourself. Movements you do not ' +
+      'have yet join your exercises.',
+      'Follow', function () {
+        followRoutine(rt);
+        pop();
+      });
   });
 
   // their routine, written in your own exercise ids; anything you are
@@ -3331,6 +3397,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
     var copy = JSON.parse(JSON.stringify(rt));
     copy.id = uid();
+    // a copy is yours alone: it is not followed, and handing it on further is
+    // the original author's call, not yours
+    delete copy.shared;
+    delete copy.follow;
+    delete copy.from;
+    copy.name = routineName(copy.name);
     copy.items = (copy.items || []).filter(function (it) { return map[it.exId]; })
       .map(function (it) { it.exId = map[it.exId]; return it; });
     store.routines.push(copy);
@@ -3338,6 +3410,145 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawRoutines();
     drawExercises();
     toast('Routine saved');
+  }
+
+  /* =========================================================
+     A FOLLOWED ROUTINE
+     Somebody else's routine, kept in step with theirs: you run
+     it and track it like your own, but what is in it is theirs
+     to change. It lives in store.routines with a `follow` block
+     instead of being a copy, so every change they make lands
+     here on the next look.
+     ========================================================= */
+  function isFollowed(r) { return !!(r && r.follow); }
+
+  function followedRt(by, rid) {
+    return store.routines.filter(function (r) {
+      return r.follow && r.follow.by === by && r.follow.rid === rid;
+    })[0] || null;
+  }
+
+  function nameTaken(nm, skip) {
+    return store.routines.some(function (r) {
+      return r.id !== skip && String(r.name).toLowerCase() === nm.toLowerCase();
+    });
+  }
+
+  // Their routine written in your own exercise ids, with the pairing kept on
+  // the routine: a movement they rename stays the same one here instead of
+  // forking your library in two. Anything you are missing joins your list.
+  function applyFollow(r, src, theirEx) {
+    var f = r.follow, before = sigOf([r.name, r.items]), items = [];
+    (src.items || []).forEach(function (it) {
+      var their = theirEx.filter(function (e) { return e.id === it.exId; })[0];
+      if (!their) return;                       // gone from their library
+      var mine = f.map[it.exId] ? byId(f.map[it.exId]) : null;
+      if (!mine) {
+        mine = store.exercises.filter(function (e) {
+          return e.name.toLowerCase() === String(their.name).toLowerCase();
+        })[0];
+        if (!mine) {
+          mine = {
+            id: uid(), name: their.name, code: their.code || deriveCode(their.name),
+            muscle: their.muscle, head: their.head || '', cue: their.cue || '',
+            unilateral: !!their.unilateral
+          };
+          store.exercises.push(mine);
+        }
+        f.map[it.exId] = mine.id;
+      }
+      items.push({
+        exId: mine.id, sets: it.sets, reps: it.reps || '',
+        side: mine.unilateral ? (it.side || 'R') : null
+      });
+    });
+    r.items = items;
+    // their name follows too, unless you already have a routine under it
+    var nm = String(src.name || '').trim();
+    if (nm && nm !== r.name && !nameTaken(nm, r.id)) r.name = nm;
+    f.at = Date.now();
+    return sigOf([r.name, r.items]) !== before;
+  }
+
+  function followRoutine(rt) {
+    var lib = (userView && userView.lib) || {}, who = userView && userView.id;
+    if (!rt || !who) return;
+    var r = {
+      id: uid(), name: routineName(rt.name || 'Routine'), items: [],
+      follow: {
+        by: who, rid: rt.id, map: {}, at: 0, dead: 0,
+        user: ((userView.p || {}).username) || 'a friend'
+      }
+    };
+    store.routines.push(r);
+    applyFollow(r, rt, lib.exercises || []);
+    saveStore();
+    drawRoutines();
+    drawExercises();
+    toast('Following \u201c' + r.name + '\u201d');
+  }
+
+  // Everything you follow, read off its owners' libraries in one query. What
+  // they changed lands here; what they stopped sharing — or a friendship that
+  // ended — leaves the routine exactly as it was.
+  var fsyncAt = 0, fsyncing = false;
+
+  function syncFollowed(soft) {
+    var mine = store.routines.filter(isFollowed);
+    if (!sb || !me || !social.fol || fsyncing || !mine.length) return Promise.resolve();
+    if (soft && Date.now() - fsyncAt < 60000) return Promise.resolve();
+    fsyncing = true;
+    fsyncAt = Date.now();
+    var ids = [], seen = {};
+    mine.forEach(function (r) {
+      var by = r.follow.by;
+      // only a friend's library can be read at all, so a one-way follow is
+      // the same thing here as no longer sharing
+      if (seen[by] || !social.following[by] || !social.followers[by]) return;
+      seen[by] = 1;
+      ids.push(by);
+    });
+    var q = ids.length
+      ? sb.from('library').select('user_id,data').in('user_id', ids)
+      : Promise.resolve({ data: [] });
+    return Promise.resolve(q).then(function (res) {
+      fsyncing = false;
+      if (!res || res.error) return;
+      var libs = {}, changed = [], ended = [], touched = 0;
+      (res.data || []).forEach(function (row) { libs[row.user_id] = row.data || {}; });
+      mine.forEach(function (r) {
+        var f = r.follow, lib = libs[f.by], src = null, who = social.people[f.by];
+        if (who && who.username && who.username !== f.user) { f.user = who.username; touched++; }
+        if (lib) {
+          src = (lib.routines || []).filter(function (o) {
+            return o.id === f.rid && o.shared;
+          })[0] || null;
+        }
+        if (!src) {
+          if (!f.dead) { f.dead = 1; touched++; ended.push(r); }
+          return;
+        }
+        if (f.dead) { f.dead = 0; touched++; }
+        if (applyFollow(r, src, lib.exercises || [])) { changed.push(r); touched++; }
+      });
+      if (!touched) return;
+      saveStore();
+      drawRoutines();
+      drawExercises();
+      if (current() === 's-rtview') drawRtView();
+      var say = [];
+      if (changed.length === 1) {
+        say.push('@' + changed[0].follow.user + ' changed \u201c' + changed[0].name + '\u201d');
+      } else if (changed.length) {
+        say.push(changed.length + ' followed routines changed');
+      }
+      if (ended.length === 1) {
+        say.push('@' + ended[0].follow.user + ' no longer shares \u201c' + ended[0].name + '\u201d');
+      } else if (ended.length) {
+        say.push(ended.length + ' followed routines are no longer shared');
+      }
+      if (say.length) toast(say.join(' \u00b7 '));
+    }, function () { fsyncing = false; });
   }
 
   /* --- the sign-in gate --- */
@@ -3598,7 +3809,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     scrollBack = true;
     render(current());
   }
-  function goTab(tab) { stack = ['s-' + tab]; render(current()); }
+  function goTab(tab) {
+    stack = ['s-' + tab];
+    render(current());
+    if (tab === 'workout') syncFollowed(true);
+  }
 
   document.querySelectorAll('.tabs button').forEach(function (b) {
     b.addEventListener('click', function () { goTab(b.dataset.tab); });
@@ -4091,6 +4306,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     draft = { id: null, name: '', items: [] };
     rtDirty = false; rtBase = '';
     $('rt-delete').hidden = true;
+    $('rt-share').hidden = true;
     $('rt-title').textContent = 'New routine';
     $('rt-name').value = '';
     drawRoutineForm();
@@ -4099,6 +4315,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function openRoutine(id) {
     var r = routineById(id);
     if (!r) return;
+    if (r.follow) { openRtView(id); return; }      // theirs to change, not yours
     draft = {
       id: r.id,
       name: r.name,
@@ -4108,6 +4325,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     };
     $('rt-title').textContent = 'Edit routine';
     $('rt-delete').hidden = false;
+    $('rt-share').hidden = false;
+    $('rt-share').textContent = r.shared ? 'Disable following' : 'Enable following';
     $('rt-name').value = r.name;
     rtBase = rtSig();
     rtDirty = false;
@@ -4331,7 +4550,14 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
 
   function commitRoutine() {
-    var r = { id: draft.id || uid(), name: $('rt-name').value.trim(), items: draft.items.slice() };
+    // Start from the routine as it is stored: whether friends may follow it is
+    // not on this form, and rebuilding the object from the fields alone would
+    // throw that away.
+    var r = {}, was = draft.id && routineById(draft.id);
+    if (was) Object.keys(was).forEach(function (k) { r[k] = was[k]; });
+    r.id = draft.id || uid();
+    r.name = $('rt-name').value.trim();
+    r.items = draft.items.slice();
     var found = false;
     for (var i = 0; i < store.routines.length; i++) {
       if (store.routines[i].id === r.id) { store.routines[i] = r; found = true; }
@@ -4391,6 +4617,35 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
   $('rt-save').addEventListener('click', function () { $('rt-pop').hidden = true; saveRoutine(); });
 
+  // Following is a property of the stored routine, like deleting it: it does
+  // not wait for Save, so it cannot be half-on while you edit.
+  $('rt-share').addEventListener('click', function () {
+    $('rt-pop').hidden = true;
+    var r = draft.id && routineById(draft.id);
+    if (!r) return;
+    if (r.shared) {
+      r.shared = false;
+      saveStore();
+      drawRoutines();
+      $('rt-share').textContent = 'Enable following';
+      toast('Following off \u2014 what friends have stays as it is');
+      return;
+    }
+    askConfirm('Let friends follow it?',
+      'Friends can add this routine without copying it. Every change you make here ' +
+      '\u2014 the order, the sets, the rep ranges \u2014 shows up in theirs, and they ' +
+      'cannot edit it. Turning this off later leaves what they have frozen.',
+      'Enable', function () {
+        r.shared = true;
+        saveStore();
+        drawRoutines();
+        $('rt-share').textContent = 'Disable following';
+        toast(social.username
+          ? 'Friends can follow this routine'
+          : 'Pick a username to share it');
+      });
+  });
+
   function drawRoutines() {
     var has = store.routines.length > 0;
     $('routine-empty').hidden = has;
@@ -4399,7 +4654,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('rt-reorder').hidden = store.routines.length < 2;
     $('new-routine-btn').parentNode.style.gridTemplateColumns = has ? '2fr 1fr' : '1fr';
     $('routine-list').innerHTML = store.routines.map(function (r) {
-      var n = r.items.length, t = totalSets(r.items);
+      var n = r.items.length, t = totalSets(r.items), f = r.follow;
       var shown = r.items.slice(0, 4), rest = r.items.length - shown.length;
       return '<div class="rtcard">' +
         '<button class="rtopen" data-routine="' + r.id + '">' +
@@ -4407,6 +4662,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
             '<span>' + n + ' exercise' + (n === 1 ? '' : 's') + '</span>' +
             '<i>&middot;</i>' +
             '<span>' + t + ' set' + (t === 1 ? '' : 's') + '</span>' +
+            (f
+              ? '<i>&middot;</i><span class="rtfrom' + (f.dead ? ' off' : '') + '">' +
+                (f.dead ? 'Not shared' : '@' + esc(f.user)) + '</span>'
+              : r.shared
+                ? '<i>&middot;</i><span class="rtfrom off">Shared</span>'
+                : '') +
           '</span>' +
           '<span class="rtname">' + esc(r.name) + '</span>' +
           '<span class="rtlist">' +
@@ -4479,8 +4740,26 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function drawRtView() {
     var r = routineById(rvId);
     if (!r) { pop(); return; }
+    var f = r.follow;
     $('rv-title').textContent = r.name || 'Routine';
+    $('rv-edit').hidden = !!f;
+    $('rv-mine').hidden = !f;
+    $('rv-unfollow').hidden = !f;
+    $('rv-unfollow').textContent = (f && f.dead) ? 'Remove routine' : 'Unfollow routine';
     hideTip();
+
+    var frbar = f
+      ? (f.dead
+        ? '<div class="frbar"><b>No longer shared</b><span>@' + esc(f.user) + ' stopped ' +
+          'sharing this routine, so it stays exactly as it was. Make it yours if you ' +
+          'want to change it.</span></div>'
+        : '<div class="frbar"><b>Following @' + esc(f.user) + '</b><span>Every change ' +
+          'they make lands here. Make it yours if you want to change it ' +
+          'yourself.</span></div>')
+      : r.shared
+        ? '<div class="frbar"><b>Open to your friends</b><span>They can follow this one ' +
+          'from your profile, and what you change here changes it for them.</span></div>'
+        : '';
 
     var runs = runsOf(r);
     var xp = periodOf(rvPeriod), buckets = routineBuckets();
@@ -4519,7 +4798,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         '</div>';
     }).join('');
 
-    $('rv-body').innerHTML = chart +
+    $('rv-body').innerHTML = frbar + chart +
       '<div class="group" style="margin-top:1rem">' +
       '<h2>' + r.items.length + ' exercise' + (r.items.length === 1 ? '' : 's') +
       (runs.length ? ' &middot; done ' + runs.length + (runs.length === 1 ? ' time' : ' times') : '') +
@@ -4534,6 +4813,41 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('rv-edit').addEventListener('click', function () {
     $('rv-pop').hidden = true;
     openRoutine(rvId);
+  });
+  $('rv-mine').addEventListener('click', function () {
+    $('rv-pop').hidden = true;
+    var r = routineById(rvId);
+    if (!r || !r.follow) return;
+    askConfirm('Make it yours?',
+      'The routine stays, with everything in it, and becomes yours to edit. The link ' +
+      'to @' + r.follow.user + ' is cut, so their changes stop arriving \u2014 and ' +
+      'following it again starts from theirs.',
+      'Make it mine', function () {
+        delete r.follow;
+        saveStore();
+        drawRoutines();
+        drawRtView();
+        toast('The routine is yours now');
+      });
+  });
+  $('rv-unfollow').addEventListener('click', function () {
+    $('rv-pop').hidden = true;
+    var r = routineById(rvId);
+    if (!r || !r.follow) return;
+    askConfirm(r.follow.dead ? 'Remove routine?' : 'Unfollow routine?',
+      'It goes off your list. Finished workouts stay in your history, and so do the ' +
+      'exercises it brought in.',
+      r.follow.dead ? 'Remove' : 'Unfollow', function () {
+        store.routines = store.routines.filter(function (o) { return o.id !== r.id; });
+        saveStore();
+        drawRoutines();
+        popTo('workout');
+        toastUndo(r.follow.dead ? 'Routine removed' : 'Unfollowed', function () {
+          store.routines.push(r);
+          saveStore();
+          drawRoutines();
+        });
+      });
   });
   $('rv-start').addEventListener('click', function () {
     var r = routineById(rvId);
