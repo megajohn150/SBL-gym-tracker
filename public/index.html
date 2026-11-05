@@ -2494,7 +2494,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4107';
+  var APP_VERSION = '3.4108';
 
   /* =========================================================
      STORE
@@ -2646,9 +2646,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function cloudPull() {
     if (!me) return Promise.resolve();
     syncState('busy');
+    // what the store looked like when the question went out
+    var asked = cloud.pulled ? sigOf(store) : null;
     return sb.from('tracker').select('data,session,rev').eq('user_id', me.id).maybeSingle()
       .then(function (r) {
         if (r.error) { syncState('err'); return; }
+
+        // Something was written here while the answer was on its way: a set
+        // logged, an exercise renamed, a followed routine brought in step.
+        // The copy that came back knows nothing about it, and merging it
+        // would quietly undo it — and the change would be made, undone and
+        // made again, every time, for ever. Ours goes up first instead, and
+        // the next look will have it.
+        if (r.data && asked !== null && (cloud.dirty || sigOf(store) !== asked)) {
+          syncState('ok');
+          queuePush();
+          return;
+        }
         if (!r.data) {                       // no row yet: claim one
           cloud.rev = 0;
           cloud.pulled = true;
