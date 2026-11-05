@@ -2490,7 +2490,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4101';
+  var APP_VERSION = '3.4102';
 
   /* =========================================================
      STORE
@@ -2892,7 +2892,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (social.dirty) queueSocial();
     if (!force && Date.now() - social.at < 60000) return;
     social.at = Date.now();
-    loadFollows();
+    loadFollows().then(function () { return syncFollowed(true); });
   }
 
   addEventListener('visibilitychange', function () { if (!document.hidden) refreshSocial(); });
@@ -2904,6 +2904,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       sb.from('follows').select('followee').eq('follower', me.id),
       sb.from('follows').select('follower,created_at').eq('followee', me.id)
     ]).then(function (res) {
+      // A request that failed says nothing about who your friends are. Keeping
+      // the lists is what stops a dropped connection from emptying the feed —
+      // and from writing off every routine you follow as no longer shared.
+      if (res[0].error || res[1].error) { social.dirty = true; return; }
       social.following = {}; social.followers = {};
       (res[0].data || []).forEach(function (f) { social.following[f.followee] = 1; });
       (res[1].data || []).forEach(function (f) { social.followers[f.follower] = 1; });
@@ -3570,9 +3574,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     me = u || null;
     document.getElementById('gate').hidden = !!me && !recovering;
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
-    if (!me) { syncState('off'); return; }
+    if (!me) { social.fol = false; syncState('off'); return; }
     save('uid', me.id);
-    if (me.id !== was) { cloud.rev = 0; cloudPull().then(loadSocial); }
+    // somebody else's friend list must not decide what this account follows
+    if (me.id !== was) { social.fol = false; cloud.rev = 0; cloudPull().then(loadSocial); }
   }
 
   function gateOk(msg) {
@@ -5072,6 +5077,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   function startSession(routine) {
+    if (!routine.items.length) { toast('Nothing in this routine yet'); return; }
     session = {
       name: routine.name,
       startedAt: Date.now(),
