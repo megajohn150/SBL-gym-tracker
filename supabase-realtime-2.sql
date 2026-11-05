@@ -3,6 +3,12 @@
 -- Źródłem prawdy jest supabase-social.sql; ten plik to dokładnie te dwa
 -- kawałki, które trzeba wykonać, żeby włączyć kanały na żywo.
 -- Można puszczać wielokrotnie, nic się nie zdubluje.
+--
+-- To jest wersja z 5 listopada 2026 (189 linii). Czy masz ją już u siebie,
+-- sprawdzisz dwoma zapytaniami w SQL Editor:
+--   select count(*) from pg_trigger where tgname like 'live\_%';   -- ma być 7
+--   select prosrc like '%data:%' from pg_proc where proname = 'live_self';
+-- Jeśli pierwsze zwróci mniej niż 7 albo drugie "false" — wklej ten plik.
 
 -- ------------------------------------------------------------------
 -- 10. Na żywo. Ta sama nowina co push, tyle że do aplikacji, która
