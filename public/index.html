@@ -1987,6 +1987,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="val" id="set-push-val">Off</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <div class="row">
+          <span class="lab">Live updates</span>
+          <span class="val" id="set-live-val">Off</span>
+        </div>
       </div>
       <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
     </div>
@@ -2490,7 +2494,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4103';
+  var APP_VERSION = '3.4104';
 
   /* =========================================================
      STORE
@@ -2889,6 +2893,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // Home is where the feed lives, so that is where it is worth a new look
   function refreshSocial(force) {
     if (!sb || !me || !social.username) return;
+    liveCheck();                       // outside the throttle: it is the ears
     if (social.dirty) queueSocial();
     if (!force && Date.now() - social.at < 60000) return;
     social.at = Date.now();
@@ -2906,11 +2911,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      to see is still decided by the database, not by the ping.
      ========================================================= */
   var liveCh = null, liveT = null, liveWant = {};
+  var liveSt = 'off', liveTry = 0, liveRe = null;
+  var LIVE_LAB = { off: 'Off', wait: 'Connecting\u2026', on: 'On', back: 'Reconnecting\u2026' };
+
+  function drawLiveRow() {
+    var el = document.getElementById('set-live-val');
+    if (el) el.textContent = LIVE_LAB[liveSt] || 'Off';
+  }
+  function liveSay(st) { liveSt = st; drawLiveRow(); }
 
   function liveOn() {
     if (!sb || !me || liveCh) return;
     var who = me.id;
     liveCh = { id: who, ch: null };
+    liveSay('wait');
     // the socket authenticates with your token, or the channel is refused
     Promise.resolve(sb.realtime.setAuth()).catch(function () {}).then(function () {
       if (!liveCh || liveCh.id !== who || !me || me.id !== who) return;
@@ -2918,16 +2932,43 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         .on('broadcast', { event: 'ping' }, function (m) {
           liveHit((m && m.payload && m.payload.k) || 'react');
         })
-        .subscribe();
+        .subscribe(function (st) {
+          if (!liveCh || liveCh.id !== who) return;     // already taken down here
+          if (st === 'SUBSCRIBED') { liveTry = 0; liveSay('on'); return; }
+          // a channel that errored, timed out or was closed from the other end
+          // stays dead until somebody builds a new one
+          if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') liveLost();
+        });
     });
   }
 
-  function liveOff() {
-    if (!liveCh) return;
-    if (liveCh.ch) sb.removeChannel(liveCh.ch);
-    liveCh = null;
+  function liveOff(quiet) {
+    clearTimeout(liveRe);
     clearTimeout(liveT);
     liveWant = {};
+    if (liveCh) {
+      var ch = liveCh.ch;
+      liveCh = null;                      // before the removal, so its CLOSED is ignored
+      if (ch) sb.removeChannel(ch);
+    }
+    if (!quiet) liveSay('off');
+  }
+
+  function liveLost() {
+    liveOff(true);
+    if (!me || document.hidden) { liveSay('off'); return; }
+    liveSay('back');
+    liveTry = Math.min(liveTry + 1, 5);
+    liveRe = setTimeout(liveOn, 2000 * liveTry);       // 2s, 4s, 6s, 8s, 10s
+  }
+
+  // iOS can freeze the page without a word, and the socket dies with it. If
+  // the channel is not up when we are back, it is not coming up by itself.
+  function liveCheck() {
+    if (!me || document.hidden) return;
+    if (!liveCh) { if (!liveRe) liveOn(); return; }
+    var st = liveCh.ch && liveCh.ch.state;
+    if (st && st !== 'joined' && st !== 'joining') { liveOff(true); liveOn(); }
   }
 
   // a burst of news is still one look: the pings pile up for a moment,
@@ -2963,10 +3004,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   addEventListener('visibilitychange', function () {
     if (document.hidden) { liveOff(); return; }   // iOS drops the socket anyway
-    liveOn();
+    liveCheck();
     refreshSocial();
   });
-  addEventListener('online', function () { liveOn(); refreshSocial(true); });
+  addEventListener('online', function () { liveCheck(); refreshSocial(true); });
 
   function loadFollows() {
     if (!sb || !me) return Promise.resolve();
@@ -3850,7 +3891,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-body') drawStatBody();
     if (id === 's-stat-month') drawStatMonth();
     if (id === 's-stat-stall') drawStatStall();
-    if (id === 's-settings') drawPushRow();
+    if (id === 's-settings') { drawPushRow(); drawLiveRow(); }
     if (id === 's-rtview') drawRtView();
     // picking an exercise leaves the screen without leaving the edit
     if (id !== 's-detail' && detailEdit && !(id === 's-exercises' && pickFor === 'detail')) {
