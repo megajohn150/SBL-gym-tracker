@@ -69,15 +69,26 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 /* pull down on a tab and the app comes back as if newly opened */
 .pullring{
   position:fixed;left:50%;top:env(safe-area-inset-top);z-index:70;
-  width:34px;height:34px;margin-left:-17px;border-radius:50%;
+  width:38px;height:38px;margin-left:-19px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   background:var(--surface);border:var(--border);
-  opacity:0;transform:translateY(-44px);pointer-events:none;
+  opacity:0;transform:translate3d(0,-46px,0) scale(.7);
+  pointer-events:none;will-change:transform,opacity;
+  transition:background-color .18s ease,border-color .18s ease;
+}
+/* only while it settles: during the drag it has to sit under the finger */
+.pullring.snap{
+  transition:transform .3s cubic-bezier(.22,1,.36,1),opacity .24s ease,
+             background-color .18s ease,border-color .18s ease;
 }
 .pullring i{
-  display:block;width:14px;height:14px;border-radius:50%;
-  border:2px solid var(--line,var(--fg-3));border-top-color:var(--fg);
+  display:block;width:15px;height:15px;border-radius:50%;
+  border:2px solid var(--fg-3);border-top-color:var(--fg);
+  opacity:.5;transition:opacity .18s ease,border-color .18s ease;
 }
+/* past the point of no return it flips to a solid disc: unmistakable */
+.pullring.armed{background:var(--fg);border-color:var(--fg)}
+.pullring.armed i{border-color:rgba(127,127,127,.35);border-top-color:var(--bg);opacity:1}
 .pullring.go i{animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -2518,7 +2529,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4117';
+  var APP_VERSION = '3.4118';
 
   /* =========================================================
      STORE
@@ -4093,27 +4104,58 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      which is also the surest way onto a version that has just
      gone out — and it opens on the tab you pulled.
      ========================================================= */
-  var PULL_GO = 74, pullFrom = -1, pullX = 0, pullPane = null, pullNow = 0;
+  // how far the finger has to travel, and the slack before any of it counts
+  var PULL_GO = 125, PULL_DEAD = 10;
+  var pullFrom = -1, pullX = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
 
   function pullable() {
     return stack.length === 1 && /^s-(home|workout|profile)$/.test(current());
   }
 
-  function pullDraw(y) {
+  // The ring follows the finger at a little over half speed and then gets
+  // heavier and heavier, so the end of the pull has to be meant.
+  function pullEase(raw) {
+    var soft = Math.min(raw, PULL_GO) * 0.5;
+    var over = Math.max(0, raw - PULL_GO);
+    return soft + over * 0.34 / (1 + over / 110);
+  }
+
+  // one write per frame, never one per touch event
+  function pullPaint() {
+    pullFrame = 0;
+    var ring = $('pull-ring'), raw = pullRaw;
+    if (raw <= 0) return;
+    var k = Math.min(1, raw / PULL_GO), armed = k === 1;
+    if (armed !== pullArmed) {
+      pullArmed = armed;
+      ring.classList.toggle('armed', armed);
+    }
+    ring.style.transform = 'translate3d(0,' + pullEase(raw).toFixed(1) + 'px,0) rotate(' +
+      (k * 270).toFixed(1) + 'deg) scale(' + (0.72 + k * 0.28).toFixed(3) + ')';
+    ring.style.opacity = Math.min(1, 0.12 + k * 1.15);
+  }
+
+  function pullDraw(raw) {
     var ring = $('pull-ring');
-    pullNow = y;
-    if (y <= 0) {
+    pullRaw = raw;
+    if (raw > 0) {
+      ring.hidden = false;
+      ring.classList.remove('snap');
+      if (!pullFrame) pullFrame = requestAnimationFrame(pullPaint);
+      return;
+    }
+    // back up and out of the way, on the transition rather than in steps
+    if (pullFrame) { cancelAnimationFrame(pullFrame); pullFrame = 0; }
+    pullArmed = false;
+    ring.className = 'pullring snap';
+    ring.style.transform = 'translate3d(0,-46px,0) scale(.7)';
+    ring.style.opacity = '0';
+    setTimeout(function () {
+      if (pullFrom >= 0 || pullRaw > 0) return;        // another pull began
       ring.hidden = true;
       ring.className = 'pullring';
       ring.style.cssText = '';
-      return;
-    }
-    var k = Math.min(1, y / PULL_GO);
-    ring.hidden = false;
-    ring.className = 'pullring' + (k === 1 ? ' go' : '');
-    ring.style.opacity = Math.min(1, k * 1.5);
-    ring.style.transform =
-      'translateY(' + Math.round(y * 0.62) + 'px) rotate(' + Math.round(k * 300) + 'deg)';
+    }, 320);
   }
 
   // back from cold: the worker is asked for a fresh copy first, so a version
@@ -4152,22 +4194,23 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     // a sideways swipe belongs to whatever it started on, and so does any
     // move once the pane has scrolled away from the top
     if (dy <= 0 || dx > dy || pullPane.scrollTop > 0) {
-      if (pullNow > 0) pullDraw(0);
+      if (pullRaw > 0) pullDraw(0);
       pullFrom = -1;
       return;
     }
+    if (dy <= PULL_DEAD) return;                 // slack, so a tap shows nothing
     e.preventDefault();
-    pullDraw(Math.min(dy, 130));
+    pullDraw(Math.min(dy - PULL_DEAD, PULL_GO + 90));
   }, { passive: false });
 
   document.addEventListener('touchend', function () {
     if (pullFrom < 0) return;
     pullFrom = -1;
-    if (pullNow >= PULL_GO) {
+    if (pullRaw >= PULL_GO) {
       var ring = $('pull-ring');
-      ring.className = 'pullring go';
-      ring.style.transform = 'translateY(46px)';
-      ring.style.opacity = 1;
+      ring.className = 'pullring snap armed go';
+      ring.style.transform = 'translate3d(0,58px,0) rotate(270deg) scale(1)';
+      ring.style.opacity = '1';
       startOver();
       return;
     }
