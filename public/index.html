@@ -2494,7 +2494,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4112';
+  var APP_VERSION = '3.4113';
 
   /* =========================================================
      STORE
@@ -3610,8 +3610,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     });
   }
 
+  // What a routine actually says, in a form that cannot differ by accident.
+  // JSON.stringify writes an object's fields in the order they were added, so
+  // the same routine saved by two builds of the app compares as two different
+  // routines — and every look announces a change that is not one.
+  function rtSay(name, items) {
+    return name + '\n' + (items || []).map(function (it) {
+      return [it.exId, it.sets, it.reps || '', it.side || ''].join('\u0001');
+    }).join('\u0002');
+  }
+
   function applyFollow(r, src, theirEx) {
-    var f = r.follow, before = sigOf([r.name, r.items]), items = [];
+    var f = r.follow, before = rtSay(r.name, r.items), items = [];
     var hadName = r.name, had = r.items;        // for the line logged below
     f.side = f.side || {};                      // whichever sides you picked
     f.born = f.born || {};                      // and which movements they lent you
@@ -3657,7 +3667,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var nm = String(src.name || '').trim();
     if (nm && nm !== r.name && !nameTaken(nm, r.id)) r.name = nm;
     f.at = Date.now();
-    var now = sigOf([r.name, r.items]);
+    var now = rtSay(r.name, r.items);
     // left in while a routine that keeps announcing changes it has not had
     // is being hunted down: this is the difference, in full
     if (now !== before) {
