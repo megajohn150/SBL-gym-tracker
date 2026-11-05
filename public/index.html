@@ -2490,7 +2490,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4100';
+  var APP_VERSION = '3.4101';
 
   /* =========================================================
      STORE
@@ -3366,9 +3366,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     askConfirm('Follow this routine?',
       'It joins your routines and you run and track it like any other \u2014 but it ' +
       'stays @' + who + '\u2019s. Every change they make to it, from the order to the ' +
-      'sets, shows up in yours. Yours to set are the cue, whether a movement runs one ' +
-      'side at a time and which side starts. Movements you do not have yet join your ' +
-      'exercises.',
+      'sets, shows up in yours, and nothing you do here reaches theirs. How you log ' +
+      'it is yours: whether a movement runs one side at a time, and which side ' +
+      'starts. Movements you do not have yet join your exercises.',
       'Follow', function () {
         followRoutine(rt);
         pop();
@@ -4637,9 +4637,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     }
     askConfirm('Let friends follow it?',
       'Friends can add this routine without copying it. Every change you make here ' +
-      '\u2014 the order, the sets, the rep ranges \u2014 shows up in theirs. All they ' +
-      'set is their own cue and how a movement is logged. Turning this off later ' +
-      'leaves what they have frozen.',
+      '\u2014 the order, the sets, the rep ranges \u2014 shows up in theirs, and ' +
+      'nothing they do comes back to yours. All they set is how they log it. ' +
+      'Turning this off later leaves what they have frozen.',
       'Enable', function () {
         r.shared = true;
         saveStore();
@@ -4759,9 +4759,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           'sharing this routine, so it stays exactly as it was. Make it yours if you ' +
           'want to change it.</span></div>'
         : '<div class="frbar"><b>Following @' + esc(f.user) + '</b><span>Every change ' +
-          'they make lands here. The cue, the type and the side you start on are ' +
-          'yours \u2014 the rest is theirs. Make it yours to change all of ' +
-          'it.</span></div>')
+          'they make lands here, and nothing you do changes theirs. How you log it ' +
+          'is yours. Make it yours to change the rest.</span></div>')
       : r.shared
         ? '<div class="frbar"><b>Open to your friends</b><span>They can follow this one ' +
           'from your profile, and what you change here changes it for them.</span></div>'
@@ -4808,12 +4807,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
                   '<button data-rvside="R" data-i="' + i + '" aria-pressed="' + (!left) + '">Right</button>' +
                   '<button data-rvside="L" data-i="' + i + '" aria-pressed="' + left + '">Left</button>' +
                 '</span></div>'
-              : '') +
-            '<input class="noteinput" type="text" maxlength="120" data-rvcue="' + i + '" value="' +
-              esc(x.cue || '') + '" placeholder="Cue" autocomplete="off">'
+              : '')
           : (uni ? '<div class="ctl"><span class="ctl-lab">Starts with</span>' +
-              '<span class="val">' + (left ? 'Left' : 'Right') + '</span></div>' : '') +
-            (x.cue ? '<p class="rocue">' + esc(x.cue) + '</p>' : '')) +
+              '<span class="val">' + (left ? 'Left' : 'Right') + '</span></div>' : '')) +
+        // the cue is changed where it lives, on the exercise itself
+        (x.cue ? '<p class="rocue">' + esc(x.cue) + '</p>' : '') +
         '</div>';
     }).join('');
 
@@ -4873,10 +4871,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (r) startSession(r);
   });
 
-  // A routine you follow is theirs, but how you log it is yours: the cue, and
-  // whether a movement runs one side at a time and which side starts. The cue
-  // and the type belong to the exercise, so they change everywhere at once;
-  // the side is kept on the routine, where their next change cannot wipe it.
+  // A routine you follow is theirs, but how you log it is yours: whether a
+  // movement runs one side at a time, and which side starts. The type belongs
+  // to the exercise, so it changes everywhere at once; the side is kept on the
+  // routine, where their next change cannot wipe it.
   function rvOwn(what, i, val) {
     var r = routineById(rvId), it = r && r.items[i], x = it && byId(it.exId);
     if (!r || !r.follow || !x) return;
@@ -4896,18 +4894,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawRoutines();
     drawExercises();
   }
-
-  // the cue is the exercise's own, so it is saved where it is typed and the
-  // row is left alone — a redraw here would take the caret with it
-  $('rv-body').addEventListener('input', function (e) {
-    var c = e.target.closest('[data-rvcue]');
-    if (!c) return;
-    var r = routineById(rvId), it = r && r.items[Number(c.dataset.rvcue)];
-    var x = it && byId(it.exId);
-    if (!x) return;
-    x.cue = c.value.slice(0, 120);
-    saveStore();
-  });
 
   $('rv-body').addEventListener('click', function (e) {
     var u = e.target.closest('[data-rvuni]');
@@ -8962,6 +8948,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   $('sess-exmenu').addEventListener('click', function () {
     if (!session) return;
     var last = session.exercises.length - 1;
+    // the sets and the rep range belong to whoever wrote the routine, and this
+    // sheet writes them back into it
+    var fr = session.routineId ? routineById(session.routineId) : null;
+    $('xp-meta').hidden = !!(fr && fr.follow);
     $('xp-up').hidden = session.idx === 0;
     $('xp-down').hidden = session.idx >= last;
     $('xp-drop').hidden = session.exercises.length < 2;
@@ -9022,8 +9012,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (ex.unilateral) ex.side = mset.side;
     setPlannedSets(ex, mset.sets);
 
+    // A routine you follow is never written to, whatever you do in here: this
+    // workout changes, theirs does not.
     var r = session.routineId ? routineById(session.routineId) : null;
-    if (r) {
+    if (r && !r.follow) {
       var it = r.items.filter(function (i) { return i.exId === ex.exId; })[0];
       if (it) {
         it.sets = mset.sets;
