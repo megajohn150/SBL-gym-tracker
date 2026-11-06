@@ -161,6 +161,16 @@ killing the PWA.
 All three are fixed and covered by `tests/`. They share one shape: a second caller running
 between a request and its answer. Assume it will happen.
 
+## Known duplication
+
+These pairs do the same job in two places, so a fix to one is a bug left in the other:
+
+- `harvestDetail` / `saveDetail` — the same DOM-collection block, written twice
+- `exerciseBuckets` / `routineBuckets` — the same bucketing over different sources
+- `copyRoutine` / `followRoutine` — both map a friend's routine onto your exercises
+- `lastSetsFor` / `lastNoteFor` — the same history walk for two fields
+- `rqFlush` / `queuePush` — two independent deferred-write queues
+
 ## Supabase deployments are manual
 
 The Supabase CLI is **not installed** and there is no migration runner. SQL goes into the
