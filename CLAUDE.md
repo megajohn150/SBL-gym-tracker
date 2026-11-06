@@ -15,6 +15,51 @@ framework. The only runtime dependency is supabase-js from a CDN, pinned in both
 All UI text is English. The user writes and reads Polish — talk to them in Polish, keep the
 code and its comments in English.
 
+## Start here, and keep it cheap
+
+This file is the map. It is loaded for free at the start of every session — reading the
+source to learn the architecture is paying twice.
+
+- **Never read `public/index.html` whole.** It is ~9800 lines. Grep for the thing
+  (`grep -n "function syncFollowed" public/index.html`) and read a window around the hit.
+  Function names are unique across the file, so one grep is enough.
+- **Jump by section**, see the map below. The banners are stable; the line numbers drift.
+- **`node tests/run.js` is the fast feedback loop** — seconds, no tokens, no browser.
+  Run it after any change to logic it covers (sync, followed routines, the pull race).
+- **Skip the browser unless the change is visual.** When it is needed, the recipe is under
+  "Verifying in a browser", and it is Receipt skin + dark mode only.
+- **Do not re-derive what is written here.** The data shapes, the ping kinds, the traps and
+  the deploy story are all below; they were expensive to learn and are kept current.
+- **Ask which area the work is in** if the request is vague. "Routines", "realtime",
+  "stats" each map to one section, and that is the difference between reading 60 lines
+  and reading 2000.
+
+## Map of `public/index.html`
+
+One IIFE, in this order. Grep the banner name to land in a section; the line numbers are
+from version 3.4120 and drift with every edit.
+
+| ~line | section | what is in it |
+|---|---|---|
+| 2534 | STORE | the store object, `save`/`load`, the `fix*` migrations |
+| 2614 | CLOUD | `cloudPull`, `cloudPush`, `mergeStores`, the `rev` lock |
+| 2774 | PEOPLE | profiles, follows, the feed, `pushLibrary` |
+| 2954 | LIVE | the realtime channel, `liveOn`, `liveRun`, `liveData` |
+| 3641 | A FOLLOWED ROUTINE | the `follow` block, `applyFollow`, `syncFollowed`, `rtSay` |
+| 3999 | NAVIGATION | the screen stack, `render`, `goTab` |
+| 4100 | PULL TO START OVER | the refresh gesture and `startOver` |
+| 4241 | EXERCISES | the exercise list and form, `saveExercise` |
+| 4656 | ROUTINES | the routine editor, `commitRoutine`, the routine list |
+| 5113 | one routine over time | the routine view and its charts |
+| 5351 | SESSION | the live workout: sets, the number pad, the rest timer |
+| 6162 | BACKUP | export and import |
+| 6264 | push notifications | subscription handling, the settings row |
+| 6390 | Hevy import | reading someone else's export |
+| 6716 | likes, comments, the bell | reactions, the offline queue, notifications |
+| 7808 | STATISTICS | every chart and the weekly targets |
+| 9692 | THEME | skins and light/dark |
+| 9776 | BOOT | startup order, the auth gate, service worker registration |
+
 ## Commands
 
 ```bash
