@@ -138,6 +138,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 /* a settings group folded into one row. The body animates by growing a 0fr grid row,
    which, unlike height:auto, can be transitioned; visibility keeps closed buttons untappable.
    The header is a small caps label so it cannot be mistaken for a field inside. */
+#app-version b{color:var(--fg);font-weight:700}
 .fold-h{
   display:flex;align-items:center;gap:12px;width:100%;text-align:left;
   padding:13px var(--cardpad);
@@ -2111,8 +2112,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     <div class="note" id="app-version" style="padding-bottom:.4rem"></div>
 
-    <div class="note">Everything lives on this device. Export writes a JSON file you can keep;
-      importing one replaces what is here, and erasing cannot be undone &mdash; export first.</div>
     </div>
 
   </section>
@@ -2605,7 +2604,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4131';
+  var APP_VERSION = '3.4132';
 
   /* =========================================================
      STORE
@@ -9955,7 +9954,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   });
   mo.observe(document.getElementById('s-exercises'), { attributes: true, attributeFilter: ['class'] });
 
-  $('app-version').textContent = 'Current version: ' + APP_VERSION;
+  $('app-version').innerHTML = 'Current version: <b>' + APP_VERSION + '</b>';
 
   initAuth();
 
