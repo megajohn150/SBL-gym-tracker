@@ -2665,7 +2665,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4151';
+  var APP_VERSION = '3.4152';
 
   /* =========================================================
      STORE
@@ -4248,7 +4248,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   // how far the finger has to travel, and the slack before any of it counts
   var PULL_GO = 125, PULL_DEAD = 10;
-  var pullGo = false, pullTick = 0, pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
+  var pullLast = 0, pullGo = false, pullTick = 0, pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
 
   function pullable() {
     if (document.querySelector('.pop:not([hidden]), .sheet:not([hidden])')) return false;   // a layer covers the screen
@@ -4296,6 +4296,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (!pullFrame) pullFrame = requestAnimationFrame(pullPaint);
       return;
     }
+    pullLast = Date.now();
     // back up and out of the way, on the transition rather than in steps
     if (pullFrame) { cancelAnimationFrame(pullFrame); pullFrame = 0; }
     pullArmed = false;
@@ -4342,7 +4343,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   document.addEventListener('touchstart', function (e) {
     pullFrom = -1;
-    if (e.touches.length !== 1 || pullGo || !pullable()) return;
+    if (e.touches.length !== 1 || pullGo || Date.now() - pullLast < 1500 || !pullable()) return;   // no second pull while the first is still settling
     // a pull whose end never arrived must not leave the page hanging half way down
     if (pullRaw > 0) pullDraw(0);
     var pane = document.querySelector('.screen.on .scroll');
