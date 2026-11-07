@@ -1707,11 +1707,11 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <div class="sfoot">
       <button class="prev" id="sess-prev">&larr; Prev</button>
       <span class="mids">
-      <button class="mid" id="sess-timer" aria-label="Timer">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13M9 2h6"/></svg>
-      </button>
       <button class="mid" id="sess-spotify" aria-label="Open Spotify playlist" hidden>
         <svg width="20" height="20" viewBox="68 37 457 459" fill="none" stroke="currentColor" stroke-linejoin="round"><circle cx="296" cy="266" r="220.5"/><path d="M169 217.5c-9.5 2.7-19.4-2.7-22.3-12.1-3-9.6 2.4-19.8 12-23 87.8-27.5 187.6-18.8 287.1 25.1 9.2 4.1 13.3 14.8 9.2 24-4 9.1-14.7 13.3-23.9 9.2-91.3-40.3-181.9-48.3-262.1-23.2Z"/><path d="M184.2 285.1c-9.4 3-19.5-2.1-22.6-11.6-3.1-9.4 2.1-19.6 11.5-22.6 73.6-24.1 159.3-16.9 243.5 23.5 9 4.3 12.8 15.1 8.5 24.1-4.4 9-15.1 12.8-24.1 8.5-75.6-36.2-151.9-42.7-216.8-21.9Z"/><path d="M194 352.4c-9.3 3.3-19.6-1.6-22.9-11-3.3-9.4 1.6-19.7 11-23 61.5-21.8 138.6-15.2 209.4 22.7 8.8 4.7 12.1 15.6 7.4 24.4-4.7 8.8-15.6 12.1-24.4 7.4-61.6-33-128.3-38.9-180.5-20.5Z"/></svg>
+      </button>
+      <button class="mid" id="sess-timer" aria-label="Timer">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13M9 2h6"/></svg>
       </button>
       <button class="mid" id="sess-soundcloud" aria-label="Open SoundCloud playlist" hidden>
         <svg width="24" height="24" viewBox="694 149 454 236" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M702 293v47M723 268v96M745 256v119M767 261v115M788 227v149M810 207v169M832 197v179M853 197v179M875 205v171M897 181v195"/><path d="M918 376V168c14.2-7.6 30.3-11.6 46.5-11.6 52.7 0 95.4 42.7 95.4 95.4 5.8-2.1 12-3.2 18.4-3.2 35.5 0 64.3 28.8 64.3 64.3s-28.8 63.1-64.3 63.1H918Z"/></svg>
@@ -2578,7 +2578,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4124';
+  var APP_VERSION = '3.4125';
 
   /* =========================================================
      STORE
@@ -9728,6 +9728,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       return u.protocol === 'https:' && MUSIC[kind].test(u.hostname) ? u.href : '';
     } catch (e) { return ''; }
   }
+  function spotifyUri(href) {
+    var m = new URL(href).pathname.match(/\/(playlist|album|artist|track|show|episode)\/([A-Za-z0-9]+)/);
+    return m ? 'spotify:' + m[1] + ':' + m[2] : href;   // spotify.link short links cannot be converted
+  }
   function paintMusicFoot() {
     Object.keys(MUSIC).forEach(function (k) {
       $('sess-' + k).hidden = !(music[k] && music[k].on && music[k].url);
@@ -9758,7 +9762,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       keep();
     });
     $('sess-' + k).addEventListener('click', function () {
-      if (music[k] && music[k].url) window.open(music[k].url, '_blank', 'noopener');
+      // window.open leaves a blank in-app browser sheet behind; a plain navigation does not,
+      // and spotify: opens the app directly where the https link bounces to Safari
+      if (music[k] && music[k].url) location.href = k === 'spotify' ? spotifyUri(music[k].url) : music[k].url;
     });
   });
   paintMusicFoot();
