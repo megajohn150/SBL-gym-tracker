@@ -2662,7 +2662,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4146';
+  var APP_VERSION = '3.4147';
 
   /* =========================================================
      STORE
@@ -4248,7 +4248,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var pullFrom = -1, pullX = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
 
   function pullable() {
-    return stack.length === 1 && /^s-(home|workout|profile)$/.test(current());
+    return (stack.length === 1 && /^s-(home|workout|profile)$/.test(current())) || current() === 's-settings';
   }
 
   // The ring follows the finger at a little over half speed and then gets
