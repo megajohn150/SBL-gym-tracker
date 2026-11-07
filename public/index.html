@@ -2080,6 +2080,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="lab">Music</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <button class="row" data-push="resttimer">
+          <span class="lab">Rest timer</span>
+          <span class="chev">&rsaquo;</span>
+        </button>
       </div>
       </div></div>
     </div>
@@ -2141,6 +2145,35 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <input type="url" id="mus-soundcloud-in" placeholder="https://soundcloud.com/&hellip;" autocomplete="off"
                autocapitalize="none" spellcheck="false">
         <p class="hint" id="mus-soundcloud-hint" style="padding-left:0"></p>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ===================== REST TIMER SETTINGS ===================== -->
+  <section class="screen" id="s-resttimer" data-tab="profile" data-title="Rest timer">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Rest timer</h1>
+      <span></span>
+    </div>
+    <div class="scroll">
+    <div style="padding:1.1rem var(--pad) 0">
+      <label class="privrow"><span>Default rest timer<i>Starts when you tick a set as done</i></span>
+        <input type="checkbox" id="rt-on"></label>
+      <div id="rt-opts" hidden>
+      <div class="field" style="padding:0 0 1.1rem"><label>Normal rest timer</label>
+        <div class="rest-pick" style="margin:0">
+          <button id="rt-n-minus">&minus; 15s</button>
+          <span class="v" id="rt-n-value">3:00</span>
+          <button id="rt-n-plus">+ 15s</button>
+        </div></div>
+      <div class="field" style="padding:0 0 1.1rem"><label>Unilateral rest timer</label>
+        <div class="rest-pick" style="margin:0">
+          <button id="rt-u-minus">&minus; 15s</button>
+          <span class="v" id="rt-u-value">3:00</span>
+          <button id="rt-u-plus">+ 15s</button>
+        </div></div>
       </div>
     </div>
     </div>
@@ -2604,7 +2637,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4132';
+  var APP_VERSION = '3.4133';
 
   /* =========================================================
      STORE
@@ -4124,6 +4157,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); }
     if (id === 's-music') drawMusic();
+    if (id === 's-resttimer') drawRestCfg();
     if (id === 's-rtview') drawRtView();
     // picking an exercise leaves the screen without leaving the edit
     if (id !== 's-detail' && detailEdit && !(id === 's-exercises' && pickFor === 'detail')) {
@@ -5938,6 +5972,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         ex2.sets[j].done = !ex2.sets[j].done;
         saveSession();
         drawSession();
+        if (ex2.sets[j].done && restCfg.on) startRest(ex2.unilateral ? restCfg.uni : restCfg.normal);
         return;
       }
       var p = fillFrom(ex2, j);
@@ -9820,12 +9855,40 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     restWanted = Math.min(REST_MAX, restWanted + REST_STEP);
     drawRestPicker();
   });
+  function startRest(sec) {
+    rest = { endsAt: Date.now() + sec * 1000, done: false, job: pushLive };
+    pushJob('rest', rest.endsAt);
+    tickRest();
+  }
   $('rest-start').addEventListener('click', function () {
     save('rest', String(restWanted));
-    rest = { endsAt: Date.now() + restWanted * 1000, done: false, job: pushLive };
-    pushJob('rest', rest.endsAt);
     $('rest-sheet').hidden = true;
-    tickRest();
+    startRest(restWanted);
+  });
+
+  // the optional automatic rest: one length for normal sets, one for unilateral ones
+  var restCfg = { on: false, normal: 180, uni: 90 };
+  try {
+    var rc = JSON.parse(load('restcfg')) || {};
+    restCfg.on = !!rc.on;
+    restCfg.normal = Math.max(REST_MIN, Math.min(REST_MAX, Number(rc.normal) || 180));
+    restCfg.uni = Math.max(REST_MIN, Math.min(REST_MAX, Number(rc.uni) || 90));
+  } catch (e) {}
+  function drawRestCfg() {
+    $('rt-on').checked = restCfg.on;
+    $('rt-opts').hidden = !restCfg.on;
+    $('rt-n-value').textContent = mmss(restCfg.normal);
+    $('rt-u-value').textContent = mmss(restCfg.uni);
+  }
+  function keepRestCfg() { save('restcfg', JSON.stringify(restCfg)); drawRestCfg(); }
+  $('rt-on').addEventListener('change', function () { restCfg.on = this.checked; keepRestCfg(); });
+  [['n', 'normal'], ['u', 'uni']].forEach(function (p) {
+    $('rt-' + p[0] + '-minus').addEventListener('click', function () {
+      restCfg[p[1]] = Math.max(REST_MIN, restCfg[p[1]] - REST_STEP); keepRestCfg();
+    });
+    $('rt-' + p[0] + '-plus').addEventListener('click', function () {
+      restCfg[p[1]] = Math.min(REST_MAX, restCfg[p[1]] + REST_STEP); keepRestCfg();
+    });
   });
   document.querySelector('[data-rest-close]').addEventListener('click', function () {
     $('rest-sheet').hidden = true;
