@@ -392,10 +392,10 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--surface);font-size:.9rem;color:var(--fg-2);line-height:1.45;text-align:left;
 }
 /* the note from the last time this exercise was done — quieter than the cue */
-.cuerow{display:flex;align-items:flex-start}
+.cuerow{display:flex;align-items:stretch}
 .cuerow .cue{flex:1;min-width:0}
 .cuerow.hurt .cue{margin-right:0}
-.injbtn{flex:none;width:46px;height:46px;margin:6px var(--pad) 0 6px;display:grid;place-items:center;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);color:var(--red)}
+.injbtn{flex:none;aspect-ratio:1;min-height:46px;margin:6px var(--pad) 0 6px;display:grid;place-items:center;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);color:var(--red)}
 .injrow{margin:6px var(--pad) 0;padding:13px;border:var(--border);border-radius:var(--radius);background:var(--surface);line-height:1.45}
 .injrow .nm{font-weight:700}
 .injrow .sub{font-size:.8rem;color:var(--fg-3)}
@@ -2661,7 +2661,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4139';
+  var APP_VERSION = '3.4140';
 
   /* =========================================================
      STORE
