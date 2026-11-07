@@ -67,6 +67,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* pull down on a tab and the app comes back as if newly opened */
+/* the strip the page leaves behind as it comes down; --done is already a faint tint of the text colour in either theme */
+.pullgap{position:absolute;left:0;right:0;top:0;height:0;z-index:3;background:var(--done);pointer-events:none}
 .pullring{
   position:absolute;left:50%;top:0;z-index:4;           /* under .bar (5), so it comes out from behind it */
   width:38px;height:38px;margin-left:-19px;border-radius:50%;
@@ -2417,6 +2419,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </div>
 </div>
 
+<div class="pullgap" id="pull-gap" hidden></div>
 <div class="pullring" id="pull-ring" hidden><i></i></div>
 
 <div class="toast" id="toast" hidden></div>
@@ -2662,7 +2665,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4149';
+  var APP_VERSION = '3.4150';
 
   /* =========================================================
      STORE
@@ -4245,9 +4248,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   // how far the finger has to travel, and the slack before any of it counts
   var PULL_GO = 125, PULL_DEAD = 10;
-  var pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
+  var pullTick = 0, pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
 
   function pullable() {
+    if (document.querySelector('.pop:not([hidden]), .sheet:not([hidden])')) return false;   // a layer covers the screen
     return (stack.length === 1 && /^s-(home|workout|profile)$/.test(current())) || current() === 's-settings';
   }
 
@@ -4272,17 +4276,20 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       ring.classList.toggle('armed', armed);
     }
     pullPane.style.transform = 'translate3d(0,' + e.toFixed(1) + 'px,0)';
+    $('pull-gap').style.height = e.toFixed(1) + 'px';
     ring.style.transform = 'translate3d(0,' + (e * 0.8).toFixed(1) + 'px,0) rotate(' +
       (k * 270).toFixed(1) + 'deg) scale(' + (0.72 + k * 0.28).toFixed(3) + ')';
     ring.style.opacity = 1;
   }
 
   function pullDraw(raw) {
-    var ring = $('pull-ring'), pane = pullPane;
+    var ring = $('pull-ring'), gap = $('pull-gap'), pane = pullPane, tick = ++pullTick;
     pullRaw = raw;
     if (raw > 0) {
       ring.hidden = false;
       ring.style.top = pullTop + 'px';
+      gap.hidden = false;
+      gap.style.cssText = 'top:' + (pullTop + 38) + 'px';
       ring.classList.remove('snap');
       pane.style.transition = 'none';
       pane.parentNode.style.overflow = 'hidden';      // the pane must not slide over the tab bar
@@ -4299,9 +4306,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       pane.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
       pane.style.transform = 'translate3d(0,0,0)';
     }
+    gap.style.transition = 'height .3s cubic-bezier(.22,1,.36,1)';
+    gap.style.height = '0px';
     setTimeout(function () {
-      if (pullFrom >= 0 || pullRaw > 0) return;        // another pull began
-      ring.hidden = true;
+      if (tick !== pullTick) return;                   // a later pull owns the ring now
+      ring.hidden = gap.hidden = true;
+      gap.style.cssText = '';
       ring.className = 'pullring';
       ring.style.cssText = '';
       if (pane) {
@@ -4338,7 +4348,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     pullPane = pane;
     var scr = pane.parentNode, bar = scr.querySelector('.bar,.head'), ring = $('pull-ring');
     pullTop = (bar ? bar.offsetHeight : 0) - 38;      // hidden behind the header, just
-    if (ring.parentNode !== scr) scr.appendChild(ring);
+    if (ring.parentNode !== scr) { scr.appendChild($('pull-gap')); scr.appendChild(ring); }
     pullFrom = e.touches[0].clientY;
     pullX = e.touches[0].clientX;
   }, { passive: true });
