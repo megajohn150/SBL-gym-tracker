@@ -135,17 +135,23 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* --- groups, rows, lists --- */
 .group{padding:1.1rem var(--pad) 0}
-/* a settings group folded into one row; its rows show once it is opened */
-.fold>summary{
-  display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;
-  padding:13px var(--cardpad);font-weight:500;
+/* a settings group folded into one row. The body animates by growing a 0fr grid row,
+   which, unlike height:auto, can be transitioned; visibility keeps closed buttons untappable.
+   The header is a small caps label so it cannot be mistaken for a field inside. */
+.fold-h{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:13px var(--cardpad);
   border:var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);
 }
-.fold>summary::-webkit-details-marker{display:none}
-.fold>summary .lab{flex:1}
-.fold>summary .chev{color:var(--fg-3);font-size:.9rem;transition:transform .15s}
-.fold[open]>summary .chev{transform:rotate(90deg)}
-.fold>.rows{margin-top:.55rem}
+.fold-h .lab{flex:1;font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;font-weight:700;color:var(--fg-2)}
+.fold-h .chev{color:var(--fg-3);font-size:.9rem;transition:transform .25s}
+.fold.open .fold-h .chev{transform:rotate(90deg)}
+.fold-b{
+  display:grid;grid-template-rows:0fr;visibility:hidden;
+  transition:grid-template-rows .25s ease,visibility 0s .25s;
+}
+.fold.open .fold-b{grid-template-rows:1fr;visibility:visible;transition-delay:0s}
+.fold-in{overflow:hidden;min-height:0;padding-top:.55rem}
 .group h2{
   font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;
   color:var(--fg-3);font-weight:600;margin-bottom:.55rem;
@@ -2026,8 +2032,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
 
     <div class="scroll">
-    <details class="group fold" name="settings">
-      <summary><span class="lab">Account</span><span class="chev">&rsaquo;</span></summary>
+    <div class="group fold">
+      <button class="fold-h" aria-expanded="false"><span class="lab">Account</span><span class="chev">&rsaquo;</span></button>
+      <div class="fold-b"><div class="fold-in">
       <div class="rows">
         <span class="row"><span class="lab">Signed in</span><span class="val" id="set-email">&mdash;</span></span>
         <span class="row"><span class="lab">Sync</span><span class="val" id="set-sync">&mdash;</span></span>
@@ -2038,10 +2045,12 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
-    </details>
+      </div></div>
+    </div>
 
-    <details class="group fold" name="settings">
-      <summary><span class="lab">Notifications</span><span class="chev">&rsaquo;</span></summary>
+    <div class="group fold">
+      <button class="fold-h" aria-expanded="false"><span class="lab">Notifications</span><span class="chev">&rsaquo;</span></button>
+      <div class="fold-b"><div class="fold-in">
       <div class="rows">
         <button class="row" id="set-push">
           <span class="lab">Push notifications</span>
@@ -2054,20 +2063,24 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         </div>
       </div>
       <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
-    </details>
+      </div></div>
+    </div>
 
-    <details class="group fold" name="settings">
-      <summary><span class="lab">Workout</span><span class="chev">&rsaquo;</span></summary>
+    <div class="group fold">
+      <button class="fold-h" aria-expanded="false"><span class="lab">Workout</span><span class="chev">&rsaquo;</span></button>
+      <div class="fold-b"><div class="fold-in">
       <div class="rows">
         <button class="row" data-push="music">
           <span class="lab">Music</span>
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
-    </details>
+      </div></div>
+    </div>
 
-    <details class="group fold" name="settings">
-      <summary><span class="lab">Data</span><span class="chev">&rsaquo;</span></summary>
+    <div class="group fold">
+      <button class="fold-h" aria-expanded="false"><span class="lab">Data</span><span class="chev">&rsaquo;</span></button>
+      <div class="fold-b"><div class="fold-in">
       <div class="rows">
         <button class="row" id="set-export">
           <span class="lab">Export backup</span>
@@ -2085,7 +2098,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
-    </details>
+      </div></div>
+    </div>
 
     <input type="file" id="set-file" accept="application/json,.json" hidden>
     <input type="file" id="set-csv" accept="text/csv,.csv" hidden>
@@ -2586,7 +2600,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4129';
+  var APP_VERSION = '3.4130';
 
   /* =========================================================
      STORE
@@ -6295,6 +6309,19 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   // three gates: a warning, your own email typed out, and a last word
   function eraseWord() { return me && me.email ? me.email : 'ERASE'; }
+
+  // one settings drawer open at a time; CSS animates the .open class
+  document.querySelectorAll('.fold-h').forEach(function (h) {
+    h.addEventListener('click', function () {
+      var f = h.parentNode, was = f.classList.contains('open');
+      document.querySelectorAll('.fold.open').forEach(function (o) {
+        o.classList.remove('open');
+        o.firstElementChild.setAttribute('aria-expanded', 'false');
+      });
+      f.classList.toggle('open', !was);
+      h.setAttribute('aria-expanded', String(!was));
+    });
+  });
 
   $('set-reset').addEventListener('click', function () {
     askConfirm('Erase everything?',
