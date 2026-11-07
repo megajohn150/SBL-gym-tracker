@@ -2026,16 +2026,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
 
     <div class="scroll">
-    <details class="group fold">
+    <details class="group fold" name="settings">
       <summary><span class="lab">Account</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <span class="row"><span class="lab">Signed in</span><span class="val" id="set-email">&mdash;</span></span>
         <span class="row"><span class="lab">Sync</span><span class="val" id="set-sync">&mdash;</span></span>
         <button class="row" id="set-signout"><span class="lab">Sign out</span><span class="chev">&rsaquo;</span></button>
+        <button class="row danger" id="set-reset">
+          <span class="lab">Erase everything</span>
+          <span class="val">Fresh start</span>
+          <span class="chev">&rsaquo;</span>
+        </button>
       </div>
     </details>
 
-    <details class="group fold">
+    <details class="group fold" name="settings">
       <summary><span class="lab">Notifications</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <button class="row" id="set-push">
@@ -2051,16 +2056,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
     </details>
 
-    <div class="group">
+    <details class="group fold" name="settings">
+      <summary><span class="lab">Workout</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <button class="row" data-push="music">
-          <span class="lab">Session settings</span>
+          <span class="lab">Music</span>
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
-    </div>
+    </details>
 
-    <details class="group fold">
+    <details class="group fold" name="settings">
       <summary><span class="lab">Data</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <button class="row" id="set-export">
@@ -2084,17 +2090,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     <input type="file" id="set-file" accept="application/json,.json" hidden>
     <input type="file" id="set-csv" accept="text/csv,.csv" hidden>
 
-    <details class="group fold">
-      <summary><span class="lab">Reset</span><span class="chev">&rsaquo;</span></summary>
-      <div class="rows">
-        <button class="row danger" id="set-reset">
-          <span class="lab">Erase everything</span>
-          <span class="val">Fresh start</span>
-          <span class="chev">&rsaquo;</span>
-        </button>
-      </div>
-    </details>
-
     <div class="note" id="app-version" style="padding-bottom:.4rem"></div>
 
     <div class="note">Everything lives on this device. Export writes a JSON file you can keep;
@@ -2104,10 +2099,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   </section>
 
   <!-- ===================== SESSION SETTINGS ===================== -->
-  <section class="screen" id="s-music" data-tab="profile" data-title="Session settings">
+  <section class="screen" id="s-music" data-tab="profile" data-title="Music">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
-      <h1>Session settings</h1>
+      <h1>Music</h1>
       <span></span>
     </div>
     <div class="scroll">
@@ -2591,7 +2586,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4128';
+  var APP_VERSION = '3.4129';
 
   /* =========================================================
      STORE
