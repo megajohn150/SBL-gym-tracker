@@ -177,6 +177,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 }
 .rtfrom.off{
   color:var(--fg-3);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;
+  /* capitals have no descenders, so the font's normal line box leaves the text riding high;
+     trimming to the cap height centres it, and the line-height covers browsers without trim */
+  line-height:1;padding:.4em 6px;text-box:trim-both cap alphabetic;
+  /* the last letter's tracking would push the text left of centre */
+  padding-right:calc(6px - .1em);
 }
 .rtfrom.tap{cursor:pointer}
 .rtfrom.tap:active{background:var(--surface)}
@@ -2600,7 +2605,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4130';
+  var APP_VERSION = '3.4131';
 
   /* =========================================================
      STORE
