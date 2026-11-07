@@ -392,8 +392,10 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--surface);font-size:.9rem;color:var(--fg-2);line-height:1.45;text-align:left;
 }
 /* the note from the last time this exercise was done — quieter than the cue */
-.cue.hurt{border-color:var(--red);background:rgba(180,71,61,.1);color:var(--red)}
-.cue.hurt svg{color:var(--red)}
+.cuerow{display:flex;align-items:flex-start}
+.cuerow .cue{flex:1;min-width:0}
+.cuerow.hurt .cue{margin-right:0}
+.injbtn{flex:none;width:46px;height:46px;margin:6px var(--pad) 0 6px;display:grid;place-items:center;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);color:var(--red)}
 .injrow{margin:6px var(--pad) 0;padding:13px;border:var(--border);border-radius:var(--radius);background:var(--surface);line-height:1.45}
 .injrow .nm{font-weight:700}
 .injrow .sub{font-size:.8rem;color:var(--fg-3)}
@@ -1708,8 +1710,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <button class="iconbtn" id="sess-exmenu" aria-label="Exercise menu">&#8942;</button>
     </div>
 
-    <div class="cue hurt" id="sess-injury" hidden></div>
-    <div class="cue" id="sess-cue" hidden></div>
+    <div class="cuerow" id="sess-cuerow">
+      <div class="cue" id="sess-cue" hidden></div>
+      <button class="injbtn" id="sess-injury" aria-label="Injury warning" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3ZM12 10v4M12 17v.5"/></svg></button>
+    </div>
     <div class="cue last" id="sess-lastnote" hidden></div>
     <div style="padding:8px var(--pad) 0">
       <div class="notebox" id="sess-notebox">
@@ -2657,7 +2661,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4138';
+  var APP_VERSION = '3.4139';
 
   /* =========================================================
      STORE
@@ -5710,8 +5714,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     var hurt = (store.injuries || []).filter(function (n) { return n.muscles.indexOf(ex.muscle) >= 0; });
     $('sess-injury').hidden = done || !hurt.length;
-    $('sess-injury').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3ZM12 10v4M12 17v.5"/></svg><span>Injury (' +
-      esc(hurt.map(function (n) { return n.name; }).join(', ')) + '): go easy, keep it light and stop if it hurts.</span>';
+    $('sess-cuerow').classList.toggle('hurt', !$('sess-injury').hidden);
+    $('sess-injury').dataset.prs = esc('Injury (' + esc(hurt.map(function (n) { return n.name; }).join(', ')) +
+      '): go easy, keep it light and stop if it hurts.');
     $('sess-cue').hidden = done || !ex.cue;
     $('sess-cue').innerHTML = PIN + '<span>' + esc(ex.cue) + '</span>';
 
