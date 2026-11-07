@@ -135,6 +135,17 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* --- groups, rows, lists --- */
 .group{padding:1.1rem var(--pad) 0}
+/* a settings group folded into one row; its rows show once it is opened */
+.fold>summary{
+  display:flex;align-items:center;gap:12px;list-style:none;cursor:pointer;
+  padding:13px var(--cardpad);font-weight:500;
+  border:var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);
+}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary .lab{flex:1}
+.fold>summary .chev{color:var(--fg-3);font-size:.9rem;transition:transform .15s}
+.fold[open]>summary .chev{transform:rotate(90deg)}
+.fold>.rows{margin-top:.55rem}
 .group h2{
   font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;
   color:var(--fg-3);font-weight:600;margin-bottom:.55rem;
@@ -2015,18 +2026,17 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     </div>
 
     <div class="scroll">
-    <div class="group">
-    <div class="group">
-      <h2>Account</h2>
+    <details class="group fold">
+      <summary><span class="lab">Account</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <span class="row"><span class="lab">Signed in</span><span class="val" id="set-email">&mdash;</span></span>
         <span class="row"><span class="lab">Sync</span><span class="val" id="set-sync">&mdash;</span></span>
         <button class="row" id="set-signout"><span class="lab">Sign out</span><span class="chev">&rsaquo;</span></button>
       </div>
-    </div>
+    </details>
 
-    <div class="group">
-      <h2>Notifications</h2>
+    <details class="group fold">
+      <summary><span class="lab">Notifications</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <button class="row" id="set-push">
           <span class="lab">Push notifications</span>
@@ -2039,10 +2049,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         </div>
       </div>
       <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
-    </div>
+    </details>
 
     <div class="group">
-      <h2>Workout</h2>
       <div class="rows">
         <button class="row" data-push="music">
           <span class="lab">Session settings</span>
@@ -2051,8 +2060,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       </div>
     </div>
 
-    <div class="group">
-      <h2>Data</h2>
+    <details class="group fold">
+      <summary><span class="lab">Data</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <button class="row" id="set-export">
           <span class="lab">Export backup</span>
@@ -2070,13 +2079,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
-    </div>
+    </details>
 
     <input type="file" id="set-file" accept="application/json,.json" hidden>
     <input type="file" id="set-csv" accept="text/csv,.csv" hidden>
 
-    <div class="group">
-      <h2>Reset</h2>
+    <details class="group fold">
+      <summary><span class="lab">Reset</span><span class="chev">&rsaquo;</span></summary>
       <div class="rows">
         <button class="row danger" id="set-reset">
           <span class="lab">Erase everything</span>
@@ -2084,7 +2093,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
-    </div>
+    </details>
 
     <div class="note" id="app-version" style="padding-bottom:.4rem"></div>
 
@@ -2582,7 +2591,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4127';
+  var APP_VERSION = '3.4128';
 
   /* =========================================================
      STORE
