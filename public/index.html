@@ -2658,7 +2658,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4143';
+  var APP_VERSION = '3.4144';
 
   /* =========================================================
      STORE
@@ -5793,15 +5793,22 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('sess-notebox').parentNode.style.paddingRight = 'var(--pad)';   // its inline padding shorthand is the only source
     if (b.hidden || !host) return;
     var pad = host === $('sess-notebox') ? host.parentNode.style : host.style;
-    var s = 46;
-    for (var i = 0; i < 4; i++) {
-      var room = 'calc(var(--pad) + ' + (s + 6) + 'px)';
-      if (host === $('sess-notebox')) pad.paddingRight = room; else pad.marginRight = room;
-      var h = host.offsetHeight;
-      if (!h || Math.abs(h - s) < 1) break;
-      s = h;
+    // shortcut: a box taller than the cap gets a tall rectangle, not a square, since
+    // widening the square squeezes the text and makes the box taller still.
+    var w = 46;
+    function room() {
+      var r = 'calc(var(--pad) + ' + (w + 6) + 'px)';
+      if (host === $('sess-notebox')) pad.paddingRight = r; else pad.marginRight = r;
+      return host.offsetHeight;
     }
-    b.style.width = b.style.height = s + 'px';
+    for (var i = 0; i < 4; i++) {
+      var h = room(), next = Math.min(h, 80);
+      if (!h || next === w) break;
+      w = next;
+    }
+    h = room();
+    b.style.width = w + 'px';
+    b.style.height = h + 'px';
     b.style.top = host.offsetTop + 'px';
   }
 
