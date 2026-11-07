@@ -2662,7 +2662,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4147';
+  var APP_VERSION = '3.4148';
 
   /* =========================================================
      STORE
@@ -4301,7 +4301,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   // that went out a minute ago is the one that opens
   function startOver() {
     var on = document.querySelector('.screen.on');
-    save('reopen', (on && on.dataset.tab) || 'home');
+    save('reopen', current() === 's-settings' ? 'settings' : (on && on.dataset.tab) || 'home');
     var go = function () { location.reload(); };
     setTimeout(go, 2500);                  // a dead network must not strand you here
     // Whatever is still waiting to go up goes first. A reload kills a request in
@@ -10141,7 +10141,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var reopen = load('reopen');
   if (reopen) {
     save('reopen', '');
-    if (document.getElementById('s-' + reopen)) stack = ['s-' + reopen];
+    if (reopen === 'settings') stack = ['s-profile', 's-settings'];   // back still leads to Profile
+    else if (document.getElementById('s-' + reopen)) stack = ['s-' + reopen];
   }
   render(current());
 
