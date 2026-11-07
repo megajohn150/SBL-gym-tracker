@@ -1097,7 +1097,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .dashbtn.wide{grid-column:1 / -1}
 .statlist{padding:1rem var(--pad) 0}
 .stath{margin:.4rem 0 .6rem;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
-.statfoot{margin-top:auto;position:sticky;bottom:0;background:var(--bg);padding-top:.5rem}
 .statlist button{
   display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
   padding:15px var(--cardpad);margin-bottom:8px;text-align:left;
@@ -1986,8 +1985,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <div class="stath">Other</div>
         <button data-push="stat-injuries"><b>Injuries</b><span id="stats-inj"></span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
-      </div>
-      <div class="statlist statfoot">
+        <div class="stath">Report</div>
         <button data-push="stat-month"><b>Monthly report</b><span id="stats-month"></span></button>
       </div>
     </div>
@@ -2664,7 +2662,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4145';
+  var APP_VERSION = '3.4146';
 
   /* =========================================================
      STORE
