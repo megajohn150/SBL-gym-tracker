@@ -392,17 +392,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--surface);font-size:.9rem;color:var(--fg-2);line-height:1.45;text-align:left;
 }
 /* the note from the last time this exercise was done — quieter than the cue */
-.cuerow{display:flex;align-items:stretch}
-.cuerow .cue{flex:1;min-width:0}
-.cuerow.hurt .cue{margin-right:0}
-.injbtn{flex:none;aspect-ratio:1;min-height:46px;margin:6px var(--pad) 0 6px;display:grid;place-items:center;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);color:var(--red)}
-.injrow{margin:6px var(--pad) 0;padding:13px;border:var(--border);border-radius:var(--radius);background:var(--surface);line-height:1.45}
-.injrow .nm{font-weight:700}
-.injrow .sub{font-size:.8rem;color:var(--fg-3)}
-.injrow button{color:var(--red);font-size:.8rem;margin-top:6px}
-.injchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.injchips button{padding:6px 10px;border:var(--border);border-radius:var(--radius);font-size:.85rem;color:var(--fg-2)}
-.injchips button.on{background:var(--red);border-color:var(--red);color:#fff}
+.injbtn{position:absolute;right:var(--pad);display:grid;place-items:center;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);color:var(--red)}
 .cue.last{border:var(--dash);background:none;color:var(--fg-3);font-size:.84rem}
 .cue.last b{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.64rem;color:var(--fg-3)}
 .cue.last span{flex:1;min-width:0}
@@ -1710,16 +1700,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <button class="iconbtn" id="sess-exmenu" aria-label="Exercise menu">&#8942;</button>
     </div>
 
-    <div class="cuerow" id="sess-cuerow">
+    <div id="sess-top" style="position:relative">
       <div class="cue" id="sess-cue" hidden></div>
       <button class="injbtn" id="sess-injury" aria-label="Injury warning" hidden><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3ZM12 10v4M12 17v.5"/></svg></button>
-    </div>
     <div class="cue last" id="sess-lastnote" hidden></div>
     <div style="padding:8px var(--pad) 0">
       <div class="notebox" id="sess-notebox">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>
         <textarea id="sess-note" rows="1" placeholder="Add a note" autocomplete="off"></textarea>
       </div>
+    </div>
     </div>
 
     <div class="sets-h" id="sess-setshead">
@@ -2661,7 +2651,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4140';
+  var APP_VERSION = '3.4141';
 
   /* =========================================================
      STORE
@@ -5714,7 +5704,6 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
     var hurt = (store.injuries || []).filter(function (n) { return n.muscles.indexOf(ex.muscle) >= 0; });
     $('sess-injury').hidden = done || !hurt.length;
-    $('sess-cuerow').classList.toggle('hurt', !$('sess-injury').hidden);
     $('sess-injury').dataset.prs = esc('Injury (' + esc(hurt.map(function (n) { return n.name; }).join(', ')) +
       '): go easy, keep it light and stop if it hurts.');
     $('sess-cue').hidden = done || !ex.cue;
@@ -5732,6 +5721,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     $('sess-notebox').className = 'notebox' + (ex.snote ? ' has' : '');
     $('sess-note').value = ex.snote || '';
     grow($('sess-note'));
+    placeWarn();
 
     if (padTarget && padTarget.idx !== session.idx) closePad();
 
@@ -5783,6 +5773,31 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   }
 
   // the box is the input — it grows with the text and saves as you type
+  // The warning square sits beside the first box showing (cue, last note, or the
+  // note being written) and is as tall as that box is wide. Making room for it
+  // can make the box taller, so the size is found by trying, from scratch each
+  // time: a size left over from a longer cue must never stretch a shorter one.
+  function placeWarn() {
+    var b = $('sess-injury');
+    var host = [$('sess-cue'), $('sess-lastnote'), $('sess-notebox')].filter(function (h) {
+      return !h.hidden && !h.parentNode.hidden;
+    })[0];
+    ['sess-cue', 'sess-lastnote'].forEach(function (id) { $(id).style.marginRight = ''; });
+    $('sess-notebox').parentNode.style.paddingRight = '';
+    if (b.hidden || !host) return;
+    var pad = host === $('sess-notebox') ? host.parentNode.style : host.style;
+    var s = 46;
+    for (var i = 0; i < 4; i++) {
+      var room = 'calc(var(--pad) + ' + (s + 6) + 'px)';
+      if (host === $('sess-notebox')) pad.paddingRight = room; else pad.marginRight = room;
+      var h = host.offsetHeight;
+      if (!h || Math.abs(h - s) < 1) break;
+      s = h;
+    }
+    b.style.width = b.style.height = s + 'px';
+    b.style.top = host.offsetTop + 'px';
+  }
+
   function grow(el) {
     el.style.height = 'auto';
     el.style.height = (el.scrollHeight || 20) + 'px';
@@ -5808,6 +5823,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     ex.snote = this.value;
     $('sess-notebox').className = 'notebox' + (this.value.trim() ? ' has' : '');
     grow(this);
+    placeWarn();
     saveSession();
   });
 
