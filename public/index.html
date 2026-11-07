@@ -63,16 +63,16 @@ ul{list-style:none}
 .app{max-width:440px;margin:0 auto;height:100svh;min-height:0;display:flex;flex-direction:column;background:var(--bg)}
 main{flex:1;min-height:0;display:flex;flex-direction:column}
 .screen{display:none;animation:fade .25s ease both}
-.screen.on{display:flex;flex-direction:column;flex:1;min-height:0}
+.screen.on{display:flex;flex-direction:column;flex:1;min-height:0;position:relative}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* pull down on a tab and the app comes back as if newly opened */
 .pullring{
-  position:fixed;left:50%;top:env(safe-area-inset-top);z-index:70;
+  position:absolute;left:50%;top:0;z-index:4;           /* under .bar (5), so it comes out from behind it */
   width:38px;height:38px;margin-left:-19px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   background:var(--surface);border:var(--border);
-  opacity:0;transform:translate3d(0,-46px,0) scale(.7);
+  opacity:0;transform:translate3d(0,0,0) scale(.7);
   pointer-events:none;will-change:transform,opacity;
   transition:background-color .18s ease,border-color .18s ease;
 }
@@ -109,7 +109,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .barend[disabled]{opacity:.35;cursor:default}
 
 /* --- page header --- */
-.head{flex:none;padding:1.6rem var(--pad) 1.2rem}
+.head{flex:none;padding:1.6rem var(--pad) 1.2rem;position:relative;z-index:5;background:var(--bg)}
 .eyebrow{font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;color:var(--fg-3);font-weight:600}
 .title{
   font-family:var(--display);font-size:var(--h1);font-weight:var(--h1w);
@@ -2662,7 +2662,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4148';
+  var APP_VERSION = '3.4149';
 
   /* =========================================================
      STORE
@@ -4245,7 +4245,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   // how far the finger has to travel, and the slack before any of it counts
   var PULL_GO = 125, PULL_DEAD = 10;
-  var pullFrom = -1, pullX = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
+  var pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
 
   function pullable() {
     return (stack.length === 1 && /^s-(home|workout|profile)$/.test(current())) || current() === 's-settings';
@@ -4259,27 +4259,33 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     return soft + over * 0.34 / (1 + over / 110);
   }
 
-  // one write per frame, never one per touch event
+  // One write per frame, never one per touch event. The pane itself comes down
+  // with the finger and the ring rides out from behind the header in the gap it
+  // leaves, so the ring is never anywhere the content is not.
   function pullPaint() {
     pullFrame = 0;
     var ring = $('pull-ring'), raw = pullRaw;
     if (raw <= 0) return;
-    var k = Math.min(1, raw / PULL_GO), armed = k === 1;
+    var k = Math.min(1, raw / PULL_GO), armed = k === 1, e = pullEase(raw);
     if (armed !== pullArmed) {
       pullArmed = armed;
       ring.classList.toggle('armed', armed);
     }
-    ring.style.transform = 'translate3d(0,' + pullEase(raw).toFixed(1) + 'px,0) rotate(' +
+    pullPane.style.transform = 'translate3d(0,' + e.toFixed(1) + 'px,0)';
+    ring.style.transform = 'translate3d(0,' + (e * 0.8).toFixed(1) + 'px,0) rotate(' +
       (k * 270).toFixed(1) + 'deg) scale(' + (0.72 + k * 0.28).toFixed(3) + ')';
-    ring.style.opacity = Math.min(1, 0.12 + k * 1.15);
+    ring.style.opacity = 1;
   }
 
   function pullDraw(raw) {
-    var ring = $('pull-ring');
+    var ring = $('pull-ring'), pane = pullPane;
     pullRaw = raw;
     if (raw > 0) {
       ring.hidden = false;
+      ring.style.top = pullTop + 'px';
       ring.classList.remove('snap');
+      pane.style.transition = 'none';
+      pane.parentNode.style.overflow = 'hidden';      // the pane must not slide over the tab bar
       if (!pullFrame) pullFrame = requestAnimationFrame(pullPaint);
       return;
     }
@@ -4287,13 +4293,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (pullFrame) { cancelAnimationFrame(pullFrame); pullFrame = 0; }
     pullArmed = false;
     ring.className = 'pullring snap';
-    ring.style.transform = 'translate3d(0,-46px,0) scale(.7)';
+    ring.style.transform = 'translate3d(0,0,0) scale(.7)';
     ring.style.opacity = '0';
+    if (pane) {
+      pane.style.transition = 'transform .3s cubic-bezier(.22,1,.36,1)';
+      pane.style.transform = 'translate3d(0,0,0)';
+    }
     setTimeout(function () {
       if (pullFrom >= 0 || pullRaw > 0) return;        // another pull began
       ring.hidden = true;
       ring.className = 'pullring';
       ring.style.cssText = '';
+      if (pane) {
+        pane.style.cssText = '';
+        pane.parentNode.style.overflow = '';
+      }
     }, 320);
   }
 
@@ -4322,6 +4336,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var pane = document.querySelector('.screen.on .scroll');
     if (!pane || pane.scrollTop > 0) return;
     pullPane = pane;
+    var scr = pane.parentNode, bar = scr.querySelector('.bar,.head'), ring = $('pull-ring');
+    pullTop = (bar ? bar.offsetHeight : 0) - 38;      // hidden behind the header, just
+    if (ring.parentNode !== scr) scr.appendChild(ring);
     pullFrom = e.touches[0].clientY;
     pullX = e.touches[0].clientX;
   }, { passive: true });
@@ -4348,7 +4365,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (pullRaw >= PULL_GO) {
       var ring = $('pull-ring');
       ring.className = 'pullring snap armed go';
-      ring.style.transform = 'translate3d(0,58px,0) rotate(270deg) scale(1)';
+      ring.style.transform = 'translate3d(0,' + (pullEase(PULL_GO) * 0.8).toFixed(1) + 'px,0) rotate(270deg) scale(1)';
       ring.style.opacity = '1';
       startOver();
       return;
