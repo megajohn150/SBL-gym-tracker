@@ -2665,7 +2665,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4150';
+  var APP_VERSION = '3.4151';
 
   /* =========================================================
      STORE
@@ -4248,7 +4248,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
      ========================================================= */
   // how far the finger has to travel, and the slack before any of it counts
   var PULL_GO = 125, PULL_DEAD = 10;
-  var pullTick = 0, pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
+  var pullGo = false, pullTick = 0, pullFrom = -1, pullX = 0, pullTop = 0, pullPane = null, pullRaw = 0, pullFrame = 0, pullArmed = false;
 
   function pullable() {
     if (document.querySelector('.pop:not([hidden]), .sheet:not([hidden])')) return false;   // a layer covers the screen
@@ -4342,7 +4342,9 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 
   document.addEventListener('touchstart', function (e) {
     pullFrom = -1;
-    if (e.touches.length !== 1 || !pullable()) return;
+    if (e.touches.length !== 1 || pullGo || !pullable()) return;
+    // a pull whose end never arrived must not leave the page hanging half way down
+    if (pullRaw > 0) pullDraw(0);
     var pane = document.querySelector('.screen.on .scroll');
     if (!pane || pane.scrollTop > 0) return;
     pullPane = pane;
@@ -4364,8 +4366,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       pullFrom = -1;
       return;
     }
+    // Cancelled from the first pixel down: once Safari has started its own
+    // bounce on the pane, later moves cannot be cancelled and the pull stalls.
+    if (e.cancelable) e.preventDefault();
     if (dy <= PULL_DEAD) return;                 // slack, so a tap shows nothing
-    e.preventDefault();
     pullDraw(Math.min(dy - PULL_DEAD, PULL_GO + 90));
   }, { passive: false });
 
@@ -4375,6 +4379,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (pullRaw >= PULL_GO) {
       var ring = $('pull-ring');
       ring.className = 'pullring snap armed go';
+      pullGo = true;
+      setTimeout(function () { pullGo = false; pullDraw(0); }, 6000);   // if the reload never comes, give the page back
       ring.style.transform = 'translate3d(0,' + (pullEase(PULL_GO) * 0.8).toFixed(1) + 'px,0) rotate(270deg) scale(1)';
       ring.style.opacity = '1';
       startOver();
