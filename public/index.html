@@ -2637,7 +2637,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4133';
+  var APP_VERSION = '3.4134';
 
   /* =========================================================
      STORE
@@ -9763,8 +9763,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var bar = $('restbar');
     bar.hidden = false;
     bar.classList.toggle('done', rest.done);
-    $('rest-lab').textContent = rest.done ? 'Rest over' : 'Rest';
-    $('rest-time').textContent = mmss(left);
+    // once over, the bar counts what you actually took: the whole rest, and how long ago it ended
+    var over = Math.max(0, -left);
+    $('rest-lab').textContent = rest.done ? 'Rest over \u00b7 ' + mmss(over) + ' ago' : 'Rest';
+    $('rest-time').textContent = mmss(rest.done ? (rest.sec || 0) + over : left);
     $('rest-dismiss').textContent = rest.done ? 'Close' : '\u00d7';
     $('rest-dismiss').setAttribute('aria-label', rest.done ? 'Close' : 'Cancel rest');
   }
@@ -9772,7 +9774,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   function tickRest() {
     if (!rest.endsAt) return;
     var left = Math.round((rest.endsAt - Date.now()) / 1000);
-    if (left <= 0) { left = 0; rest.done = true; }
+    if (left <= 0) rest.done = true;       // left stays negative: drawRestBar reads the overrun from it
     // watching the bar run out is notification enough; the push is for a
     // phone that went to sleep with the timer running
     if (rest.job && left <= 2 && !document.hidden) { rest.job = false; killJob('rest'); }
@@ -9856,7 +9858,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     drawRestPicker();
   });
   function startRest(sec) {
-    rest = { endsAt: Date.now() + sec * 1000, done: false, job: pushLive };
+    rest = { endsAt: Date.now() + sec * 1000, sec: sec, done: false, job: pushLive };
     pushJob('rest', rest.endsAt);
     tickRest();
   }
