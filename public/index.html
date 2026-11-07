@@ -392,6 +392,15 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--surface);font-size:.9rem;color:var(--fg-2);line-height:1.45;text-align:left;
 }
 /* the note from the last time this exercise was done — quieter than the cue */
+.cue.hurt{border-color:var(--red);background:rgba(180,71,61,.1);color:var(--red)}
+.cue.hurt svg{color:var(--red)}
+.injrow{margin:6px var(--pad) 0;padding:13px;border:var(--border);border-radius:var(--radius);background:var(--surface);line-height:1.45}
+.injrow .nm{font-weight:700}
+.injrow .sub{font-size:.8rem;color:var(--fg-3)}
+.injrow button{color:var(--red);font-size:.8rem;margin-top:6px}
+.injchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.injchips button{padding:6px 10px;border:var(--border);border-radius:var(--radius);font-size:.85rem;color:var(--fg-2)}
+.injchips button.on{background:var(--red);border-color:var(--red);color:#fff}
 .cue.last{border:var(--dash);background:none;color:var(--fg-3);font-size:.84rem}
 .cue.last b{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.64rem;color:var(--fg-3)}
 .cue.last span{flex:1;min-width:0}
@@ -1699,6 +1708,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <button class="iconbtn" id="sess-exmenu" aria-label="Exercise menu">&#8942;</button>
     </div>
 
+    <div class="cue hurt" id="sess-injury" hidden></div>
     <div class="cue" id="sess-cue" hidden></div>
     <div class="cue last" id="sess-lastnote" hidden></div>
     <div style="padding:8px var(--pad) 0">
@@ -1969,6 +1979,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button data-push="stat-sets"><b>Set count per muscle group</b><span>Last full week</span></button>
         <button data-push="stat-chart"><b>Muscle distribution</b><span>Chart</span></button>
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
+        <button data-push="stat-injuries"><b>Injuries</b><span id="stats-inj"></span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
         <button data-push="stat-month"><b>Monthly report</b><span id="stats-month"></span></button>
       </div>
@@ -2009,6 +2020,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span></span>
     </div>
     <div class="scroll" id="stbody-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-injuries" data-tab="profile" data-title="Injuries">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Injuries</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="stinj-body"></div>
   </section>
 
   <section class="screen" id="s-stat-stall" data-tab="profile" data-title="No recent records">
@@ -2637,13 +2657,13 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4137';
+  var APP_VERSION = '3.4138';
 
   /* =========================================================
      STORE
      ========================================================= */
   var store = {
-    exercises: [], routines: [], workouts: [], gone: [], targets: {},
+    exercises: [], routines: [], workouts: [], gone: [], targets: {}, injuries: [],
     profile: { handle: 'you', name: 'your name', bio: '', pic: null }
   };
 
@@ -2658,6 +2678,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       if (Array.isArray(raw.workouts)) store.workouts = raw.workouts;
       if (Array.isArray(raw.gone)) store.gone = raw.gone;
       if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
+      if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
       // workouts saved before exercises were linked by id
       store.workouts.forEach(function (w) {
         w.exercises.forEach(function (e) {
@@ -2771,6 +2792,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       routines: (remote.routines && remote.routines.length) ? remote.routines : local.routines,
       workouts: workouts,
       targets: remote.targets || local.targets || {},
+      injuries: remote.injuries || local.injuries || [],
       gone: Object.keys(gone)
     };
   }
@@ -4153,6 +4175,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-targets') drawTargets();
     if (id === 's-stat-chart') drawStatChart();
     if (id === 's-stat-body') drawStatBody();
+    if (id === 's-stat-injuries') drawInjuries();
     if (id === 's-stat-month') drawStatMonth();
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); }
@@ -5685,6 +5708,10 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var PIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3-1-6ZM12 15v5"/></svg>';
     var PEN = NOTE_SVG;
 
+    var hurt = (store.injuries || []).filter(function (n) { return n.muscles.indexOf(ex.muscle) >= 0; });
+    $('sess-injury').hidden = done || !hurt.length;
+    $('sess-injury').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3ZM12 10v4M12 17v.5"/></svg><span>Injury (' +
+      esc(hurt.map(function (n) { return n.name; }).join(', ')) + '): go easy, keep it light and stop if it hurts.</span>';
     $('sess-cue').hidden = done || !ex.cue;
     $('sess-cue').innerHTML = PIN + '<span>' + esc(ex.cue) + '</span>';
 
@@ -6281,7 +6308,8 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     var payload = {
       app: 'gym-tracker', version: 1, exportedAt: new Date().toISOString(),
       profile: store.profile, exercises: store.exercises,
-      routines: store.routines, workouts: store.workouts, targets: store.targets
+      routines: store.routines, workouts: store.workouts, targets: store.targets,
+      injuries: store.injuries
     };
     var url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)],
       { type: 'application/json' }));
@@ -6313,6 +6341,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         store.routines = (raw.routines || []).map(migrate);
         store.workouts = raw.workouts;
         if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
+        if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
         if (raw.profile) {
           ['handle', 'name', 'bio'].forEach(function (k) {
             if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
@@ -8463,6 +8492,69 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     stWeek += Number(b.dataset.wk);
     if (stWeek > 0) stWeek = 0;
     drawStatBody();
+  });
+
+  /* --- injuries: the body in red where it hurts --- */
+  var INJ_MUSCLES = ['Chest', 'Upper back', 'Lats', 'Shoulders', 'Biceps', 'Triceps', 'Abs',
+    'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Calves', 'Forearms'];
+  var injForm = null;                               // null while closed, else { muscles: [] }
+
+  function drawInjuries() {
+    var list = store.injuries, hit = {}, blobs = '';
+    list.forEach(function (n) { n.muscles.forEach(function (m) { hit[m] = 1; }); });
+    Object.keys(hit).forEach(function (m) {
+      (BODY_ART[m] || []).forEach(function (d) {
+        blobs += '<path d="' + d + '" fill="#cf3b2f" fill-opacity=".7"/>';
+      });
+    });
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var rows = list.map(function (n) {
+      var d = new Date(n.date), at = new Date(d); at.setHours(0, 0, 0, 0);
+      var ago = Math.round((today - at) / 864e5);
+      return '<div class="injrow"><div class="nm">' + esc(n.name) + '</div>' +
+        '<div class="sub">Added ' + dmy(d) + ' \u00b7 ' +
+        (ago === 0 ? 'today' : ago + (ago === 1 ? ' day ago' : ' days ago')) + '</div>' +
+        '<div class="sub">' + esc(n.muscles.join(', ')) + '</div>' +
+        '<button data-injdel="' + esc(n.id) + '">Delete</button></div>';
+    }).join('');
+    var form = injForm
+      ? '<div class="field"><label for="inj-name">Injury</label>' +
+        '<input type="text" id="inj-name" maxlength="60" placeholder="Tennis elbow" autocomplete="off">' +
+        '<div class="injchips">' + INJ_MUSCLES.map(function (m) {
+          return '<button data-injm="' + m + '"' + (injForm.muscles.indexOf(m) >= 0 ? ' class="on"' : '') + '>' + m + '</button>';
+        }).join('') + '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:12px">' +
+        '<button class="btn btn-ghost" data-injcancel>Cancel</button>' +
+        '<button class="btn btn-primary" data-injsave>Save</button></div></div>'
+      : '<div class="field"><button class="btn btn-primary" data-injadd style="width:100%">Add injury</button></div>';
+    $('stinj-body').innerHTML =
+      '<div class="bodymap"><img src="imgs/body.svg" alt=""><svg viewBox="0 0 800 600">' + blobs + '</svg></div>' +
+      rows + form;
+    $('stats-inj').textContent = list.length ? String(list.length) : '';
+  }
+
+  $('stinj-body').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    if ('injadd' in b.dataset) injForm = { muscles: [] };
+    else if ('injcancel' in b.dataset) injForm = null;
+    else if (b.dataset.injm) {
+      var name = $('inj-name').value, i = injForm.muscles.indexOf(b.dataset.injm);
+      if (i >= 0) injForm.muscles.splice(i, 1); else injForm.muscles.push(b.dataset.injm);
+      drawInjuries();
+      $('inj-name').value = name;                 // the redraw would otherwise eat what was typed
+      return;
+    } else if ('injsave' in b.dataset) {
+      var nm = $('inj-name').value.trim();
+      if (!nm || !injForm.muscles.length) { toast('Name it and pick a muscle'); return; }
+      store.injuries.push({ id: uid(), name: nm, muscles: injForm.muscles, date: new Date().toISOString() });
+      injForm = null;
+      saveStore();
+    } else if (b.dataset.injdel) {
+      store.injuries = store.injuries.filter(function (n) { return n.id !== b.dataset.injdel; });
+      saveStore();
+    } else return;
+    drawInjuries();
   });
 
   /* --- the month in one page --- */
