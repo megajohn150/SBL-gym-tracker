@@ -1548,7 +1548,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 [data-skin="mellow"] .tabs button[aria-current="true"]{color:var(--bg)}
 /* the lights are pinned, so the mode buttons say so */
 /* the pictures are drawn on white and grey: warm them so they sit on the cream */
-[data-skin="mellow"] .dav,[data-skin="mellow"] .avatar.pic{filter:sepia(.4) saturate(1.1);mix-blend-mode:multiply}
+[data-skin="mellow"] .dav,[data-skin="mellow"] .avatar.pic{filter:sepia(.15) saturate(.85);mix-blend-mode:multiply}
 [data-skin="mellow"] #seg-mode{opacity:.4;pointer-events:none}
 /* no sun or moon here: it frees room for the handle, and Themes still leads out */
 [data-skin="mellow"] #daynight{display:none}
@@ -2836,7 +2836,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4202';
+  var APP_VERSION = '3.4203';
 
   /* =========================================================
      STORE
