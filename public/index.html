@@ -2695,7 +2695,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4176';
+  var APP_VERSION = '3.4177';
 
   /* =========================================================
      STORE
@@ -7485,7 +7485,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     save('notes-hid', ids.join('~'));
   }
   function noteId(n) { return n.type + '|' + n.by + '|' + n.at; }
-  function dropNote(n) { hidLoad()[noteId(n)] = 1; hidSave(); }
+  function dropNote(n) {
+    hidLoad()[noteId(n)] = 1; hidSave();
+    // the same news in the phone's notification centre goes with it. A push only
+    // names the post (or the person, for a follow), so every like on that post goes too.
+    var pu = n.k ? keyUser(n.k) : '', pi = n.k ? keyPost(n.k) : '';
+    closePushes(function (x) {
+      var g = (x.data || {}).go;
+      if (!g) return false;
+      if (n.type === 'fol') return g.go === 'u' && g.id === n.by;
+      return g.go === (n.type === 'like' ? 'w' : 'c') && g.pu === pu && g.pi === pi;
+    });
+  }
 
   var NOTE_TEXT = {
     like: ' liked your workout', cmt: ' commented on your workout',
@@ -10046,6 +10057,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function drawRestPicker() { $('rest-value').textContent = mmss(restWanted); }
 
+  // take notifications off the phone's notification centre; the page cannot know
+  // which ones are still there, so it asks the service worker's registration
+  function closePushes(match) {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.getNotifications ? reg.getNotifications() : [];
+    }).then(function (list) {
+      list.forEach(function (x) { if (match(x)) x.close(); });
+    }).catch(function () {});
+  }
+  function closeRestPushes() { closePushes(function (x) { return x.tag === 'rest'; }); }
+
   function drawRestBar(left) {
     var bar = $('restbar');
     bar.hidden = false;
@@ -10073,6 +10096,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (rest.job) killJob('rest');
     rest = { endsAt: null, done: false, job: false };
     try { localStorage.removeItem('tracker-rest-run'); } catch (e) {}
+    closeRestPushes();
     $('restbar').hidden = true;
     dockShow();
   }
@@ -10151,6 +10175,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     rest = { endsAt: Date.now() + sec * 1000, sec: sec, done: false, job: pushLive };
     pushJob('rest', rest.endsAt);
     save('rest-run', JSON.stringify({ endsAt: rest.endsAt, sec: sec }));
+    closeRestPushes();                       // a new rest makes the old "rest over" stale
     tickRest();
   }
   $('rest-start').addEventListener('click', function () {
@@ -10187,6 +10212,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('rest-sheet').hidden = true;
   });
   $('rest-dismiss').addEventListener('click', stopRest);
+
+  // opening the app by its icon says nothing to the notification, so sweep what is left
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && !rest.endsAt) closeRestPushes();
+  });
 
   setInterval(function () {
     if (session && !session.pausedAt) paintClocks();
@@ -10313,6 +10343,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       rest = { endsAt: rr.endsAt, sec: rr.sec, done: false, job: false };
       tickRest();
     } else if (rr) stopRest();
+    if (!rest.endsAt) closeRestPushes();
   } catch (e) {}
 
   // keep the exercise list in sync whenever that screen is opened
