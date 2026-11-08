@@ -871,12 +871,12 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 /* the rest timer lives in the dock: with the workout card under it, the two are one block */
 .dock .restbar{position:static;transform:none;width:auto;max-width:none}
-.dock #restbar:has(+ #dock-card:not([hidden])){border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:none}
+.dock #restbar:has(+ #dock-card:not([hidden])){border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:none}
+/* in the session the timer is a strip above the footer */
+#s-session > #restbar{flex:none;position:static;transform:none;width:auto;max-width:none;margin:0;border-radius:0;border-width:1px 0;box-shadow:none}
 .dock #restbar:not([hidden]) + #dock-card{border-top:1px dashed var(--line);border-top-left-radius:0;border-top-right-radius:0}
 /* the tab bar is gone in a session, so the dock itself clears the home bar */
 body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
-body.in-session.has-rest .pad{padding-bottom:10px}
-body.in-session.has-rest #s-session .sfoot{padding-bottom:12px}
 
 /* the session you walked away from */
 .dock{flex:none;padding:10px var(--pad)}
@@ -2687,7 +2687,7 @@ body.in-session.has-rest #s-session .sfoot{padding-bottom:12px}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4161';
+  var APP_VERSION = '3.4162';
 
   /* =========================================================
      STORE
@@ -9909,7 +9909,7 @@ body.in-session.has-rest #s-session .sfoot{padding-bottom:12px}
     dockShow();
     if (live) {
       $('dock-name').textContent = session.name;
-      $('session-dock').querySelector('.lab').textContent =
+      $('dock-card').querySelector('.lab').textContent =
         session.pausedAt ? 'Workout paused' : 'Workout in progress';
       paintClocks();
     }
@@ -9917,9 +9917,10 @@ body.in-session.has-rest #s-session .sfoot{padding-bottom:12px}
 
   // the dock is there for the workout card, the rest bar, or both
   function dockShow() {
-    var rb = !$('restbar').hidden;
-    $('session-dock').hidden = $('dock-card').hidden && !rb;
-    document.body.classList.toggle('has-rest', rb);
+    var bar = $('restbar'), inS = current() === 's-session';
+    if (inS && bar.parentNode.id !== 's-session') $('s-session').insertBefore(bar, $('s-session').querySelector('.sfoot'));
+    else if (!inS && bar.parentNode.id === 's-session') $('session-dock').insertBefore(bar, $('session-dock').firstChild);
+    $('session-dock').hidden = $('dock-card').hidden && (bar.hidden || inS);
   }
 
   $('sess-resume').addEventListener('click', function () {
