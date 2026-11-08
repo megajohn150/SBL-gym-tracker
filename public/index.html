@@ -2675,7 +2675,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4155';
+  var APP_VERSION = '3.4156';
 
   /* =========================================================
      STORE
@@ -8665,12 +8665,16 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         rows += '<button class="injrow" data-w="' + esc(w.id) + '" style="width:calc(100% - 2 * var(--pad));text-align:left;font:inherit;color:inherit;display:block">' +
           '<div class="nm">' + esc(w.name) + '</div><div class="sub">' + label + '</div></button>';
         w.exercises.forEach(function (e) {
-          if (countSets(e) && !(e.muscle in last)) last[e.muscle] = h;   // newest session wins
+          if (!countSets(e)) return;
+          var k = e.muscle === 'Shoulders' && headOf(e) === 'Rear delt' ? '@rear' : e.muscle;
+          if (!(k in last)) last[k] = h;   // newest session wins; rear delts rest apart from the rest
         });
       });
-    Object.keys(last).forEach(function (m) {
-      var c = readyColor(last[m]);
-      (BODY_ART[m] || []).forEach(function (d) {
+    Object.keys(BODY_ART).forEach(function (m) {
+      BODY_ART[m].forEach(function (d) {
+        var h = m === 'Shoulders' ? last[parseFloat(d.slice(1)) > 400 ? '@rear' : 'Shoulders'] : last[m];
+        if (h == null) return;
+        var c = readyColor(h);
         blobs += '<path d="' + d + '" fill="' + c.rgb + '" fill-opacity="' + c.op.toFixed(2) + '"/>';
       });
     });
