@@ -300,7 +300,7 @@ SQL feature means checking the database before the code.
 ## Service worker
 
 `public/sw.js` is network-first for the page itself and cache-first for everything else.
-**Bump `V` (currently `tracker-v9`) whenever the `CORE` list changes**, including the pinned
+**Bump `V` (currently `tracker-v10`) whenever the `CORE` list changes**, including the pinned
 supabase-js URL — otherwise the old cache is kept and the asset never updates. A new worker
 takes over with `skipWaiting` + `clients.claim`, and the page reloads itself on
 `controllerchange`.
