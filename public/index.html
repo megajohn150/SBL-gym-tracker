@@ -2695,7 +2695,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4175';
+  var APP_VERSION = '3.4176';
 
   /* =========================================================
      STORE
@@ -8242,7 +8242,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   /* --- set count: the last week that is already behind you --- */
   function drawStatSets() {
-    var end = monday(new Date()), start = addDays(end, -7);
+    // a workout logged on this week's Sunday closes the week, no need to wait for Monday
+    var end = monday(new Date()), sun = addDays(end, 6);
+    var closed = store.workouts.some(function (w) { var d = new Date(w.date); return d >= sun && d < addDays(sun, 1); });
+    if (closed) end = addDays(end, 7);
+    var start = addDays(end, -7);
     var r = statsFor(start, end);
     $('stsets-body').innerHTML =
       '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
