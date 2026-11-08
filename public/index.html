@@ -2695,7 +2695,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4172';
+  var APP_VERSION = '3.4173';
 
   /* =========================================================
      STORE
@@ -10184,15 +10184,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
   $('rest-dismiss').addEventListener('click', stopRest);
 
-  // a reload must not lose a timer that is still running (or one you have not closed yet)
-  try {
-    var rr = JSON.parse(load('rest-run'));
-    if (rr && session && Date.now() - rr.endsAt < 36e5) {
-      rest = { endsAt: rr.endsAt, sec: rr.sec, done: false, job: false };
-      tickRest();
-    } else if (rr) stopRest();
-  } catch (e) {}
-
   setInterval(function () {
     if (session && !session.pausedAt) paintClocks();
     tickRest();
@@ -10310,6 +10301,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     else if (document.getElementById('s-' + reopen)) stack = ['s-' + reopen];
   }
   render(current());
+  // a reload must not lose a timer that is still running (or one you have not closed yet);
+  // it waits for the session to be read back, or it would find none and clear itself
+  try {
+    var rr = JSON.parse(load('rest-run'));
+    if (rr && session && Date.now() - rr.endsAt < 36e5) {
+      rest = { endsAt: rr.endsAt, sec: rr.sec, done: false, job: false };
+      tickRest();
+    } else if (rr) stopRest();
+  } catch (e) {}
 
   // keep the exercise list in sync whenever that screen is opened
   var mo = new MutationObserver(function () {
