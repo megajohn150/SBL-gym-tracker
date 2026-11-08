@@ -835,8 +835,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 }
 .pad-grid button.ghost{font-family:var(--font);font-size:1rem;color:var(--fg-2)}
 .pad-grid button.off{opacity:.25}
-.pad-grid .split{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.pad-grid .split button{font-size:1.5rem}
+.pad-grid .split{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pad-grid .split button{font-family:var(--display);font-size:1.3rem;padding:15px 0;width:100%}
 .pad-grid button b{font-style:normal;font-weight:700;font-size:.84rem}
 .pad-grid button svg{display:block}
 .cell[readonly]{cursor:pointer;-webkit-user-select:none;user-select:none}
@@ -873,18 +873,21 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .dock .restbar{position:static;transform:none;width:auto;max-width:none}
 .dock #restbar:has(+ #dock-card:not([hidden])){border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:none}
 /* in the session the timer is a strip above the footer */
-#s-session > #restbar{flex:none;position:static;transform:none;width:auto;max-width:none;margin:6px var(--pad)}
+#s-session > #restbar{flex:none;position:static;transform:none;width:auto;max-width:none;margin:7px var(--pad);padding:9px 13px;gap:11px}
+#s-session > #restbar .time{font-size:1.08rem}
+#s-session > #restbar .x{min-width:24px;height:24px}
 /* the pad needs the room more than the timer does */
 #s-session.padon > #restbar{display:none}
 .dock #restbar:not([hidden]) + #dock-card{border-top:1px dashed var(--line);border-top-left-radius:0;border-top-right-radius:0}
 /* the tab bar is gone in a session, so the dock itself clears the home bar */
-body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 6px)}
+body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
 /* the session you walked away from */
-.dock{flex:none;padding:6px var(--pad)}
-.dock .bar-card,#restbar{padding:6px 12px;gap:10px}
-.dock .bar-card .time,#restbar .time{font-size:1rem}
-.dock .bar-card .x,#restbar .x{min-width:22px;height:22px}
+.dock{flex:none;padding:10px var(--pad)}
+/* the rest timer is the slim one; the workout card keeps its full size */
+#restbar{padding:6px 12px;gap:10px}
+#restbar .time{font-size:1rem}
+#restbar .x{min-width:22px;height:22px}
 .dock .resume{flex:1;min-width:0;text-align:left}
 .dock .resume .lab{display:block;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
 .dock .resume .nm{
@@ -2692,7 +2695,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 6px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4167';
+  var APP_VERSION = '3.4168';
 
   /* =========================================================
      STORE
