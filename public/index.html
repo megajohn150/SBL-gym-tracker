@@ -1986,6 +1986,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
         <button data-push="stat-body"><b>Muscle distribution</b><span>Body</span></button>
         <div class="stath">Other</div>
         <button data-push="stat-injuries"><b>Injuries</b><span id="stats-inj"></span></button>
+        <button data-push="stat-ready"><b>Muscle readiness</b><span>72 h</span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
         <div class="stath">Report</div>
         <button data-push="stat-month"><b>Monthly report</b><span id="stats-month"></span></button>
@@ -2036,6 +2037,15 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       <span></span>
     </div>
     <div class="scroll" id="stinj-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-ready" data-tab="profile" data-title="Muscle readiness">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Readiness</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="strdy-body"></div>
   </section>
 
   <section class="screen" id="s-stat-stall" data-tab="profile" data-title="No recent records">
@@ -2665,7 +2675,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4154';
+  var APP_VERSION = '3.4155';
 
   /* =========================================================
      STORE
@@ -4184,6 +4194,7 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
     if (id === 's-stat-chart') drawStatChart();
     if (id === 's-stat-body') drawStatBody();
     if (id === 's-stat-injuries') drawInjuries();
+    if (id === 's-stat-ready') drawReady();
     if (id === 's-stat-month') drawStatMonth();
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); }
@@ -8628,6 +8639,49 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
       saveStore();
     } else return;
     drawInjuries();
+  });
+
+  /* --- readiness: how long ago each muscle was trained, red to green --- */
+  // Hours since the session -> colour and opacity. Each band is a stop, and the
+  // space between two stops is a blend, so 24 h and 40 h are not cliffs.
+  var READY_STOPS = [[0, 207, 59, 47, .7], [20, 207, 59, 47, .7], [28, 232, 137, 43, .7],
+    [36, 232, 137, 43, .7], [44, 63, 157, 90, .7], [64, 63, 157, 90, .7], [72, 63, 157, 90, 0]];
+
+  function readyColor(h) {
+    var S = READY_STOPS, i = 1;
+    while (i < S.length - 1 && h > S[i][0]) i++;
+    var a = S[i - 1], b = S[i], t = Math.max(0, Math.min(1, (h - a[0]) / (b[0] - a[0])));
+    var c = [1, 2, 3].map(function (k) { return Math.round(a[k] + (b[k] - a[k]) * t); });
+    return { rgb: 'rgb(' + c.join(',') + ')', op: a[4] + (b[4] - a[4]) * t };
+  }
+
+  function drawReady() {
+    var now = Date.now(), last = {}, rows = '', blobs = '';
+    store.workouts.slice().sort(function (x, y) { return new Date(y.date) - new Date(x.date); })
+      .forEach(function (w) {
+        var h = (now - new Date(w.date)) / 36e5;
+        if (h < 0 || h >= 72) return;
+        var label = h < 1 ? '<1 h ago' : Math.floor(h) + ' h ago';
+        rows += '<button class="injrow" data-w="' + esc(w.id) + '" style="width:calc(100% - 2 * var(--pad));text-align:left;font:inherit;color:inherit;display:block">' +
+          '<div class="nm">' + esc(w.name) + '</div><div class="sub">' + label + '</div></button>';
+        w.exercises.forEach(function (e) {
+          if (countSets(e) && !(e.muscle in last)) last[e.muscle] = h;   // newest session wins
+        });
+      });
+    Object.keys(last).forEach(function (m) {
+      var c = readyColor(last[m]);
+      (BODY_ART[m] || []).forEach(function (d) {
+        blobs += '<path d="' + d + '" fill="' + c.rgb + '" fill-opacity="' + c.op.toFixed(2) + '"/>';
+      });
+    });
+    $('strdy-body').innerHTML =
+      '<div class="bodymap"><img src="imgs/body.svg" alt=""><svg viewBox="0 0 800 600">' + blobs + '</svg></div>' +
+      (rows || '<div class="sub" style="padding:0 var(--pad)">No workouts in the last 72 hours.</div>');
+  }
+
+  $('strdy-body').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-w]');
+    if (c) openWorkout(c.dataset.w);
   });
 
   /* --- the month in one page --- */
