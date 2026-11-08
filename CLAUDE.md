@@ -92,7 +92,7 @@ Only the parts that are not self-evident:
 | `supabase-social.sql` | **source of truth** for the server: tables, RLS, triggers, cron |
 | `supabase-realtime-3.sql` | generated from the above; the block the user pastes into the dashboard |
 | `supabase/functions/notify/` | Edge Function that turns a trigger into a web push |
-| `tests/` | node, no dependencies — see below |
+| `tests/` | node, no dependencies — see below; `fake-supabase.js` + `fake-page.js` are a browser harness, not tests |
 | `others/` | older one-file variants of the app; nothing serves them |
 | `*.json` in the root | exported training data (backup / Hevy import), not code |
 | `SUPABASE.md`, `TEST-SOCIAL.md` | Polish design and test-plan docs, drifted from the code |
@@ -124,15 +124,13 @@ Two methods, cheapest first:
    object, reload, remove the `#gate` element, then drive the UI from the console. Enough for
    anything that is only local.
 2. **A fake Supabase, for anything social** (Compare, leaderboards, live workouts, the feed).
-   Copy `public/index.html` to a temporary `public/__t.html` and replace the supabase-js
-   `<script src=…>` with an inline fake: `window.supabase.createClient` returning a chainable
-   query builder over a plain `window.DB` object (`select/eq/in/gte/order/range`, `upsert`,
-   `update`, `delete`, `maybeSingle`, head-count selects), `auth.getSession` returning a user
-   `me`, and a `channel()` whose broadcast handler is exposed as `window.__ping(kind)`. Put
-   friends, `follows` in both directions, `posts` and `profiles.stats.records` in `DB`, then
-   mutate `DB.live_session` and call `__ping('sess')` to play a friend. The preview pane shows
-   `file://` pages as static snapshots, so it must be served over http from inside the
-   project; delete the copy afterwards. In the fake store `gone` is an **array**.
+   `node tests/fake-page.js` writes `public/__t.html`: `index.html` with supabase-js replaced
+   by `tests/fake-supabase.js` (a chainable query builder over a plain `window.DB`, a signed-in
+   user `me`, four mutual friends `f1`–`f4` with posts and `profiles.stats.records`). Serve it
+   with the dev server and open `/__t.html` — it must be http from inside the project, the
+   preview pane shows `file://` pages as static snapshots. Play a friend by changing
+   `DB.live_session` and calling `__ping('sess')`. The file is git-ignored; delete it
+   afterwards. In the fake store `gone` is an **array**.
 
 Check the Receipt skin in dark mode (`tracker-skin=receipt`, `tracker-mode=dark`) and nothing
 else unless asked. Clear `localStorage` when done.
