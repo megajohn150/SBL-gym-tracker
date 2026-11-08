@@ -84,7 +84,7 @@ Only the parts that are not self-evident:
 | `public/index.html` | the whole app |
 | `public/sw.js` | service worker: offline shell, web push, notification clicks |
 | `supabase-social.sql` | **source of truth** for the server: tables, RLS, triggers, cron |
-| `supabase-realtime-2.sql` | generated from the above; the block the user pastes into the dashboard |
+| `supabase-realtime-3.sql` | generated from the above; the block the user pastes into the dashboard |
 | `supabase/functions/notify/` | Edge Function that turns a trigger into a web push |
 | `tests/` | node, no dependencies — see below |
 | `others/` | older one-file variants of the app; nothing serves them |
@@ -184,6 +184,7 @@ and answers each ping kind in `liveRun`:
 | `post` | a session posted, edited or deleted | `loadFeed()` |
 | `prof` | nick, name, bio, avatar or stats change | `loadFeed()` |
 | `lib` | the library changed | `syncFollowed(false)` |
+| `sess` | a friend started, changed or ended a workout (`live_session`, friends-only RLS) | `loadLive()` |
 | `data:<rev>` | your own log, from another device | `cloudPull()` if `rev` is newer |
 
 A reaction pings everyone who can *see* the post, not only its owner. The `rev` in `data:`
@@ -220,7 +221,7 @@ These pairs do the same job in two places, so a fix to one is a bug left in the 
 
 The Supabase CLI is **not installed** and there is no migration runner. SQL goes into the
 dashboard SQL editor by hand; the Edge Function is pasted into the dashboard function editor.
-`supabase-realtime-2.sql` is generated from `supabase-social.sql` and exists only as the block
+`supabase-realtime-3.sql` is generated from `supabase-social.sql` and exists only as the block
 to paste — regenerate it rather than editing it, and rename it when it changes so the user can
 tell versions apart. `push_send` contains a `<PUSH_SECRET>` placeholder that is substituted in
 the dashboard; the real secret must never be committed.

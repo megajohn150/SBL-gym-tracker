@@ -485,3 +485,42 @@ create trigger live_on_uncomment after delete on public.comments
   for each row execute function public.live_undo();
 create trigger live_on_tracker after update on public.tracker
   for each row execute function public.live_self();
+
+-- ------------------------------------------------------------------
+-- 11. Trening w toku. Jeden wiersz na osobę, dopóki sesja trwa; znika,
+--     gdy trening się kończy, zostaje odrzucony albo jest prywatny.
+--     Czyta właściciel i znajomi — w przeciwieństwie do profilu, który
+--     czyta każdy zalogowany, więc ćwiczeń i serii nie wolno tam trzymać.
+--     Zmiana wiersza pinguje znajomych ('sess'), a aplikacja sięga po
+--     wiersze zwykłym zapytaniem, tak jak przy reszcie kanału na żywo.
+-- ------------------------------------------------------------------
+create table if not exists public.live_session (
+  user_id    uuid primary key references auth.users on delete cascade,
+  data       jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.live_session enable row level security;
+
+drop policy if exists "live_session read"  on public.live_session;
+drop policy if exists "live_session write" on public.live_session;
+drop policy if exists "live_session edit"  on public.live_session;
+drop policy if exists "live_session drop"  on public.live_session;
+create policy "live_session read"  on public.live_session for select to authenticated
+  using (auth.uid() = user_id or public.friends_with(user_id));
+create policy "live_session write" on public.live_session for insert to authenticated
+  with check (auth.uid() = user_id);
+create policy "live_session edit"  on public.live_session for update to authenticated
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "live_session drop"  on public.live_session for delete to authenticated
+  using (auth.uid() = user_id);
+
+create or replace function public.live_sess() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform public.live_friends(coalesce(new.user_id, old.user_id), 'sess', null);
+  return coalesce(new, old);
+end $$;
+
+drop trigger if exists live_on_sess on public.live_session;
+create trigger live_on_sess after insert or update or delete on public.live_session
+  for each row execute function public.live_sess();
