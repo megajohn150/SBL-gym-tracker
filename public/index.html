@@ -1550,6 +1550,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 /* no sun or moon here: it frees room for the handle, and Themes still leads out */
 [data-skin="mellow"] #daynight{display:none}
 [data-skin="mellow"] .phead .title{font-size:1.8rem}
+/* the cells are round here, so what sits in their corners moves in off the curve */
+[data-skin="mellow"] .delta{top:5px;right:10px}
+[data-skin="mellow"] .platetog{right:9px;bottom:5px}
+[data-skin="mellow"] .plate{right:10px;bottom:6px}
 
 /* ===========================================================
    SIGNAL COLOURS
@@ -2846,7 +2850,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4211';
+  var APP_VERSION = '3.4212';
 
   /* =========================================================
      STORE
@@ -6393,8 +6397,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('sess-notebox').parentNode.style.paddingRight = 'var(--pad)';   // its inline padding shorthand is the only source
     if (b.hidden || !host) return;
     var pad = host === $('sess-notebox') ? host.parentNode.style : host.style;
-    // shortcut: a box taller than the cap gets a tall rectangle, not a square, since
-    // widening the square squeezes the text and makes the box taller still.
+    // a box taller than the cap gets a tall rectangle, not a square: widening the
+    // square squeezes the text and makes the box taller still
     var w = 46;
     function room() {
       var r = 'calc(var(--pad) + ' + (w + 6) + 'px)';
