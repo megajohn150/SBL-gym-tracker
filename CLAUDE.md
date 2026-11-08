@@ -121,7 +121,7 @@ forces a frame) is sometimes needed before reading an animated style back.
 
 `save(k, v)` / `load(k)` prefix every key with `tracker-`. The keys in use: `data` (the
 store), `session` (written directly as `tracker-session`), `skin`, `mode`, `xstyle`,
-`rest`, `reopen` (the tab a pull-to-refresh asked for), `uid`, `react-q` (queued likes and
+`rest`, `ver` (the last version this device ran, for the "Version updated" toast), `reopen` (the tab a pull-to-refresh asked for), `uid`, `react-q` (queued likes and
 comments), `sigs-<user_id>` (what has already gone up), `notes-seen`, `notes-hid`,
 `report-seen`.
 

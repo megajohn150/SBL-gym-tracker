@@ -2793,7 +2793,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4192';
+  var APP_VERSION = '3.4193';
 
   /* =========================================================
      STORE
@@ -3120,13 +3120,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // a line that says what just happened, then gets out of the way
   var toastT = null;
-  function toast(msg) {
+  function toast(msg, ms) {
     var el = $('toast');
     el.textContent = msg;
     el.classList.remove('wide');
     el.hidden = false;
     clearTimeout(toastT);
-    toastT = setTimeout(function () { el.hidden = true; }, 1800);
+    toastT = setTimeout(function () { el.hidden = true; }, ms || 1800);
   }
 
   // the same line, with a way back out of it
@@ -10796,6 +10796,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     else if (document.getElementById('s-' + reopen)) stack = ['s-' + reopen];
   }
   render(current());
+  // a new version took over on this reload: say so, so Settings need not be opened to find out
+  var seenVer = load('ver');
+  if (seenVer && seenVer !== APP_VERSION) toast('Version updated: ' + APP_VERSION, 3000);
+  save('ver', APP_VERSION);
   // a reload must not lose a timer that is still running (or one you have not closed yet);
   // it waits for the session to be read back, or it would find none and clear itself
   try {
