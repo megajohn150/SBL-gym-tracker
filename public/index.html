@@ -1088,6 +1088,48 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
 }
 .followbtn.off{background:none;color:var(--fg-2);border:var(--border)}
+/* --- comparing two friends --- */
+.cmpcard{display:flex;align-items:center;gap:14px;width:calc(100% - 2 * var(--pad));margin:0 var(--pad);
+  padding:12px var(--cardpad);background:var(--surface);border:var(--border);border-radius:var(--radius);
+  text-align:left;font-weight:700}
+.cmpcard b{flex:1}
+.cmpcard .pair{display:flex}
+.cmpcard .pair .avatar + .avatar{margin-left:-10px;box-shadow:0 0 0 2px var(--surface)}
+.ch{text-decoration:none;font-size:1.2rem;line-height:1;color:var(--fg-3)}
+.cmphead{display:flex;align-items:flex-start;gap:10px;padding:1.2rem var(--pad) .2rem}
+.cmpwho{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.cmpwho b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmpwho.mine .avatar{box-shadow:0 0 0 3px var(--accent)}
+.cmpwho em{font-style:normal;font-size:.7rem;font-weight:800;letter-spacing:.06em;
+  background:#f5c518;color:#111;border-radius:6px;padding:3px 9px}
+.cmpvs{flex:none;margin-top:36px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
+  background:var(--accent);color:var(--accent-ink);font-size:.7rem;font-weight:800}
+.cmpm{padding:0 var(--pad);margin-bottom:1.3rem}
+.cmpm h4{display:flex;align-items:baseline;gap:8px;margin:0 0 .5rem;font-size:.95rem;font-weight:700}
+.cmpm h4 i{font-style:normal;font-size:.85rem}
+.cmpm h4 i.up{color:var(--green)}
+.cmpm h4 i.down{color:var(--red)}
+.cmpline{display:flex;align-items:center;gap:8px;margin:6px 0}
+.cmpline .avatar{flex:none}
+.cmptrack{flex:1;min-width:0}
+.cmptrack i{display:block;height:10px;border-radius:5px;background:var(--accent)}
+.cmpline.them .cmptrack i{background:var(--fg-3);opacity:.4}
+.cmpline b{flex:none;min-width:3.4rem;text-align:right;font-size:.9rem}
+.cmpex{display:flex;align-items:center;gap:14px;width:100%;padding:10px var(--pad);text-align:left;border-bottom:var(--dash)}
+.cmpex span{flex:1;min-width:0}
+.cmpex b{display:block}
+.cmpex span i{display:block;font-style:normal;font-size:.85rem;color:var(--fg-3)}
+.lbcard{display:flex;align-items:center;gap:12px;margin:0 var(--pad) 8px;padding:10px var(--cardpad);
+  background:var(--surface);border:var(--border);border-radius:var(--radius)}
+.lbcard .rk{flex:none;width:2.6rem;font-weight:700}
+.lbcard .rk sup{font-size:.6em}
+.lbcard .rk u{text-decoration:none;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font-size:.85rem}
+.lbcard .rk u.m1{background:#f5c518;color:#111}
+.lbcard .rk u.m2{background:#c4c4c4;color:#111}
+.lbcard .rk u.m3{background:#c07a30;color:#fff}
+.lbcard b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbcard .kg{flex:none;color:var(--fg-2)}
+.lbdots{text-align:center;color:var(--fg-3);letter-spacing:.3em;margin:-2px 0 6px}
 .rtscroll{display:flex;gap:8px;overflow-x:auto;padding:.2rem var(--pad) .6rem;scrollbar-width:none}
 .rtscroll::-webkit-scrollbar{display:none}
 .frcard{
@@ -1953,6 +1995,33 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll" id="user-body"></div>
   </section>
 
+  <section class="screen" id="s-compare" data-tab="home" data-title="Comparison">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Comparison</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="cmp-body"></div>
+  </section>
+
+  <section class="screen" id="s-cmpex" data-tab="home" data-title="Comparison">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Comparison</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="cmpx-body"></div>
+  </section>
+
+  <section class="screen" id="s-lb" data-tab="home" data-title="Leaderboard">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1 id="lb-title">Leaderboard</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="lb-body"></div>
+  </section>
+
   <!-- ===================== NOTIFICATIONS ===================== -->
   <section class="screen" id="s-notes" data-tab="home" data-title="Notifications">
     <div class="bar">
@@ -2695,7 +2764,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4177';
+  var APP_VERSION = '3.4178';
 
   /* =========================================================
      STORE
@@ -2990,7 +3059,35 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   function myStats() {
     var pub = publicWorkouts();
-    return { workouts: pub.length, streak: weekStreak(pub) };
+    return { workouts: pub.length, streak: weekStreak(pub), records: myRecords() };
+  }
+
+  function nameKey(s) { return String(s).trim().toLowerCase(); }
+
+  // The leaderboards need every friend's bests at once, so they ride on the
+  // profile row: [heaviest, est. 1RM, best set] per exercise name. Private
+  // workouts count — it is one number per exercise, not a session.
+  function myRecords() {
+    var out = {}, cuts = cutMap();
+    store.workouts.forEach(function (w) {
+      w.exercises.forEach(function (e) {
+        if (!afterCut(w, cuts[exKey(e)] || 0)) return;
+        var x = e.exId && byId(e.exId), k = nameKey(x ? x.name : e.name);
+        var r = out[k] || (out[k] = [0, 0, 0]);
+        e.sets.forEach(function (st) {
+          if (!logged(st)) return;
+          var kg = num(st.weight);
+          r[0] = Math.max(r[0], kg);
+          r[1] = Math.max(r[1], epley(kg, effReps(st)));
+          r[2] = Math.max(r[2], kg * num(st.reps));
+        });
+      });
+    });
+    Object.keys(out).forEach(function (k) {
+      if (!out[k][0]) delete out[k];                 // bodyweight work has no weight to rank
+      else out[k] = out[k].map(function (v) { return Math.round(v * 10) / 10; });
+    });
+    return out;
   }
   function postRow(w) {
     return { user_id: me.id, id: w.id, date: w.date, data: w,
@@ -3658,6 +3755,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged yet.</div>';
 
     paint($('user-body'), head + chart +
+      '<div class="dsec">Comparison</div>' +
+      '<button class="cmpcard" data-cmp><span class="pair">' + avatarTag(34, '', store.profile) +
+      avatarTag(34, '', p) + '</span><b>Compare</b><u class="ch">›</u></button>' +
       '<div class="dsec">Routines</div>' + rts +
       '<div class="dsec">Recent workouts</div>' +
       '<div class="feed">' + feed + '</div>');
@@ -3666,6 +3766,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('user-body').addEventListener('click', function (e) {
     var f = e.target.closest('[data-follow]');
     if (f) { followSet(f.dataset.follow, !social.following[f.dataset.follow]); return; }
+    if (e.target.closest('[data-cmp]')) { openCompare(); return; }
     var c = e.target.closest('[data-openrt]');
     if (c && userView && userView.lib) { openFrRoutine(Number(c.dataset.openrt)); return; }
     var uf = e.target.closest('[data-ufollow]');
@@ -3684,6 +3785,198 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (e.target.closest('[data-postsmore]')) { loadUserPosts(true); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
+  });
+
+  /* --- comparing yourself with a friend --- */
+  var cmp = null;     // { id, p, mine, theirs, fr, k, all } behind the two Compare screens
+  var lbK = null, lbFr = null;   // the exercise a leaderboard is for, and the friends it ranks
+
+  function recOf(p, k) { return ((p && p.stats && p.stats.records) || {})[k]; }
+  function kgTxt(v, sp) { return (Math.round(v * 10) / 10) + (sp ? ' kg' : 'kg'); }
+
+  // every friend with their records, not only the one being compared
+  function loadCmpFriends() {
+    var ids = Object.keys(social.following).filter(function (id) { return social.followers[id]; });
+    if (!sb || !ids.length) return Promise.resolve({});
+    return sb.from('profiles').select('user_id,username,name,pic,stats').in('user_id', ids)
+      .then(function (r) {
+        var m = {};
+        (r.data || []).forEach(function (p) { m[p.user_id] = p; });
+        return m;
+      });
+  }
+
+  function openCompare() {
+    if (!userView || !sb) return;
+    var now = new Date(), from = addDays(now, -30);
+    var c = cmp = { id: userView.id, p: userView.p || {}, all: false,
+                    mine: statsFor(from, now, publicWorkouts()) };
+    push('compare');
+    drawCompare();
+    // what they logged shows as posts, so the month is counted the way their profile does
+    Promise.all([
+      loadCmpFriends(),
+      sb.from('posts').select('date,data,private').eq('user_id', c.id).gte('date', from.toISOString())
+    ]).then(function (r) {
+      if (cmp !== c) return;
+      if (r[1].error) { c.err = true; drawCompare(); return; }
+      c.fr = r[0];
+      if (c.fr[c.id]) c.p = c.fr[c.id];
+      c.theirs = statsFor(from, now, (r[1].data || []).filter(function (row) {
+        return !row.private && row.data && row.data.exercises;
+      }).map(function (row) { var w = row.data; w.date = row.date; return w; }));
+      lbFr = c.fr;
+      drawCompare();
+    });
+  }
+
+  function cmpHead(p, win) {
+    function one(who, name, mine, on) {
+      return '<div class="cmpwho' + (mine ? ' mine' : '') + '">' + avatarTag(104, '', who) +
+        '<b>' + esc(name) + '</b>' + (on ? '<em>STRONGER</em>' : '') + '</div>';
+    }
+    return '<div class="cmphead">' + one(store.profile, social.username || 'You', true, win === 'me') +
+      '<span class="cmpvs">VS</span>' + one(p, p.username || '', false, win === 'them') + '</div>';
+  }
+
+  // a is yours, b is theirs; the % is how far you are from them, as on the screenshots
+  function cmpBars(label, a, b, fmt, p) {
+    var top = Math.max(a, b), d = '';
+    if (b > 0 && a !== b) {
+      var pc = Math.round(Math.abs(a - b) / b * 100);
+      d = '<i class="' + (a > b ? 'up' : 'down') + '">' + (a > b ? '↑ ' : '↓ ') + pc + '%</i>';
+    }
+    function line(v, who, cls) {
+      return '<div class="cmpline ' + cls + '">' + avatarTag(28, '', who) +
+        '<span class="cmptrack"><i style="width:' + (top ? Math.max(2, Math.round(v / top * 100)) : 2) +
+        '%"></i></span><b>' + fmt(v) + '</b></div>';
+    }
+    return '<div class="cmpm"><h4>' + label + d + '</h4>' + line(a, store.profile, 'me') +
+      line(b, p, 'them') + '</div>';
+  }
+
+  // exercises you both have a weight logged for, matched by name
+  function commonEx() {
+    var mine = myRecords(), their = cmp.fr && cmp.fr[cmp.id], seen = {};
+    return store.exercises.filter(function (x) {
+      var k = nameKey(x.name);
+      if (seen[k] || !mine[k] || !recOf(their, k)) return false;
+      return (seen[k] = true);
+    });
+  }
+
+  function exRow(x, attr) {
+    return '<button class="cmpex" ' + attr + '>' + muscleArt(x.muscle, 52) +
+      '<span><b>' + esc(x.name) + '</b><i>' + esc(x.muscle || '') + '</i></span>' +
+      '<u class="ch">›</u></button>';
+  }
+
+  function drawCompare() {
+    var c = cmp;
+    if (!c) return;
+    var head = cmpHead(c.p, '');
+    if (!c.theirs) {
+      paint($('cmp-body'), head + '<div class="note" style="padding:1rem var(--pad)">' +
+        (c.err ? 'Could not load their month.' : 'Loading…') + '</div>');
+      return;
+    }
+    var a = c.mine, b = c.theirs, list = commonEx();
+    var shown = c.all ? list : list.slice(0, 3);
+    var vol = function (v) { return Math.round(v).toLocaleString('en-US') + ' kg'; };
+    paint($('cmp-body'), head +
+      '<div class="dsec">Muscle split</div>' +
+      radar(byGroup(a.by), byGroup(b.by), esc(social.username || 'You'), esc(c.p.username || '')) +
+      '<div class="dsec">Stats · last 30 days</div>' +
+      cmpBars('Workout count', a.workouts, b.workouts, String, c.p) +
+      cmpBars('Workout time', a.seconds, b.seconds, fmtDuration, c.p) +
+      cmpBars('Total volume', a.volume, b.volume, vol, c.p) +
+      '<div class="dsec">Exercises in common</div>' +
+      (shown.length ? shown.map(function (x) {
+        return exRow(x, 'data-cx="' + esc(nameKey(x.name)) + '"');
+      }).join('') : '<div class="note" style="padding:0 var(--pad)">No exercise you both have a weight for.</div>') +
+      (list.length > shown.length
+        ? '<button class="mmore" data-cmore>See ' + (list.length - shown.length) + ' more</button>' : ''));
+  }
+
+  function openCmpEx(k) {
+    cmp.k = k;
+    push('cmpex');
+    drawCmpEx();
+  }
+
+  // everybody who has the exercise, best first; ties share a place
+  function board(k) {
+    var rows = [], mine = myRecords()[k];
+    if (mine) rows.push({ you: true, p: store.profile, kg: mine[0] });
+    Object.keys(lbFr || {}).forEach(function (id) {
+      var r = recOf(lbFr[id], k);
+      if (r) rows.push({ id: id, p: lbFr[id], kg: r[0] });
+    });
+    rows.sort(function (x, y) { return y.kg - x.kg; });
+    rows.forEach(function (r, i) { r.rank = i && r.kg === rows[i - 1].kg ? rows[i - 1].rank : i + 1; });
+    return rows;
+  }
+
+  function lbCard(r, full) {
+    var n = r.rank, sfx = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    var rk = full
+      ? '<u class="m' + (n < 4 ? n : 0) + '">' + n + '</u>'
+      : n + '<sup>' + (sfx[(v - 20) % 10] || sfx[v] || sfx[0]) + '</sup>';
+    return '<div class="lbcard"><span class="rk">' + rk + '</span>' + avatarTag(40, '', r.p) +
+      '<b>' + (r.you ? 'You' : esc(r.p.username || '')) + '</b><span class="kg">' +
+      kgTxt(r.kg, true) + '</span></div>';
+  }
+
+  function drawCmpEx() {
+    var c = cmp, k = c && c.k;
+    var x = store.exercises.filter(function (e) { return nameKey(e.name) === k; })[0];
+    var a = myRecords()[k], b = recOf(c.fr && c.fr[c.id], k);
+    if (!x || !a || !b) return;
+    var win = a[1] > b[1] ? 'me' : b[1] > a[1] ? 'them' : '';
+    var rows = board(k), keep = rows.filter(function (r) { return r.you || r.id === c.id; });
+    paint($('cmpx-body'), cmpHead(c.p, win) +
+      '<div class="dsec">Exercise</div>' + exRow(x, 'data-xo="' + esc(x.id) + '"') +
+      '<div class="dsec">Comparison</div>' +
+      cmpBars('One rep max', a[1], b[1], kgTxt, c.p) +
+      cmpBars('Heaviest weight', a[0], b[0], kgTxt, c.p) +
+      cmpBars('Best set (volume)', a[2], b[2], kgTxt, c.p) +
+      '<div class="dsec">Friends’ leaderboard</div>' +
+      keep.map(function (r, i) {
+        return (i && r.rank - keep[i - 1].rank > 1 ? '<div class="lbdots">&bull;&bull;&bull;</div>' : '') +
+          lbCard(r, false);
+      }).join('') +
+      '<div style="padding:0 var(--pad)"><button class="dashbtn" data-lb style="width:100%">See full leaderboard</button></div>' +
+      '<div style="height:1.5rem"></div>');
+  }
+
+  // from a comparison, or from the exercise itself
+  function openLb(k) {
+    lbK = k;
+    push('lb');
+    drawLb();
+    if (!lbFr) loadCmpFriends().then(function (m) { if (lbK === k) { lbFr = m; drawLb(); } });
+  }
+
+  function drawLb() {
+    var x = store.exercises.filter(function (e) { return nameKey(e.name) === lbK; })[0];
+    $('lb-title').textContent = x ? x.name : 'Leaderboard';
+    paint($('lb-body'),
+      '<div class="dsec" style="border-top:none;margin-top:0">Leaderboard · heaviest weight</div>' +
+      (lbFr ? board(lbK).map(function (r) { return lbCard(r, true); }).join('')
+            : '<div class="note" style="padding:0 var(--pad)">Loading…</div>') +
+      '<div class="note" style="text-align:center;padding:1.6rem var(--pad) .6rem">Want to compete with more friends?</div>' +
+      '<div style="text-align:center"><button class="dashbtn" data-push="find" style="padding:12px 22px">+ Invite a friend</button></div>');
+  }
+
+  $('cmp-body').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-cx]');
+    if (x) { openCmpEx(x.dataset.cx); return; }
+    if (e.target.closest('[data-cmore]')) { cmp.all = true; drawCompare(); }
+  });
+  $('cmpx-body').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-xo]');
+    if (x) { openHistory(x.dataset.xo); return; }
+    if (e.target.closest('[data-lb]')) openLb(cmp.k);
   });
 
   var frRoutine = null;
@@ -4621,7 +4914,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '<div><b>' + (best.weight ? fmtVolume(best.weight) : '&ndash;') + '</b><i>Heaviest</i></div>' +
       '<div><b>' + (best.orm ? Math.round(best.orm) + ' kg' : '&ndash;') + '</b><i>Est. 1RM</i></div>' +
       '<div><b>' + (best.vol ? fmtVolume(best.vol) : '&ndash;') + '</b><i>Best set</i></div>' +
-      '</div>';
+      '</div>' +
+      (sb && me ? '<div style="padding:.9rem var(--pad) 0"><button class="dashbtn" data-xlb="' +
+        esc(nameKey(x.name)) + '" style="width:100%">Friends leaderboard</button></div>' : '');
 
     hideTip();
     var xp = periodOf(xPeriod), buckets = exerciseBuckets(key);
@@ -8060,6 +8355,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (sty) { xStyle = sty.dataset.xstyle; save('xstyle', xStyle); drawHistory(); return; }
     var w = e.target.closest('[data-wopen]');
     if (w) { openWorkout(w.dataset.wopen); return; }
+    var lb = e.target.closest('[data-xlb]');
+    if (lb) { lbFr = null; openLb(lb.dataset.xlb); return; }
     var r = e.target.closest('#xh-range');
     if (r) openPeriod(r, 'exercise');
   });
@@ -8124,13 +8421,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return (x && x.head) || 'Shoulders';
   }
 
-  // everything a stretch of time holds, muscle by muscle
-  function statsFor(from, to) {
+  // everything a stretch of time holds, muscle by muscle; `list` is somebody
+  // else's workouts when a friend is being counted
+  function statsFor(from, to, list) {
     var by = {}, days = {}, total = 0, sets = 0, volume = 0, seconds = 0, count = 0;
     var heads = {}, hdays = {};
     Object.keys(MUSCLE_CELL).forEach(function (m) { by[m] = 0; days[m] = 0; });
     HEADS.concat(['Shoulders', 'Front+Side']).forEach(function (h) { heads[h] = 0; hdays[h] = 0; });
-    store.workouts.forEach(function (w) {
+    (list || store.workouts).forEach(function (w) {
       var d = new Date(w.date);
       if (d < from || d >= to) return;
       count++;
