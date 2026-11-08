@@ -2,7 +2,7 @@
    sesji. Notatki zostają w domu. */
 const { slice, suite } = require('./lib');
 
-const code = slice('  function livePayload() {', '  function pushLive() {');
+const code = slice('  function livePayload() {', '  // not pushLive');
 const t = suite('live');
 
 const session = {
