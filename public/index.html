@@ -1093,6 +1093,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .livebar + .livebar{margin-top:8px}
 .livebar .lvtxt{flex:1;min-width:0}
 .livebar .lab{display:block;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
+.livebar .lab b{color:var(--fg);font-weight:800}
 .livebar .nm{
   display:block;margin-top:2px;font-family:var(--display);font-weight:var(--namew);
   text-transform:var(--namecase);letter-spacing:var(--nametrack);font-size:.95rem;
@@ -2791,7 +2792,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4186';
+  var APP_VERSION = '3.4187';
 
   /* =========================================================
      STORE
@@ -3223,8 +3224,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('live-bars').innerHTML = ids.map(function (id) {
       var d = liveSess[id], p = social.people[id] || {};
       return '<button class="bar-card livebar" data-live="' + esc(id) + '">' + avatarTag(52, '', p) +
-        '<span class="lvtxt"><span class="lab">' + esc(p.username || 'A friend') +
-        ' has a workout in progress</span><span class="nm">' + esc(d.name) + '</span></span>' +
+        '<span class="lvtxt"><span class="lab"><b>' + esc(p.username || 'A friend') +
+        '</b> has a workout in progress</span><span class="nm">' + esc(d.name) + '</span></span>' +
         '<span class="time" data-lvt="' + esc(id) + '"></span></button>';
     }).join('');
     liveClock();
@@ -3247,8 +3248,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     liveClock();
     var planned = ex.unilateral ? ex.sets.length / 2 : ex.sets.length;
     var PIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3-1-6ZM12 15v5"/></svg>';
+    var was = $('lv-chips'), left0 = was ? was.scrollLeft : 0;
     paint($('lv-body'),
-      '<div class="exchips">' + d.exercises.map(function (e, n) {
+      '<div class="exchips" id="lv-chips">' + d.exercises.map(function (e, n) {
         var ed = exDone(e);
         return '<span class="exchip' + (ed ? ' done' : '') + '" aria-current="' + (n === i) + '">' +
           '<span class="n">' + (n + 1) + (ed ? ' ✓' : '') + '</span>' +
@@ -3271,11 +3273,21 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             delta(st.weight, pv.weight) + plateMark(st, 'plate') + '</span>' +
           '<span class="cellwrap"><input class="cell" type="text" readonly tabindex="-1" value="' + esc(st.reps) +
             '" placeholder="' + (pv.reps ? esc(pv.reps) : '&ndash;') + '">' + delta(st.reps, pv.reps) + '</span>' +
-          '<span class="cellwrap"><span class="cell' + (st.rir === '' ? ' blank' : '') + '">' +
+          '<span class="cellwrap"><button class="cell' + (st.rir === '' ? ' blank' : '') + '" tabindex="-1">' +
             (st.rir !== '' ? esc(st.rir) : (pv.rir !== '' && pv.rir != null ? esc(pv.rir) : '&ndash;')) +
-            '</span>' + delta(st.rir, pv.rir, true) + '</span>' +
+            '</button>' + delta(st.rir, pv.rir, true) + '</span>' +
           '</div></div>';
       }).join('') + '</div><div style="height:1.5rem"></div>');
+    // the strip is yours to scroll until their exercise changes, then it follows them
+    var strip = $('lv-chips'), chip = strip.children[i];
+    strip.scrollLeft = left0;
+    if (chip && liveView.at !== i) {
+      var left = Math.max(0, Math.min(chip.offsetLeft - (strip.clientWidth - chip.offsetWidth) / 2,
+        strip.scrollWidth - strip.clientWidth));
+      if (strip.scrollTo) strip.scrollTo({ left: left, behavior: liveView.at == null ? 'auto' : 'smooth' });
+      else strip.scrollLeft = left;
+      liveView.at = i;
+    }
   }
 
   $('live-bars').addEventListener('click', function (e) {
