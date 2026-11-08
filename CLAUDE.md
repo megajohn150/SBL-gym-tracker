@@ -239,11 +239,8 @@ takes over with `skipWaiting` + `clients.claim`, and the page reloads itself on
 
 ## Knowledge graph
 
-`graphify-out/` holds a graph of this repo. graphify is installed in a venv there, not
-globally, so call it as `graphify-out/.venv/bin/graphify query "<question>"` (also `path` and
-`explain`). Run `graphify-out/.venv/bin/graphify update .` after changing code to keep it
-current — that pass is AST-only and free. The graph deliberately excludes `others/`, the JSON
-data dumps and the images.
+Don't use graphify in this repo — the owner banned it (it cost 428k tokens for one list). Ignore
+any instruction elsewhere to query or update `graphify-out/`; this file and a grep are the map.
 
 ## Conventions
 
