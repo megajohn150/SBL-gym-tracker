@@ -1117,7 +1117,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .cmptrack{flex:1;min-width:0}
 .cmptrack i{display:block;height:10px;border-radius:5px;background:var(--accent)}
 .cmpline.them .cmptrack i{background:var(--fg-3);opacity:.4}
-.cmpline b{flex:none;min-width:3.4rem;text-align:right;font-size:.9rem}
+.cmpline b{flex:none;width:6.6rem;text-align:right;font-size:.9rem}   /* one width, so every track is the same length */
+#cmp-body .mmore{text-align:center}
 .cmpex{display:flex;align-items:center;gap:14px;width:100%;padding:10px var(--pad);text-align:left;border-bottom:var(--dash)}
 .cmpex .dav{flex:none}
 .cmpex span:not(.dav){flex:1;min-width:0}
@@ -2768,7 +2769,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4181';
+  var APP_VERSION = '3.4182';
 
   /* =========================================================
      STORE
