@@ -1116,9 +1116,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .cmpline.them .cmptrack i{background:var(--fg-3);opacity:.4}
 .cmpline b{flex:none;min-width:3.4rem;text-align:right;font-size:.9rem}
 .cmpex{display:flex;align-items:center;gap:14px;width:100%;padding:10px var(--pad);text-align:left;border-bottom:var(--dash)}
-.cmpex span{flex:1;min-width:0}
+.cmpex .dav{flex:none}
+.cmpex span:not(.dav){flex:1;min-width:0}
 .cmpex b{display:block}
-.cmpex span i{display:block;font-style:normal;font-size:.85rem;color:var(--fg-3)}
+.cmpex span:not(.dav) i{display:block;font-style:normal;font-size:.85rem;color:var(--fg-3)}
 .lbcard{display:flex;align-items:center;gap:12px;margin:0 var(--pad) 8px;padding:10px var(--cardpad);
   background:var(--surface);border:var(--border);border-radius:var(--radius)}
 .lbcard .rk{flex:none;width:2.6rem;font-weight:700}
@@ -2764,7 +2765,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4178';
+  var APP_VERSION = '3.4179';
 
   /* =========================================================
      STORE
