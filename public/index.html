@@ -1089,10 +1089,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 }
 .followbtn.off{background:none;color:var(--fg-2);border:var(--border)}
 /* --- comparing two friends --- */
-.cmpcard{display:flex;align-items:center;gap:14px;width:calc(100% - 2 * var(--pad));margin:0 var(--pad);
+.cmpcard{display:flex;align-items:center;gap:14px;width:calc(100% - 2 * var(--pad));margin:1rem var(--pad) 0;
   padding:12px var(--cardpad);background:var(--surface);border:var(--border);border-radius:var(--radius);
   text-align:left;font-weight:700}
 .cmpcard b{flex:1}
+.cmpcard + .dsec{border-top:none;margin-top:.4rem;padding-top:1rem}
 .cmpcard .pair{display:flex}
 .cmpcard .pair .avatar + .avatar{margin-left:-10px;box-shadow:0 0 0 2px var(--surface)}
 .ch{text-decoration:none;font-size:1.2rem;line-height:1;color:var(--fg-3)}
@@ -2769,7 +2770,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4182';
+  var APP_VERSION = '3.4183';
 
   /* =========================================================
      STORE
@@ -3760,7 +3761,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       : '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged yet.</div>';
 
     paint($('user-body'), head + chart +
-      '<div class="dsec">Comparison</div>' +
       '<button class="cmpcard" data-cmp><span class="pair">' + avatarTag(34, '', store.profile) +
       avatarTag(34, '', p) + '</span><b>Compare</b><u class="ch">›</u></button>' +
       '<div class="dsec">Routines</div>' + rts +
