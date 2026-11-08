@@ -873,15 +873,18 @@ body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
 .dock .restbar{position:static;transform:none;width:auto;max-width:none}
 .dock #restbar:has(+ #dock-card:not([hidden])){border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:none}
 /* in the session the timer is a strip above the footer */
-#s-session > #restbar{flex:none;position:static;transform:none;width:auto;max-width:none;margin:8px var(--pad)}
+#s-session > #restbar{flex:none;position:static;transform:none;width:auto;max-width:none;margin:6px var(--pad)}
 /* the pad needs the room more than the timer does */
 #s-session.padon > #restbar{display:none}
 .dock #restbar:not([hidden]) + #dock-card{border-top:1px dashed var(--line);border-top-left-radius:0;border-top-right-radius:0}
 /* the tab bar is gone in a session, so the dock itself clears the home bar */
-body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
+body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 6px)}
 
 /* the session you walked away from */
-.dock{flex:none;padding:10px var(--pad)}
+.dock{flex:none;padding:6px var(--pad)}
+.dock .bar-card,#restbar{padding:6px 12px;gap:10px}
+.dock .bar-card .time,#restbar .time{font-size:1rem}
+.dock .bar-card .x,#restbar .x{min-width:22px;height:22px}
 .dock .resume{flex:1;min-width:0;text-align:left}
 .dock .resume .lab{display:block;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
 .dock .resume .nm{
@@ -2689,7 +2692,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4165';
+  var APP_VERSION = '3.4166';
 
   /* =========================================================
      STORE
@@ -6098,7 +6101,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
   // no backdrop any more, so anything else you touch puts the pad away
   document.addEventListener('click', function (e) {
-    if (!padTarget || e.target.closest('#pad-sheet, input[data-f], [data-fill]')) return;
+    // a key that redraws the pad has detached its own target by now, so ask the event's path
+    if (!padTarget || e.composedPath().indexOf($('pad-sheet')) >= 0 ||
+        e.target.closest('input[data-f], [data-fill]')) return;
     closePad();
   });
 
