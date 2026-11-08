@@ -2765,7 +2765,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4179';
+  var APP_VERSION = '3.4180';
 
   /* =========================================================
      STORE
@@ -4915,9 +4915,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '<div><b>' + (best.weight ? fmtVolume(best.weight) : '&ndash;') + '</b><i>Heaviest</i></div>' +
       '<div><b>' + (best.orm ? Math.round(best.orm) + ' kg' : '&ndash;') + '</b><i>Est. 1RM</i></div>' +
       '<div><b>' + (best.vol ? fmtVolume(best.vol) : '&ndash;') + '</b><i>Best set</i></div>' +
-      '</div>' +
-      (sb && me ? '<div style="padding:.9rem var(--pad) 0"><button class="dashbtn" data-xlb="' +
-        esc(nameKey(x.name)) + '" style="width:100%">Friends leaderboard</button></div>' : '');
+      '</div>';
+    var lbBtn = sb && me ? '<div style="padding:1.2rem var(--pad) 0"><button class="dashbtn" data-xlb="' +
+      esc(nameKey(x.name)) + '" style="width:100%">Friends leaderboard</button></div>' : '';
 
     hideTip();
     var xp = periodOf(xPeriod), buckets = exerciseBuckets(key);
@@ -4959,7 +4959,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         }).join('')
       : '<div class="note">Not done yet.</div>');
 
-    $('xh-body').innerHTML = recs + chart + hist + '<div style="height:1.5rem"></div>';
+    $('xh-body').innerHTML = recs + chart + lbBtn + hist + '<div style="height:1.5rem"></div>';
   }
 
   // how many workouts this exercise appears in — nothing to reset if none
