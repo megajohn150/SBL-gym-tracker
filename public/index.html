@@ -2689,7 +2689,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4164';
+  var APP_VERSION = '3.4165';
 
   /* =========================================================
      STORE
@@ -5976,27 +5976,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return '<button data-k="' + k + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + lab + '</button>';
   }
 
-  // Diagnostics for keys that sometimes do not register right after entering a
-  // session: window.padlog holds the last 80 events, with the gap between a finger
-  // landing and its key being handled, and any stall of the main thread.
-  var padlog = window.padlog = [], padDownAt = 0, stallAt = performance.now();
-  function plog(m) {
-    padlog.push(Math.round(performance.now()) + ' ' + m);
-    if (padlog.length > 80) padlog.shift();
-    console.log('[pad]', m);
-  }
-  setInterval(function () {
-    var now = performance.now();
-    if (now - stallAt > 600) plog('main thread stalled ' + Math.round(now - stallAt - 250) + 'ms');
-    stallAt = now;
-  }, 250);
-  document.addEventListener('pointerdown', function (e) {
-    var t = e.target.closest('[data-k], input[data-f]');
-    if (!t) return;
-    padDownAt = performance.now();
-    plog('down ' + (t.dataset.k || t.dataset.f));
-  }, true);
-
   // a step key asks for its sign on the next tap: padStep is the one being asked
   var padStep = null, padW = false;
   var PAD_STEPS = { s1: 1.1, s2: 2.5 };
@@ -6027,7 +6006,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function openPad(el) {
     var f = el.dataset.f, i = Number(el.dataset.i);
     padTarget = { idx: session.idx, i: i, f: f };
-    plog('open ' + f + ' ' + i + ' after ' + Math.round(performance.now() - padDownAt) + 'ms');
     padFresh = true;
     padStep = null;
     padW = f === 'weight';
@@ -6078,8 +6056,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   function padHit(k) {
-    plog('hit ' + k + ' after ' + Math.round(performance.now() - padDownAt) + 'ms, ' +
-      (padTarget ? 'target set' : 'NO TARGET') + (session ? '' : ', NO SESSION'));
     if (!session || !padTarget) return;
     var st = session.exercises[session.idx].sets[padTarget.i];
     if (!st) return;
