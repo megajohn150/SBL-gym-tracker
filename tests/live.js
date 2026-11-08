@@ -6,7 +6,7 @@ const code = slice('  function livePayload() {', '  function pushLive() {');
 const t = suite('live');
 
 const session = {
-  name: 'Anterior', startedAt: 1000, pausedAt: null, idx: 1, note: 'tajna notatka', private: false,
+  name: 'Anterior', startedAt: 1000, pausedAt: null, idx: 1, note: 'tajna notatka',
   exercises: [{
     exId: 'a', name: 'Chest Fly', code: 'CF', muscle: 'Chest', unilateral: false, cue: '2 | Lowest',
     reps: '5-9', snote: 'bolało', prevNote: 'zeszły tydzień', side: null,

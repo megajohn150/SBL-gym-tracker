@@ -483,7 +483,7 @@ body.in-session .tabs{display:none}
 /* --- finished workouts --- */
 .endpage{flex:1;display:flex;align-items:center;justify-content:center;padding:0 var(--pad)}
 .endwrap{width:100%;max-width:320px;display:grid;gap:16px;justify-items:center}
-.endwrap .notebox,.endwrap .privrow{width:100%;margin:0}
+.endwrap .notebox{width:100%;margin:0}
 .endpage .btn{width:100%;padding:14px 28px;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase}
 .feed{display:grid;gap:var(--gap);padding:var(--pad)}
 .wcard{
@@ -1818,8 +1818,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           <textarea id="sess-wnote" rows="1" placeholder="Session note"
                     autocomplete="off"></textarea>
         </div>
-        <label class="privrow"><span>Private workout<i>Friends will not see it</i></span>
-          <input type="checkbox" id="sess-private"></label>
         <button class="btn btn-primary" id="sess-end">End workout</button>
       </div>
     </div>
@@ -2793,7 +2791,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4184';
+  var APP_VERSION = '3.4185';
 
   /* =========================================================
      STORE
@@ -3040,7 +3038,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   /* =========================================================
      PEOPLE
      A public profile keyed by username, follows both ways for a
-     friendship, and a copy of every workout that is not private.
+     friendship, and a copy of every workout.
      ========================================================= */
   var social = {
     username: '', timer: null, at: 0, dirty: false, more: false,
@@ -3082,20 +3080,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function cleanName(v) {
     return String(v || '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
   }
-  // a private workout is one that did not happen, as far as anyone else goes
-  function publicWorkouts() {
-    return store.workouts.filter(function (w) { return !w.private; });
-  }
   function myStats() {
-    var pub = publicWorkouts();
-    return { workouts: pub.length, streak: weekStreak(pub), records: myRecords() };
+    return { workouts: store.workouts.length, streak: weekStreak(store.workouts), records: myRecords() };
   }
 
   function nameKey(s) { return String(s).trim().toLowerCase(); }
 
   // The leaderboards need every friend's bests at once, so they ride on the
-  // profile row: [heaviest, est. 1RM, best set] per exercise name. Private
-  // workouts count — it is one number per exercise, not a session.
+  // profile row: [heaviest, est. 1RM, best set] per exercise name.
   function myRecords() {
     var out = {}, cuts = cutMap();
     store.workouts.forEach(function (w) {
@@ -3120,6 +3112,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   function postRow(w) {
     return { user_id: me.id, id: w.id, date: w.date, data: w,
+             // a workout flagged private in the days when that was a thing stays unpublished
              private: !!w.private, updated_at: new Date().toISOString() };
   }
 
@@ -3186,7 +3179,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function pushLive() {
     if (!sb || !me || !social.username) return;
-    var p = session && !session.private ? livePayload() : null;   // private is private
+    var p = session ? livePayload() : null;
     var s = p ? sigOf(p) : null;
     if (s === livePub) return;      // first call has none, so a row a dead app left behind goes
     var q = p
@@ -3342,8 +3335,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (r.error) { social.dirty = true; return; }
       var have = {}, mine = {}, add = [];
       (r.data || []).forEach(function (row) { have[row.id] = 1; });
-      // Private ones go up too, flagged — friends cannot read them, and the
-      // likes and comments survive a trip through private and back.
       store.workouts.forEach(function (w) {
         mine[w.id] = 1;
         var s = sigOf(w);
@@ -3551,14 +3542,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!sb || !ids.length) { social.feed = []; social.more = false; drawHome(); return Promise.resolve(); }
     var from = more ? social.feed.length : 0;
     return Promise.all([
-      sb.from('posts').select('user_id,id,date,data,private').in('user_id', ids)
+      sb.from('posts').select('user_id,id,date,data').in('user_id', ids)
         .order('date', { ascending: false }).range(from, from + FEED_PAGE - 1),
       more ? Promise.resolve({ data: [] })
         : sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
     ]).then(function (res) {
       (res[1].data || []).forEach(function (p) { social.people[p.user_id] = p; });
-      var rows = (res[0].data || []).filter(function (row) { return !row.private; })
-        .map(function (row) {
+      var rows = (res[0].data || []).map(function (row) {
         var w = row.data || {};
         w.id = row.id; w.by = row.user_id; w.date = row.date;
         return w;
@@ -3819,14 +3809,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function loadUserPosts(more) {
     if (!userView || !sb) return Promise.resolve();
     var id = userView.id, from = more ? userView.posts.length : 0;
-    return sb.from('posts').select('id,date,data,private').eq('user_id', id)
+    return sb.from('posts').select('id,date,data').eq('user_id', id)
       .order('date', { ascending: false }).range(from, from + FR_PAGE - 1)
       .then(function (r) {
         if (!userView || userView.id !== id || r.error) return;
-        var rows = (r.data || []).filter(function (row) { return !row.private; })
-          .map(function (row) {
-            var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
-          });
+        var rows = (r.data || []).map(function (row) {
+          var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
+        });
         userView.posts = more ? userView.posts.concat(rows) : rows;
         userView.more = rows.length === FR_PAGE;
         if (more) drawUser();
@@ -3979,20 +3968,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!userView || !sb) return;
     var now = new Date(), from = addDays(now, -30);
     var c = cmp = { id: userView.id, p: userView.p || {}, all: false,
-                    mine: statsFor(from, now, publicWorkouts()) };
+                    mine: statsFor(from, now) };
     push('compare');
     drawCompare();
     // what they logged shows as posts, so the month is counted the way their profile does
     Promise.all([
       loadCmpFriends(),
-      sb.from('posts').select('date,data,private').eq('user_id', c.id).gte('date', from.toISOString())
+      sb.from('posts').select('date,data').eq('user_id', c.id).gte('date', from.toISOString())
     ]).then(function (r) {
       if (cmp !== c) return;
       if (r[1].error) { c.err = true; drawCompare(); return; }
       c.fr = r[0];
       if (c.fr[c.id]) c.p = c.fr[c.id];
       c.theirs = statsFor(from, now, (r[1].data || []).filter(function (row) {
-        return !row.private && row.data && row.data.exercises;
+        return row.data && row.data.exercises;
       }).map(function (row) { var w = row.data; w.date = row.date; return w; }));
       lbFr = c.fr;
       drawCompare();
@@ -6215,7 +6204,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     $('sess-endpage').hidden = !done;
     if (done) {
-      $('sess-private').checked = !!session.private;
       $('sess-wnotebox').className = 'notebox' + (session.note ? ' has' : '');
       $('sess-wnote').value = session.note || '';
       grow($('sess-wnote'));
@@ -6372,12 +6360,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('sess-notebox').className = 'notebox' + (this.value.trim() ? ' has' : '');
     grow(this);
     placeWarn();
-    saveSession();
-  });
-
-  $('sess-private').addEventListener('change', function () {
-    if (!session) return;
-    session.private = this.checked;
     saveSession();
   });
 
@@ -6839,7 +6821,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       date: new Date().toISOString(),
       seconds: seconds || sessionSeconds(),
       routineId: session.routineId || null,
-      private: !!session.private,
       // only what was actually logged is worth keeping
       exercises: session.exercises.map(function (e) {
         return {
@@ -6878,7 +6859,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('summary-body').innerHTML =
       '<div class="sumhead"><span class="eyebrow">Workout saved</span>' +
       '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
-      (w.private ? '<span class="prbadge">Private</span>' : '') +
       '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2></div>' +
       '<div class="sumline">' + fullDate(w.date) + '</div>' +
       '<div style="padding:0 var(--pad)">' + statsRow(w, t) + '</div>' +
@@ -7293,7 +7273,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         fresh.forEach(function (w) {
           var wo = {
             id: uid(), name: w.name, note: w.note, date: w.date.toISOString(),
-            seconds: w.seconds, routineId: null, private: false, exercises: []
+            seconds: w.seconds, routineId: null, exercises: []
           };
           w.ex.forEach(function (e) {
             var x = store.exercises.filter(function (y) {
@@ -7608,7 +7588,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var THUMB_ON = '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg>';
   var BUBBLE = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6c0 4.2-3.8 7.6-8.5 7.6a9.6 9.6 0 0 1-2.6-.35L4 21l1.4-3.7A7.3 7.3 0 0 1 3.5 11.6C3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.6z"/></svg>';
 
-  // A private workout was never published, so there is nothing to react to.
+  // one flagged private long ago was never published, so there is nothing to react to
   function reactable(w) { return !!social.username && !w.private; }
 
   function actsBox(w, full) {
@@ -7717,9 +7697,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // a workout reached from the bell may not be in any list yet
   function fetchPost(uid2, id) {
     if (!sb) return Promise.resolve(null);
-    return sb.from('posts').select('user_id,id,date,data,private').eq('user_id', uid2).eq('id', id)
+    return sb.from('posts').select('user_id,id,date,data').eq('user_id', uid2).eq('id', id)
       .maybeSingle().then(function (r) {
-        if (!r.data || (r.data.private && (!me || r.data.user_id !== me.id))) return null;
+        if (!r.data) return null;
         var w = r.data.data || {};
         w.id = r.data.id; w.by = r.data.user_id; w.date = r.data.date;
         return w;
@@ -9759,7 +9739,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             '<input type="text" id="d-m" inputmode="numeric" value="' + Math.round((w.seconds % 3600) / 60) + '"></span>' +
           '</div>'
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
-          (w.private ? '<span class="prbadge">Private</span>' : '') +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
       statsRow(w, t) + (detailEdit ? '' : actsBox(w, false)) + '</div>' +
@@ -9863,8 +9842,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       ? '<button data-dact="cancel">Discard changes</button>'
       : '<button data-dact="edit">Edit workout</button>' +
         '<button data-dact="routine">Save as routine</button>' +
-        '<button data-dact="private">' +
-          (detailW && detailW.private ? 'Share with friends' : 'Make private') + '</button>' +
         '<button data-dact="delete" class="danger">Delete workout</button>';
     $('detail-pop').hidden = false;
   }
@@ -9888,16 +9865,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (act === 'cancel') { leaveEdit(); return; }
 
     if (act === 'routine') { routineFromWorkout(detailW); return; }
-
-    // a workout can leave the feed, or join it, long after it happened
-    if (act === 'private') {
-      detailW.private = !detailW.private;
-      saveStore();
-      drawDetail(detailW);
-      drawHome();
-      toast(detailW.private ? 'Hidden from friends' : 'Shared with friends');
-      return;
-    }
 
     if (act === 'delete') {
       askConfirm('Delete workout?', 'It will be removed from Home.', 'Delete', function () {

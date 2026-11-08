@@ -130,10 +130,10 @@ store   = { exercises, routines, workouts, gone, targets, profile }
 exercise = { id, name, code, muscle, head, cue, unilateral, resetAt? }
 routine  = { id, name, items, shared?, follow? }
 item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null
-session  = { name, startedAt, pausedAt, idx, routineId, note?, private?, exercises }
+session  = { name, startedAt, pausedAt, idx, routineId, note?, exercises }
 sessionEx= { exId, name, code, muscle, unilateral, side, cue, reps, prev, prevNote, sets }
 set      = { label, weight, reps, rir, plate? } // all strings; '' means not logged
-workout  = { id, name, note, date, seconds, routineId, private, records?, exercises }
+workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // old ones may carry private:true; they stay unpublished, nothing sets it any more
 ```
 
 A finished workout **copies** the exercise name, muscle and unilateral flag into itself, so
