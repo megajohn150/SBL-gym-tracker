@@ -2793,7 +2793,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4188';
+  var APP_VERSION = '3.4189';
 
   /* =========================================================
      STORE
@@ -3242,7 +3242,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       return;
     }
     var p = social.people[id] || {}, last = d.exercises.length;
-    var i = Math.max(0, Math.min(Number(d.idx) || 0, last - 1)), ex = d.exercises[i];
+    var own = Math.max(0, Math.min(Number(d.idx) || 0, last - 1));
+    // you may look at any exercise, until they move on: then you move with them
+    if (liveView.own !== own) liveView.sel = null;
+    liveView.own = own;
+    var i = liveView.sel != null ? Math.min(liveView.sel, last - 1) : own, ex = d.exercises[i];
     if (!ex) return;
     $('lv-title').innerHTML = '<small>' + esc(p.username || 'Friend') + '’s</small>' + esc(d.name);
     $('lv-clock').dataset.lvt = id;
@@ -3253,9 +3257,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     paint($('lv-body'),
       '<div class="exchips" id="lv-chips">' + d.exercises.map(function (e, n) {
         var ed = exDone(e);
-        return '<span class="exchip' + (ed ? ' done' : '') + '" aria-current="' + (n === i) + '">' +
+        return '<button class="exchip' + (ed ? ' done' : '') + '" data-lvchip="' + n + '" aria-current="' + (n === i) + '">' +
           '<span class="n">' + (n + 1) + (ed ? ' ✓' : '') + '</span>' +
-          '<span class="ini">' + esc(e.code || initials(e.name)) + '</span></span>';
+          '<span class="ini">' + esc(e.code || initials(e.name)) + '</span></button>';
       }).join('') + '</div>' +
       '<div class="exhead"><span class="exnum">' + (i + 1) + '</span>' + muscleArt(ex.muscle, 54) +
         '<span class="t"><span class="nm">' + esc(ex.name) + '</span><span class="extags">' +
@@ -3290,6 +3294,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       liveView.at = i;
     }
   }
+
+  $('lv-body').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-lvchip]');
+    if (!c || !liveView) return;
+    liveView.sel = Number(c.dataset.lvchip);
+    drawLiveView();
+  });
 
   $('live-bars').addEventListener('click', function (e) {
     var b = e.target.closest('[data-live]');
