@@ -1089,6 +1089,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 }
 .followbtn.off{background:none;color:var(--fg-2);border:var(--border)}
 /* --- a friend's workout in progress --- */
+.sbar h1 small{display:block;font-family:inherit;font-size:.62rem;font-weight:600;letter-spacing:.1em;line-height:1.2;color:var(--fg-3);text-transform:none;overflow:hidden;text-overflow:ellipsis}
 .livebar{width:calc(100% - 2 * var(--pad));margin:1rem var(--pad) 0;text-align:left}
 .livebar + .livebar{margin-top:8px}
 .livebar .lvtxt{flex:1;min-width:0}
@@ -2792,7 +2793,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4187';
+  var APP_VERSION = '3.4188';
 
   /* =========================================================
      STORE
@@ -3243,7 +3244,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var p = social.people[id] || {}, last = d.exercises.length;
     var i = Math.max(0, Math.min(Number(d.idx) || 0, last - 1)), ex = d.exercises[i];
     if (!ex) return;
-    $('lv-title').textContent = (p.username || 'Friend') + '’s ' + d.name;
+    $('lv-title').innerHTML = '<small>' + esc(p.username || 'Friend') + '’s</small>' + esc(d.name);
     $('lv-clock').dataset.lvt = id;
     liveClock();
     var planned = ex.unilateral ? ex.sets.length / 2 : ex.sets.length;
