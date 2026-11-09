@@ -796,8 +796,9 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   box-shadow:0 12px 30px -12px rgba(0,0,0,.6);transform:translateX(-50%);
   animation:rtpop .45s cubic-bezier(.3,1.6,.5,1) both;
 }
-.rectoast.out{animation:rtfold .4s ease both}
-.rectoast.shut .rtx{animation:rtshut .35s ease-in forwards}
+/* the entrance played backwards: same curves, reversed */
+.rectoast.out{animation:rtfold .45s cubic-bezier(.3,1.6,.5,1) reverse both}
+.rectoast.shut .rtx{animation:rtshut .45s ease reverse both}
 .rtic{
   flex:none;width:41px;height:41px;border-radius:50%;display:grid;place-items:center;
   background:var(--accent);color:var(--accent-ink);
@@ -809,9 +810,9 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .rtl span{display:block;animation:rtroll .35s ease both}
 @keyframes rtpop{from{opacity:0;transform:translateX(-50%) translateY(-24px) scale(.3)}}
 @keyframes rtopen{to{max-width:80vw}}
-@keyframes rtshut{from{max-width:var(--w)}to{max-width:0}}
+@keyframes rtshut{from{max-width:0}to{max-width:var(--w)}}
 @keyframes rtroll{from{opacity:0;transform:translateY(100%)}}
-@keyframes rtfold{to{opacity:0;transform:translateX(-50%) translateY(-24px) scale(.6)}}
+@keyframes rtfold{from{opacity:0;transform:translateX(-50%) translateY(-24px) scale(.3)}}
 .recrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:var(--border)}
 .recrow svg{flex:none;width:22px;height:22px;color:var(--accent)}
 .recrow .recn{flex:1;font-weight:600}
@@ -2565,6 +2566,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
 <div class="prpop" id="pr-pop" hidden></div>
 <div class="rectoast" id="rec-toast" hidden></div>
+<!-- rendered, not display:none: a switch nobody can see may well be one iOS will not tick for -->
+<label id="buzz" aria-hidden="true" style="position:fixed;left:0;bottom:0;width:1px;height:1px;overflow:hidden;opacity:.01;pointer-events:none"><input type="checkbox" switch tabindex="-1"></label>
 <div class="sheet" id="rec-sheet" hidden>
   <div class="sheet-bg" data-rec-close></div>
   <div class="sheet-card">
@@ -2951,7 +2954,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4232';
+  var APP_VERSION = '3.4233';
 
   /* =========================================================
      STORE
@@ -6226,14 +6229,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // shortcut: undocumented, iOS 18+ and only inside a tap; if Apple closes it, it just goes quiet.
   function buzz() {
     if (navigator.vibrate) { navigator.vibrate(12); return; }
-    var l = document.createElement('label'), i = document.createElement('input');
-    i.type = 'checkbox';
-    i.setAttribute('switch', '');
-    l.appendChild(i);
-    l.style.display = 'none';
-    document.head.appendChild(l);
-    l.click();
-    document.head.removeChild(l);
+    $('buzz').click();
   }
 
   function setFull(st) { return st.weight !== '' && st.reps !== '' && st.rir !== ''; }
@@ -9916,8 +9912,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       el.className = 'rectoast shut';
       recT = setTimeout(function () {
         el.className = 'rectoast shut out';
-        recT = setTimeout(function () { el.hidden = true; }, 400);
-      }, 350);
+        recT = setTimeout(function () { el.hidden = true; }, 450);
+      }, 450 + 300);                     // folded into the medal, it rests a moment before it goes
     })();
   }
 
