@@ -493,7 +493,7 @@ body.in-session .tabs{display:none}
 .endpage{flex:1;display:flex;padding:0 var(--pad)}
 .endwrap{width:100%;display:grid;grid-template-rows:1fr auto 1fr;gap:16px}
 .endtop,.endbot{width:100%;max-width:320px;margin:0 auto}
-.endtop{display:flex;align-items:flex-end}
+.endtop{display:grid;gap:10px;align-content:end}
 .endbot{display:grid;gap:16px;align-content:start}
 .endbot .notebox{width:100%;margin:0}
 .endor{
@@ -1895,7 +1895,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     <div class="endpage" id="sess-endpage" hidden>
       <div class="endwrap">
-        <div class="endtop"><button class="btn btn-ghost" id="sess-addmore">+ Add exercise</button></div>
+        <div class="endtop">
+          <button class="btn btn-ghost" id="sess-reorder">Reorder exercises</button>
+          <button class="btn btn-ghost" id="sess-addmore">+ Add exercise</button>
+        </div>
         <div class="endor" aria-hidden="true">or</div>
         <div class="endbot">
           <div class="notebox" id="sess-wnotebox">
@@ -2804,6 +2807,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet" id="sord-sheet" hidden>
+  <div class="sheet-bg" data-sord-close></div>
+  <div class="sheet-card">
+    <h3>Drag to reorder</h3>
+    <div id="sord-list"></div>
+    <button class="btn btn-primary" id="sord-done" style="margin-top:10px">Done</button>
+  </div>
+</div>
+
 <div class="sheet center" id="confirm-sheet" hidden>
   <div class="sheet-bg" data-confirm-close></div>
   <div class="sheet-card">
@@ -2892,7 +2904,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4218';
+  var APP_VERSION = '3.4219';
 
   /* =========================================================
      STORE
@@ -6328,6 +6340,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     $('sess-endpage').hidden = !done;
     if (done) {
+      $('sess-reorder').hidden = session.exercises.length < 2;     // one exercise has no order
       $('sess-wnotebox').className = 'notebox' + (session.note ? ' has' : '');
       $('sess-wnote').value = session.note || '';
       grow($('sess-wnote'));
@@ -10333,6 +10346,30 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   $('menu-add').addEventListener('click', function () { closeMenu(); addFromSession(); });
   $('sess-addmore').addEventListener('click', addFromSession);
+
+  // Reorder from the closing card. Only this workout's line-up changes: the routine it
+  // came from is not touched, so next time it starts in its own order again.
+  function drawSessionOrder() {
+    $('sord-list').innerHTML = session.exercises.map(function (e, i) {
+      return '<div class="ordrow" data-ord="' + i + '">' +
+        '<span class="grip">&#8759;</span>' +
+        '<span class="t">' + esc(e.name) + '</span></div>';
+    }).join('');
+  }
+  dragList('sord-list', function (order) {
+    if (!session) return;
+    session.exercises = order.map(function (i) { return session.exercises[i]; });
+    drawSessionOrder();
+    drawSession();
+  });
+  $('sess-reorder').addEventListener('click', function () {
+    if (!session || session.exercises.length < 2) return;
+    drawSessionOrder();
+    $('sord-sheet').hidden = false;
+  });
+  function closeSessionOrder() { $('sord-sheet').hidden = true; }
+  $('sord-done').addEventListener('click', closeSessionOrder);
+  document.querySelector('[data-sord-close]').addEventListener('click', closeSessionOrder);
 
   /* --- editing and reordering the line-up, from inside the workout --- */
   function closeExPop() { $('ex-pop').hidden = true; }
