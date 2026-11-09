@@ -313,6 +313,9 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .sw-mellow{background:#f4ead5;border:1px solid #dccfb3;border-radius:10px}
 .sw-mellow i{background:#1e3b2f;opacity:.35}
 .sw-mellow i:nth-child(1){width:55%;height:5px;background:#254636;opacity:1}
+.sw-cocoa{background:#f4ead5;border:1px solid #dccfb3;border-radius:10px}
+.sw-cocoa i{background:#2a1c15;opacity:.35}
+.sw-cocoa i:nth-child(1){width:55%;height:5px;opacity:1}
 .sw-receipt{background:#fdfcf8;border-top:3px double #1a1a18;border-bottom:3px double #1a1a18}
 .sw-receipt i{background:#1a1a18;margin:0 auto}
 .sw-receipt i:nth-child(1){width:60%;height:4px}
@@ -1527,11 +1530,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 }
 
 /* ===========================================================
-   THEME 4 — MELLOW
+   THEME 4 — MELLOW, THEME 5 — COCOA
+   Cocoa is Mellow with the two greens (text, accent) swapped for a dark brown.
    Butter cream and two greens, deep for the bars, leaf for the accent. Light only: applyMode pins
    data-theme to light while this skin is on, so there is no dark block here.
    =========================================================== */
-[data-skin="mellow"]{
+:is([data-skin="mellow"],[data-skin="cocoa"]){
   --bg:#f4ead5;--surface:#faf3e3;--fg:#1e3b2f;--fg-2:#4a6256;--fg-3:#7d8c7d;
   --line:#dccfb3;--accent:#294436;--accent-ink:#f4ead5;
   --display:"Fraunces","Newsreader",Georgia,serif;
@@ -1542,18 +1546,25 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   --lab:10px;--labtrack:.14em;
   --navcase:none;--navsize:13px;--navtrack:.01em;
 }
-[data-skin="mellow"] .btn,[data-skin="mellow"] .empty .act{border-radius:999px}
+:is([data-skin="mellow"],[data-skin="cocoa"]) .btn,:is([data-skin="mellow"],[data-skin="cocoa"]) .empty .act{border-radius:999px}
 /* the lights are pinned, so the mode buttons say so */
 /* the pictures are drawn on white and grey: redraw them as a warm grey figure with only a trace of green on a light beige disc, just a shade deeper than the cream */
-[data-skin="mellow"] .dav,[data-skin="mellow"] .avatar.pic{filter:url(#mellow-duo)}
-[data-skin="mellow"] #seg-mode{opacity:.4;pointer-events:none}
+:is([data-skin="mellow"],[data-skin="cocoa"]) .dav,:is([data-skin="mellow"],[data-skin="cocoa"]) .avatar.pic{filter:url(#mellow-duo)}
+:is([data-skin="mellow"],[data-skin="cocoa"]) #seg-mode{opacity:.4;pointer-events:none}
 /* no sun or moon here: it frees room for the handle, and Themes still leads out */
-[data-skin="mellow"] #daynight{display:none}
-[data-skin="mellow"] .phead .title{font-size:1.8rem}
+:is([data-skin="mellow"],[data-skin="cocoa"]) #daynight{display:none}
+:is([data-skin="mellow"],[data-skin="cocoa"]) .phead .title{font-size:1.8rem}
 /* the cells are round here, so what sits in their corners moves in off the curve */
-[data-skin="mellow"] .delta{top:3px;right:6px}
-[data-skin="mellow"] .platetog{right:5px;bottom:3px}
-[data-skin="mellow"] .plate{right:6px;bottom:4px}
+:is([data-skin="mellow"],[data-skin="cocoa"]) .delta{top:3px;right:6px}
+:is([data-skin="mellow"],[data-skin="cocoa"]) .platetog{right:5px;bottom:3px}
+:is([data-skin="mellow"],[data-skin="cocoa"]) .plate{right:6px;bottom:4px}
+
+/* Cocoa: the 30% and 10% colours, and everything that was tinted from the green */
+[data-skin="cocoa"]{
+  --fg:#2a1c15;--fg-2:#5b4a40;--fg-3:#8d7f73;--accent:#2a1c15;
+  --shadow:0 6px 18px rgba(42,28,21,.08);
+}
+[data-skin="cocoa"] .dav,[data-skin="cocoa"] .avatar.pic{filter:url(#cocoa-duo)}
 
 /* ===========================================================
    SIGNAL COLOURS
@@ -1585,6 +1596,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <feFuncR type="table" tableValues=".40 .937"/>
       <feFuncG type="table" tableValues=".43 .89"/>
       <feFuncB type="table" tableValues=".36 .784"/>
+    </feComponentTransfer>
+  </filter>
+  <filter id="cocoa-duo" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values=".33 .59 .11 0 0  .33 .59 .11 0 0  .33 .59 .11 0 0  0 0 0 1 0"/>
+    <feComponentTransfer>
+      <feFuncR type="linear" slope="2" intercept="-.7"/><feFuncG type="linear" slope="2" intercept="-.7"/><feFuncB type="linear" slope="2" intercept="-.7"/>
+    </feComponentTransfer>
+    <feComponentTransfer>
+      <feFuncR type="table" tableValues=".44 .937"/>
+      <feFuncG type="table" tableValues=".385 .89"/>
+      <feFuncB type="table" tableValues=".345 .784"/>
     </feComponentTransfer>
   </filter>
 </svg>
@@ -2410,6 +2432,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             <span class="ds">Butter cream and two greens. Light only.</span></span>
           <span class="tick">&#10003;</span>
         </button>
+        <button class="opt" data-preset="light cocoa">
+          <span class="swatch sw-cocoa"><i></i><i></i><i></i></span>
+          <span class="txt"><span class="nm">Cocoa</span>
+            <span class="ds">Butter cream and dark brown. Light only.</span></span>
+          <span class="tick">&#10003;</span>
+        </button>
       </div>
     </div>
 
@@ -2445,6 +2473,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <button class="opt" data-pick-theme="mellow">
           <span class="swatch sw-mellow"><i></i><i></i><i></i></span>
           <span class="txt"><span class="nm">Mellow</span><span class="ds">Butter cream and forest green. Always light.</span></span>
+          <span class="tick">&#10003;</span>
+        </button>
+        <button class="opt" data-pick-theme="cocoa">
+          <span class="swatch sw-cocoa"><i></i><i></i><i></i></span>
+          <span class="txt"><span class="nm">Cocoa</span><span class="ds">Butter cream and dark brown. Always light.</span></span>
           <span class="tick">&#10003;</span>
         </button>
       </div>
@@ -2821,7 +2854,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var root = document.documentElement;
   var meta = document.getElementById('theme-color');
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  var NAMES = { doc: 'Document', receipt: 'Receipt', editorial: 'Editorial', mellow: 'Mellow' };
+  var NAMES = { doc: 'Document', receipt: 'Receipt', editorial: 'Editorial', mellow: 'Mellow', cocoa: 'Cocoa' };
   var $ = function (id) { return document.getElementById(id); };
 
   var NOTE_PLUS = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
@@ -2850,7 +2883,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4214';
+  var APP_VERSION = '3.4215';
 
   /* =========================================================
      STORE
@@ -10745,7 +10778,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
      THEME
      ========================================================= */
   // skins that have no dark side: the saved mode is kept, so leaving one brings it back
-  var LIGHT_ONLY = { mellow: true };
+  var LIGHT_ONLY = { mellow: true, cocoa: true };
   function applyMode(mode) {
     var lit = LIGHT_ONLY[root.getAttribute('data-skin')];
     root.setAttribute('data-theme', lit ? 'light' : mode === 'system' ? (mq.matches ? 'dark' : 'light') : mode);
