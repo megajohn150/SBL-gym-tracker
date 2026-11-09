@@ -489,9 +489,18 @@ button.cell.blank{color:var(--fg-3);font-weight:400}
 body.in-session .tabs{display:none}
 
 /* --- finished workouts --- */
-.endpage{flex:1;display:flex;align-items:center;justify-content:center;padding:0 var(--pad)}
-.endwrap{width:100%;max-width:320px;display:grid;gap:16px;justify-items:center}
-.endwrap .notebox{width:100%;margin:0}
+/* the "or" line sits on the middle of the screen: one half above it, one below, whatever each holds */
+.endpage{flex:1;display:flex;padding:0 var(--pad)}
+.endwrap{width:100%;display:grid;grid-template-rows:1fr auto 1fr;gap:16px}
+.endtop,.endbot{width:100%;max-width:320px;margin:0 auto}
+.endtop{display:flex;align-items:flex-end}
+.endbot{display:grid;gap:16px;align-content:start}
+.endbot .notebox{width:100%;margin:0}
+.endor{
+  display:flex;align-items:center;gap:12px;margin:0 calc(-1 * var(--pad));
+  font-family:var(--display);font-weight:700;font-size:1.1rem;letter-spacing:.04em;text-transform:uppercase;
+}
+.endor::before,.endor::after{content:"";flex:1;height:1px;background:var(--line)}
 .endpage .btn{width:100%;padding:14px 28px;font-size:.9rem;letter-spacing:.08em;text-transform:uppercase}
 .feed{display:grid;gap:var(--gap);padding:var(--pad)}
 .wcard{
@@ -1886,11 +1895,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     <div class="endpage" id="sess-endpage" hidden>
       <div class="endwrap">
-        <div class="notebox" id="sess-wnotebox">
-          <textarea id="sess-wnote" rows="1" placeholder="Session note"
-                    autocomplete="off"></textarea>
+        <div class="endtop"><button class="btn btn-ghost" id="sess-addmore">+ Add exercise</button></div>
+        <div class="endor" aria-hidden="true">or</div>
+        <div class="endbot">
+          <div class="notebox" id="sess-wnotebox">
+            <textarea id="sess-wnote" rows="1" placeholder="Session note"
+                      autocomplete="off"></textarea>
+          </div>
+          <button class="btn btn-primary" id="sess-end">End workout</button>
         </div>
-        <button class="btn btn-primary" id="sess-end">End workout</button>
       </div>
     </div>
 
@@ -2879,7 +2892,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4217';
+  var APP_VERSION = '3.4218';
 
   /* =========================================================
      STORE
@@ -10312,12 +10325,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('menu-pause').addEventListener('click', function () { closeMenu(); togglePause(); });
   $('menu-discard').addEventListener('click', function () { closeMenu(); discardSession(); });
 
-  $('menu-add').addEventListener('click', function () {
-    closeMenu();
+  // the closing card offers the same thing as the menu: one more exercise before you end
+  function addFromSession() {
     if (!session) return;
     pickFor = 'session';
     push('exercises');
-  });
+  }
+  $('menu-add').addEventListener('click', function () { closeMenu(); addFromSession(); });
+  $('sess-addmore').addEventListener('click', addFromSession);
 
   /* --- editing and reordering the line-up, from inside the workout --- */
   function closeExPop() { $('ex-pop').hidden = true; }
