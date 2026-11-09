@@ -1359,7 +1359,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .mmore{display:block;width:100%;padding:12px;font-size:.78rem;font-weight:700;color:var(--fg-3)}
 /* the group already pads the page; the map and rows bring their own */
 /* centred, and the map and rows are full width again where the group pads the page */
-.musbtn{text-align:center}
+.musbtn{text-align:center;scroll-margin-top:8px}
 #rt-muscles .musbody{margin:0 calc(-1 * var(--pad))}
 .prcup{text-align:center;padding:.5rem 0 .1rem;color:var(--accent)}
 .prcup svg{display:inline-block}
@@ -2967,7 +2967,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4240';
+  var APP_VERSION = '3.4241';
 
   /* =========================================================
      STORE
@@ -5714,6 +5714,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (c === 's-routine-form') drawRoutineForm();
     else if (c === 's-rtview') drawRtView();
     else if (c === 's-frroutine') drawFrRoutine();
+    // the page does not move on its own, so carry the reader down to what just opened
+    var mb = musOpen && document.querySelector('#' + c + ' .musbtn');
+    if (mb) mb.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   /* --- reorder by dragging, in its own sheet --- */
