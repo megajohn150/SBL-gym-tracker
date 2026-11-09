@@ -29,7 +29,7 @@ source to learn the architecture is paying twice.
   Run it after any change to logic it covers (sync, followed routines, the pull race, records
   and leaderboards, the live-workout payload).
 - **Skip the browser unless the change is visual.** When it is needed, the recipe is under
-  "Verifying in a browser", and it is Receipt skin + dark mode only.
+  "Verifying in a browser", and it is the Cocoa skin only.
 - **Do not re-derive what is written here.** The data shapes, the ping kinds, the traps and
   the deploy story are all below; they were expensive to learn and are kept current.
 - **Ask which area the work is in** if the request is vague. "Routines", "realtime",
@@ -132,7 +132,7 @@ Two methods, cheapest first:
    `DB.live_session` and calling `__ping('sess')`. The file is git-ignored; delete it
    afterwards. In the fake store `gone` is an **array**.
 
-Check the Receipt skin in dark mode (`tracker-skin=receipt`, `tracker-mode=dark`) and nothing
+Check the Cocoa skin (`tracker-skin=cocoa`) and nothing
 else unless asked. Clear `localStorage` when done.
 
 Touch gestures can be exercised with synthetic `TouchEvent`s on `document`. Note that

@@ -787,7 +787,7 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   border:1px solid var(--accent);border-radius:50%;color:var(--accent);
 }
 /* the set row has no spare column, so the medal floats in the gap after the set number */
-.setrow>.medal{position:absolute;left:calc(var(--pad) + 31px);top:50%;margin-top:-10px}
+.setrow>.medal{position:absolute;left:calc(var(--pad) + 25px);top:50%;margin-top:-10px}
 .prpop{
   position:fixed;z-index:30;padding:8px 11px;max-width:60vw;
   background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 3px);
@@ -2913,7 +2913,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4225';
+  var APP_VERSION = '3.4226';
 
   /* =========================================================
      STORE
@@ -6637,6 +6637,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     padMark();
   }
 
+  // A typed number moves the medals of the ticked sets without redrawing the row the pad is on.
+  function paintMedals(ex) {
+    var lp = livePrs(ex);
+    [].forEach.call($('sess-sets').querySelectorAll('.setrow'), function (row) {
+      var old = row.querySelector('.medal');
+      if (old) row.removeChild(old);
+      row.querySelector('.setno').insertAdjacentHTML('afterend', medal({ prs: lp[row.dataset.row] }));
+    });
+  }
+
   function padSet(v) {
     var ex = session.exercises[session.idx], st = ex.sets[padTarget.i];
     st[padTarget.f] = v;
@@ -6647,6 +6657,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drawSession();
       return;
     }
+    paintMedals(ex);
     var el = padCell();
     if (el) {
       el.value = v;
