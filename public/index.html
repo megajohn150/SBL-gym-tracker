@@ -1404,7 +1404,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .calmini > .on{background:var(--accent)}
 .calmini > .pad{background:none}
 /* only the day grid is read by weekday name */
-#s-calendar.v-year .caldays,#s-calendar.v-multi .caldays{display:none}
+#s-calendar.v-quarter .caldays,#s-calendar.v-year .caldays,#s-calendar.v-multi .caldays{display:none}
 .h1btn{
   font-family:var(--display);font-size:var(--name);font-weight:var(--namew);
   letter-spacing:var(--nametrack);text-transform:var(--namecase);
@@ -2732,6 +2732,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <div class="pop-wrap mid">
     <div class="pop-menu">
       <button data-cv="month" aria-pressed="true">Month</button>
+      <button data-cv="quarter" aria-pressed="false">3 months</button>
       <button data-cv="year" aria-pressed="false">Year</button>
       <button data-cv="multi" aria-pressed="false">Multi-year</button>
     </div>
@@ -2952,7 +2953,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4234';
+  var APP_VERSION = '3.4235';
 
   /* =========================================================
      STORE
@@ -8747,7 +8748,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   var calView = 'month';
-  var CALVIEWS = { month: 'Month', year: 'Year', multi: 'Multi-year' };
+  var CALVIEWS = { month: 'Month', quarter: '3 months', year: 'Year', multi: 'Multi-year' };
 
   // one month as a block of squares, a square a day
   function miniMonth(y, m, byDay) {
@@ -9638,8 +9639,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     $('cal-view').textContent = CALVIEWS[calView];
     var sc = $('s-calendar');
-    sc.classList.remove('v-month', 'v-year', 'v-multi');
+    sc.classList.remove('v-month', 'v-quarter', 'v-year', 'v-multi');
     sc.classList.add('v-' + calView);
+
+    // the last three months as they are in Year, so it can straddle New Year
+    if (calView === 'quarter') {
+      var q = [2, 1, 0].map(function (k) { return new Date(now.getFullYear(), now.getMonth() - k, 1); });
+      var y0 = q[0].getFullYear(), y1 = q[2].getFullYear();
+      $('cal-body').innerHTML = '<div class="calyr">' + (y0 === y1 ? y1 : y0 + ' \u2013 ' + y1) + '</div>' +
+        '<div class="calmons">' + q.map(function (d) {
+          return '<div><span class="lab">' + MONTHS[d.getMonth()] + '</span>' +
+            miniMonth(d.getFullYear(), d.getMonth(), byDay) + '</div>';
+        }).join('') + '</div>';
+      return;
+    }
 
     if (calView !== 'month') {
       for (var yy = y; yy <= now.getFullYear(); yy++) {
