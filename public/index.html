@@ -788,6 +788,28 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 }
 /* the set row has no spare column, so the medal floats in the gap after the set number */
 .setrow>.medal{position:absolute;left:calc(var(--pad) + 27px);top:50%;margin-top:-10px}
+/* the record announcement at the top of a session */
+.rectoast{
+  position:fixed;z-index:40;left:50%;top:calc(env(safe-area-inset-top) + 10px);pointer-events:none;
+  display:flex;align-items:center;max-width:calc(100vw - 2 * var(--pad));padding:6px;
+  background:var(--surface);border:var(--border);border-radius:999px;
+  box-shadow:0 12px 30px -12px rgba(0,0,0,.6);transform:translateX(-50%);
+  animation:rtpop .45s cubic-bezier(.3,1.6,.5,1) both;
+}
+.rectoast.out{animation:rtfold .4s ease both}
+.rtic{
+  flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:var(--accent);color:var(--accent-ink);
+}
+.rtic svg{width:18px;height:18px}
+.rtx{min-width:0;max-width:0;overflow:hidden;white-space:nowrap;animation:rtopen .45s .4s ease forwards}
+.rtx b{display:block;padding:0 14px 0 10px;font-size:.85rem;overflow:hidden;text-overflow:ellipsis}
+.rtl{display:block;height:1.3em;padding:0 14px 0 10px;overflow:hidden;font-size:.75rem;color:var(--fg-2)}
+.rtl span{display:block;animation:rtroll .35s ease both}
+@keyframes rtpop{from{opacity:0;transform:translateX(-50%) translateY(-24px) scale(.3)}}
+@keyframes rtopen{to{max-width:80vw}}
+@keyframes rtroll{from{opacity:0;transform:translateY(100%)}}
+@keyframes rtfold{to{opacity:0;transform:translateX(-50%) translateY(-24px) scale(.6)}}
 .recrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:var(--border)}
 .recrow svg{flex:none;width:22px;height:22px;color:var(--accent)}
 .recrow .recn{flex:1;font-weight:600}
@@ -2540,6 +2562,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 </div>
 
 <div class="prpop" id="pr-pop" hidden></div>
+<div class="rectoast" id="rec-toast" hidden></div>
 <div class="sheet" id="rec-sheet" hidden>
   <div class="sheet-bg" data-rec-close></div>
   <div class="sheet-card">
@@ -2926,7 +2949,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4229';
+  var APP_VERSION = '3.4230';
 
   /* =========================================================
      STORE
@@ -6743,7 +6766,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         ex2.sets[j].done = !ex2.sets[j].done;
         if (ex2.sets[j].done && navigator.vibrate) navigator.vibrate(15);
         saveSession();
-        drawSession();
+        drawSession();                   // fills in the set's prs
+        if (ex2.sets[j].done) recToast(ex2.sets[j], ex2.name);
         if (ex2.sets[j].done && restCfg.on) startRest(ex2.unilateral ? restCfg.uni : restCfg.normal);
         return;
       }
@@ -9837,16 +9861,47 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // The sheet a medal opens: what the set did and how far it moved each record it broke.
   var REC_NAME = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
 
+  // [category, value, what it was before] for each record a set broke
+  function setRec(st, name) {
+    var kg = num(st.weight), val = { Weight: kg, '1RM': epley(kg, effReps(st)), Volume: kg * num(st.reps) };
+    return { x: name, r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
+  }
+
   function medal(st, name) {
     if (!st.prs || !st.prs.length) return '';
-    var kg = num(st.weight), val = { Weight: kg, '1RM': epley(kg, effReps(st)), Volume: kg * num(st.reps) };
-    var rec = { x: name, r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
-    return '<button class="medal" data-rec="' + esc(JSON.stringify(rec)) + '">' +
+    return '<button class="medal" data-rec="' + esc(JSON.stringify(setRec(st, name))) + '">' + MEDAL_SVG + '</button>';
+  }
+
+  // A ticked set that breaks a record says so at the top: the medal pops, the pill
+  // opens with the exercise, and each record rolls past in turn before it all folds away.
+  var recT = null;
+  function recToast(st, name) {
+    if (!st.prs || !st.prs.length) return;
+    var rec = setRec(st, name), el = $('rec-toast'), i = 0;
+    clearTimeout(recT);
+    el.hidden = true;
+    el.className = 'rectoast';
+    el.innerHTML = '<span class="rtic">' + MEDAL_SVG + '</span><span class="rtx"><b>' + esc(name) +
+      '</b><span class="rtl"></span></span>';
+    void el.offsetWidth;                 // a second record mid-show starts the animation over
+    el.hidden = false;
+    (function next() {
+      if (i < rec.r.length) {
+        var r = rec.r[i++];
+        el.querySelector('.rtl').innerHTML = '<span>' + REC_NAME[r[0]] + ' \u00b7 ' + fmtVolume(r[1]) + '</span>';
+        recT = setTimeout(next, i === 1 ? 1900 : 1400);   // the first one also waits out the opening
+        return;
+      }
+      el.className = 'rectoast out';
+      recT = setTimeout(function () { el.hidden = true; }, 400);
+    })();
+  }
+
+  var MEDAL_SVG =
       '<svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
       'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
       '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
-      '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg></button>';
-  }
+      '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>';
 
   document.addEventListener('click', function (e) {
     var rb = e.target.closest('[data-rec]');
