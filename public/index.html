@@ -1561,7 +1561,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
 /* Cocoa: the 30% and 10% colours, and everything that was tinted from the green */
 [data-skin="cocoa"]{
-  --fg:#2a1c15;--fg-2:#5b4a40;--fg-3:#8d7f73;--accent:#2a1c15;
+  --fg:#2a1c15;--fg-2:#5b4a40;--fg-3:#8d7f73;--accent:#3d2a20;
   --shadow:0 6px 18px rgba(42,28,21,.08);
 }
 [data-skin="cocoa"] .dav,[data-skin="cocoa"] .avatar.pic{filter:url(#cocoa-duo)}
@@ -2426,12 +2426,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             <span class="ds">Receipt on paper. Dashed rules, centred.</span></span>
           <span class="tick">&#10003;</span>
         </button>
-        <button class="opt" data-preset="light mellow">
-          <span class="swatch sw-mellow"><i></i><i></i><i></i></span>
-          <span class="txt"><span class="nm">Mellow</span>
-            <span class="ds">Butter cream and two greens. Light only.</span></span>
-          <span class="tick">&#10003;</span>
-        </button>
         <button class="opt" data-preset="light cocoa">
           <span class="swatch sw-cocoa"><i></i><i></i><i></i></span>
           <span class="txt"><span class="nm">Cocoa</span>
@@ -2883,7 +2877,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4215';
+  var APP_VERSION = '3.4216';
 
   /* =========================================================
      STORE
