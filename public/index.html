@@ -786,6 +786,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   flex:none;width:21px;height:21px;display:grid;place-items:center;line-height:0;
   border:1px solid var(--accent);border-radius:50%;color:var(--accent);
 }
+/* the set row has no spare column, so the medal floats in the gap after the set number */
+.setrow>.medal{position:absolute;left:calc(var(--pad) + 31px);top:50%;margin-top:-10px}
 .prpop{
   position:fixed;z-index:30;padding:8px 11px;max-width:60vw;
   background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 3px);
@@ -2911,7 +2913,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4224';
+  var APP_VERSION = '3.4225';
 
   /* =========================================================
      STORE
@@ -6400,6 +6402,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     if (padTarget && padTarget.idx !== session.idx) closePad();
 
+    var lp = ex.sets.some(function (st) { return st.done; }) ? livePrs(ex) : [];
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
       return '<div class="swipe">' +
@@ -6408,6 +6411,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '<button class="setno' + (fillFrom(ex, i) ? ' hasprev' : '') +
           '" data-fill="' + i + '">' + (st.done ? '&#10003;' : 'Set') +
           '<b>' + esc(st.label) + '</b></button>' +
+        medal({ prs: lp[i] }) +
         '<span class="cellwrap">' +
           '<input class="cell' + padOn('weight', i) + '" type="text" inputmode="none" readonly data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
@@ -6946,6 +6950,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (!afterCut(w, cut)) return;
       w.exercises.forEach(function (e) {
         if (exKey(e) !== key) return;
+        best.seen = true;
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
@@ -6956,6 +6961,22 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
     });
     return best;
+  }
+
+  // The medals of a workout still in progress: recomputeRecords' rules, but only
+  // for ticked sets, against the saved history plus the sets ticked before this one.
+  function livePrs(ex) {
+    var b = bestsFor(exKey(ex)), first = !b.seen;
+    return ex.sets.map(function (st) {
+      var prs = [], kg = num(st.weight);
+      if (st.done && logged(st) && kg > 0) {
+        var orm = epley(kg, effReps(st)), vol = kg * num(st.reps);
+        if (kg > b.weight) { if (!first) prs.push('Weight'); b.weight = kg; }
+        if (orm > b.orm) { if (!first) prs.push('1RM'); b.orm = orm; }
+        if (vol > b.vol) { if (!first) prs.push('Volume'); b.vol = vol; }
+      }
+      return prs;
+    });
   }
 
   function finishSession(seconds) {
