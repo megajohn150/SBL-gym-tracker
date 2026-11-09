@@ -1358,7 +1358,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .mrow .n{width:34px;text-align:right;font-family:var(--display);font-weight:700;font-size:.85rem}
 .mmore{display:block;width:100%;padding:12px;font-size:.78rem;font-weight:700;color:var(--fg-3)}
 /* the group already pads the page; the map and rows bring their own */
-#rt-mus-body{margin:0 calc(-1 * var(--pad))}
+/* centred, and the map and rows are full width again where the group pads the page */
+.musbtn{text-align:center}
+#rt-muscles .musbody{margin:0 calc(-1 * var(--pad))}
 .prcup{text-align:center;padding:.5rem 0 .1rem;color:var(--accent)}
 .prcup svg{display:inline-block}
 .prcount{padding:.2rem var(--pad) .7rem;text-align:center;font-size:1rem;font-weight:700}
@@ -1890,10 +1892,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <h2>Exercises</h2>
       <div class="rows" id="rt-picked" hidden></div>
       <p class="hint" id="rt-none" style="padding-left:0;padding-right:0">Nothing added yet. Pick from the exercises you have created, or make a new one.</p>
-      <div id="rt-muscles" hidden>
-        <button class="mmore" id="rt-mus-btn">View muscles targeted</button>
-        <div id="rt-mus-body" hidden></div>
-      </div>
+      <div id="rt-muscles"></div>
     </div>
 
     </div>
@@ -2968,7 +2967,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4238';
+  var APP_VERSION = '3.4239';
 
   /* =========================================================
      STORE
@@ -5565,6 +5564,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   function newRoutine() {
+    musOpen = false;
     draft = { id: null, name: '', items: [] };
     rtDirty = false; rtBase = '';
     $('rt-delete').hidden = true;
@@ -5578,6 +5578,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var r = routineById(id);
     if (!r) return;
     if (r.follow) { openRtView(id); return; }      // theirs to change, not yours
+    musOpen = false;
     draft = {
       id: r.id,
       name: r.name,
@@ -5654,7 +5655,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '</div>';
     }).join('');
 
-    drawRtMuscles();
+    $('rt-muscles').innerHTML = routineMuscles(draft.items);
     syncRtForm();
   }
 
@@ -5675,30 +5676,39 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return { by: by, heads: heads, days: {}, hdays: {}, total: total };
   }
 
-  var rtMusOpen = false;
+  // Folded away every time a routine is opened; opening it is a choice made again each visit.
+  var musOpen = false;
 
-  function drawRtMuscles() {
-    $('rt-muscles').hidden = !draft.items.length;
-    $('rt-mus-btn').textContent = rtMusOpen ? 'Hide muscles targeted' : 'View muscles targeted';
-    $('rt-mus-body').hidden = !rtMusOpen;
-    if (!rtMusOpen || !draft.items.length) return;
+  // the button, and under it the body map with one row per muscle the routine trains
+  function routineMuscles(items) {
+    if (!items.length) return '';
+    var btn = '<button class="mmore musbtn" data-mus>' + (musOpen ? 'Hide' : 'View') + ' muscles targeted</button>';
+    if (!musOpen) return btn;
 
-    var r = routineStats(draft.items), max = 0;
+    var r = routineStats(items), max = 0;
     Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
-    // The map paints front and side delts as one shape, so their dots borrow its colour.
-    var delts = r.heads['Front delt'] + r.heads['Side delt'] + r.heads['Shoulders'];
-    var rows = muscleRows(r, 'split');
-    if (r.heads['Shoulders']) rows.push({ name: 'Shoulders', v: r.heads['Shoulders'] });   // heads never named
-    rows = rows.filter(function (x) { return x.v > 0; });
-    rows.sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name); });
-    $('rt-mus-body').innerHTML = bodyMap(r, max) + rows.map(function (x) {
-      var n = x.name === 'Rear delt' ? x.v : (x.name === 'Front delt' || x.name === 'Side delt' || x.name === 'Shoulders') ? delts : x.v;
-      return '<div class="strow"><span class="stdot" style="background:' + heat(n, max) + '"></span>' +
-        '<span class="nm">' + esc(x.name) + '</span><span class="n n2"><b>' + x.v + '</b><i></i></span></div>';
-    }).join('');
+    // as in the weekly body map: Shoulders is the front and side heads as one, the rear apart
+    var rows = muscleRows(r, 'map').filter(function (x) { return x.v > 0; });
+    function line(x, sub) {
+      return '<div class="strow' + (sub ? ' sub' : '') + '">' +
+        (sub ? '<span class="stdot none"></span>'
+             : '<span class="stdot" style="background:' + heat(x.v, max) + '"></span>') +
+        '<span class="nm">' + esc(x.name) + '</span>' +
+        '<span class="n n2"><b>' + x.v + '</b><i></i></span></div>';
+    }
+    return btn + '<div class="musbody">' + bodyMap(r, max) + rows.map(function (x) {
+      return line(x, false) + (x.kids && x.kids.length > 1
+        ? x.kids.map(function (k) { return line(k, true); }).join('') : '');
+    }).join('') + '</div>';
   }
 
-  $('rt-mus-btn').addEventListener('click', function () { rtMusOpen = !rtMusOpen; drawRtMuscles(); });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('[data-mus]')) return;
+    musOpen = !musOpen;
+    var c = current();
+    if (c === 's-routine-form') drawRoutineForm();
+    else if (c === 's-rtview') drawRtView();
+  });
 
   /* --- reorder by dragging, in its own sheet --- */
   function drawOrder() {
@@ -6027,6 +6037,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function openRtView(id) {
     rvId = id;
+    musOpen = false;
     push('rtview');
     drawRtView();
   }
@@ -6129,6 +6140,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '<h2>' + r.items.length + ' exercise' + (r.items.length === 1 ? '' : 's') +
       (runs.length ? ' &middot; done ' + runs.length + (runs.length === 1 ? ' time' : ' times') : '') +
       '</h2><div class="rows">' + rows + '</div></div>' +
+      routineMuscles(r.items) +
       '<div style="height:1rem"></div>';
   }
 
