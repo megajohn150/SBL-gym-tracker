@@ -388,6 +388,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   display:block;font-family:var(--display);font-size:1.2rem;font-weight:var(--namew);
   letter-spacing:var(--nametrack);text-transform:var(--namecase);line-height:1.15;
 }
+.exhead button.nm{padding:0;text-align:left}
+.exhead button.nm:not(:disabled){text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .extags{display:flex;gap:5px;margin-top:7px;flex-wrap:nowrap}
 .extag{
   flex:none;white-space:nowrap;
@@ -1855,7 +1857,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span class="exnum" id="sess-num">1</span>
       <span class="dav" id="sess-art"></span>
       <span class="t">
-        <span class="nm" id="sess-name">&mdash;</span>
+        <button class="nm" id="sess-name">&mdash;</button>
         <span class="extags" id="sess-tags"></span>
       </span>
       <button class="iconbtn" id="sess-exmenu" aria-label="Exercise menu">&#8942;</button>
@@ -2877,7 +2879,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4216';
+  var APP_VERSION = '3.4217';
 
   /* =========================================================
      STORE
@@ -6331,6 +6333,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var art = document.getElementById('sess-art');
     if (art) art.outerHTML = muscleArt(ex.muscle, 54).replace('class="dav"', 'class="dav" id="sess-art"');
     $('sess-name').textContent = ex.name;
+    // like a finished workout, the name opens the exercise's own page, unless it no longer lives in the library
+    $('sess-name').disabled = !(ex.exId && byId(ex.exId));
 
     var planned = ex.unilateral ? ex.sets.length / 2 : ex.sets.length;
     $('sess-tags').innerHTML = '<span class="extag">Sets ' + planned + '</span>' +
@@ -10429,6 +10433,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     pickFor = 'swap';
     pickMuscle = ex.muscle || null;
     push('exercises');
+  });
+
+  // the way back is the arrow on that page, which lands on the session as it was left
+  $('sess-name').addEventListener('click', function () {
+    var ex = session && session.exercises[session.idx];
+    if (ex && ex.exId && byId(ex.exId)) openHistory(ex.exId);
   });
 
   $('xp-edit').addEventListener('click', function () {
