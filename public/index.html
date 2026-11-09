@@ -2951,7 +2951,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4231';
+  var APP_VERSION = '3.4232';
 
   /* =========================================================
      STORE
@@ -6221,6 +6221,21 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return null;
   }
 
+  // iOS has no navigator.vibrate, but Safari 18 ticks the Taptic Engine when a switch
+  // checkbox is toggled through its label, so a hidden one stands in for it.
+  // shortcut: undocumented, iOS 18+ and only inside a tap; if Apple closes it, it just goes quiet.
+  function buzz() {
+    if (navigator.vibrate) { navigator.vibrate(12); return; }
+    var l = document.createElement('label'), i = document.createElement('input');
+    i.type = 'checkbox';
+    i.setAttribute('switch', '');
+    l.appendChild(i);
+    l.style.display = 'none';
+    document.head.appendChild(l);
+    l.click();
+    document.head.removeChild(l);
+  }
+
   function setFull(st) { return st.weight !== '' && st.reps !== '' && st.rir !== ''; }
 
   // the whole exercise is behind you only once every set is ticked
@@ -6766,7 +6781,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       // nothing left to fill in, so the tap means the set is behind you
       if (setFull(ex2.sets[j])) {
         ex2.sets[j].done = !ex2.sets[j].done;
-        if (ex2.sets[j].done && navigator.vibrate) navigator.vibrate(15);
+        if (ex2.sets[j].done) buzz();
         saveSession();
         drawSession();                   // fills in the set's prs
         if (ex2.sets[j].done) recToast(ex2.sets[j], ex2.name);
@@ -8216,7 +8231,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function openLikers(k) {
     var L = social.likes[k] || [];
     if (!L.length) return;
-    if (navigator.vibrate) navigator.vibrate(8);
+    buzz();
     openPeople('likes', L.map(function (x) { return x.by; }));
   }
 
@@ -9880,6 +9895,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function recToast(st, name) {
     if (!st.prs || !st.prs.length) return;
     var rec = setRec(st, name), el = $('rec-toast'), i = 0;
+    setTimeout(buzz, 140);               // the tick already buzzed once; a record gets a second
     clearTimeout(recT);
     el.hidden = true;
     el.className = 'rectoast';
@@ -11034,7 +11050,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     dnTimer = setTimeout(function () {
       dnHeld = true;
       nextPreset();
-      if (navigator.vibrate) navigator.vibrate(8);
+      buzz();
     }, 450);
   });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
