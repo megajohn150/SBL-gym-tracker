@@ -788,6 +788,11 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 }
 /* the set row has no spare column, so the medal floats in the gap after the set number */
 .setrow>.medal{position:absolute;left:calc(var(--pad) + 25px);top:50%;margin-top:-10px}
+.recrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:var(--border)}
+.recrow svg{flex:none;width:22px;height:22px;color:var(--accent)}
+.recrow .recn{flex:1;font-weight:600}
+.recrow .recv{color:var(--fg-3)}
+.recrow .recd{color:var(--green);font-weight:600}
 .prpop{
   position:fixed;z-index:30;padding:8px 11px;max-width:60vw;
   background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 3px);
@@ -2535,6 +2540,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 </div>
 
 <div class="prpop" id="pr-pop" hidden></div>
+<div class="sheet" id="rec-sheet" hidden>
+  <div class="sheet-bg" data-rec-close></div>
+  <div class="sheet-card">
+    <h3>New record</h3>
+    <p class="hint" id="rec-ex" style="padding:0 0 8px;text-align:center"></p>
+    <div id="rec-list"></div>
+  </div>
+</div>
 <div class="ptip" id="p-tip" hidden></div>
 
 <div class="gate" id="gate">
@@ -2913,7 +2926,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4226';
+  var APP_VERSION = '3.4227';
 
   /* =========================================================
      STORE
@@ -5253,7 +5266,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             '<span class="nm">' + relDate(r.w.date) + '</span>' +
             '<span class="meta">' + esc(r.w.name) + '<i>\u203a</i></span></button>' +
             r.e.sets.filter(logged).map(function (st) {
-              return '<div class="drow"><span class="no">' + esc(st.label) + medal(st) + '</span>' +
+              return '<div class="drow"><span class="no">' + esc(st.label) + medal(st, r.e.name) + '</span>' +
                 '<span class="c">' + esc(st.weight) + '</span>' +
                 '<span class="c">' + esc(st.reps) + '</span>' +
                 '<span class="c' + (st.rir === '' ? ' dim' : '') + '">' +
@@ -6402,7 +6415,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     if (padTarget && padTarget.idx !== session.idx) closePad();
 
-    var lp = ex.sets.some(function (st) { return st.done; }) ? livePrs(ex) : [];
+    livePrs(ex);
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
       return '<div class="swipe">' +
@@ -6411,7 +6424,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '<button class="setno' + (fillFrom(ex, i) ? ' hasprev' : '') +
           '" data-fill="' + i + '">' + (st.done ? '&#10003;' : 'Set') +
           '<b>' + esc(st.label) + '</b></button>' +
-        medal({ prs: lp[i] }) +
+        medal(st, ex.name) +
         '<span class="cellwrap">' +
           '<input class="cell' + padOn('weight', i) + '" type="text" inputmode="none" readonly data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
@@ -6639,11 +6652,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // A typed number moves the medals of the ticked sets without redrawing the row the pad is on.
   function paintMedals(ex) {
-    var lp = livePrs(ex);
+    livePrs(ex);
     [].forEach.call($('sess-sets').querySelectorAll('.setrow'), function (row) {
       var old = row.querySelector('.medal');
       if (old) row.removeChild(old);
-      row.querySelector('.setno').insertAdjacentHTML('afterend', medal({ prs: lp[row.dataset.row] }));
+      row.querySelector('.setno').insertAdjacentHTML('afterend', medal(ex.sets[row.dataset.row], ex.name));
     });
   }
 
@@ -6919,6 +6932,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return cuts;
   }
 
+  // One logged set against the running bests: the records it breaks and what each stood at before.
+  function stepRecords(b, st, first) {
+    var prs = [], was = {}, kg = num(st.weight);
+    if (kg > 0) {
+      var orm = epley(kg, effReps(st)), vol = kg * num(st.reps);
+      if (kg > b.weight) { if (!first) { prs.push('Weight'); was.Weight = b.weight; } b.weight = kg; }
+      if (orm > b.orm) { if (!first) { prs.push('1RM'); was['1RM'] = b.orm; } b.orm = orm; }
+      if (vol > b.vol) { if (!first) { prs.push('Volume'); was.Volume = b.vol; } b.vol = vol; }
+    }
+    return { prs: prs, was: was };
+  }
+
   // Walks the whole history oldest-first, so edits and deletes settle correctly.
   function recomputeRecords() {
     var order = store.workouts.slice().sort(function (a, b) {
@@ -6938,17 +6963,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         if (live) seen[k] = true;
         var hit = {};
         e.sets.forEach(function (st) {
-          var prs = [];
-          if (live && logged(st)) {
-            var kg = num(st.weight), reps = num(st.reps), orm = epley(kg, effReps(st)), vol = kg * reps;
-            if (kg > 0) {
-              if (kg > b.weight) { if (!first) prs.push('Weight'); b.weight = kg; }
-              if (orm > b.orm) { if (!first) prs.push('1RM'); b.orm = orm; }
-              if (vol > b.vol) { if (!first) prs.push('Volume'); b.vol = vol; }
-            }
-          }
-          st.prs = prs;
-          prs.forEach(function (c) { hit[c] = true; });
+          var r = live && logged(st) ? stepRecords(b, st, first) : { prs: [], was: {} };
+          st.prs = r.prs;
+          st.was = r.prs.length ? r.was : undefined;   // what each record was, for the sheet the medal opens
+          r.prs.forEach(function (c) { hit[c] = true; });
         });
         w.records += Object.keys(hit).length;   // one medal per category per exercise
       });
@@ -6978,15 +6996,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // for ticked sets, against the saved history plus the sets ticked before this one.
   function livePrs(ex) {
     var b = bestsFor(exKey(ex)), first = !b.seen;
-    return ex.sets.map(function (st) {
-      var prs = [], kg = num(st.weight);
-      if (st.done && logged(st) && kg > 0) {
-        var orm = epley(kg, effReps(st)), vol = kg * num(st.reps);
-        if (kg > b.weight) { if (!first) prs.push('Weight'); b.weight = kg; }
-        if (orm > b.orm) { if (!first) prs.push('1RM'); b.orm = orm; }
-        if (vol > b.vol) { if (!first) prs.push('Volume'); b.vol = vol; }
-      }
-      return prs;
+    ex.sets.forEach(function (st) {
+      var r = st.done && logged(st) ? stepRecords(b, st, first) : { prs: [], was: {} };
+      st.prs = r.prs;
+      st.was = r.was;
     });
   }
 
@@ -9821,9 +9834,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   var detailW = null, detailEdit = false, detailRO = false, detailWho = null;
 
-  function medal(st) {
+  // The sheet a medal opens: what the set did and how far it moved each record it broke.
+  var REC_NAME = { Weight: 'Heaviest weight', Volume: 'Best set volume', '1RM': 'Best 1RM' };
+
+  function medal(st, name) {
     if (!st.prs || !st.prs.length) return '';
-    return '<button class="medal" data-prs="' + esc(st.prs.join(' &middot; ')) + '">' +
+    var kg = num(st.weight), val = { Weight: kg, '1RM': epley(kg, effReps(st)), Volume: kg * num(st.reps) };
+    var rec = { x: name, r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
+    return '<button class="medal" data-rec="' + esc(JSON.stringify(rec)) + '">' +
       '<svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
       'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
       '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
@@ -9831,6 +9849,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   document.addEventListener('click', function (e) {
+    var rb = e.target.closest('[data-rec]');
+    if (e.target.closest('[data-rec-close]')) $('rec-sheet').hidden = true;
+    if (rb) {
+      var rec = JSON.parse(rb.dataset.rec);
+      $('rec-ex').textContent = rec.x;
+      $('rec-list').innerHTML = rec.r.map(function (r) {
+        return '<div class="recrow">' + rb.innerHTML + '<span class="recn">' + REC_NAME[r[0]] + '</span>' +
+          '<span class="recv">' + fmtVolume(r[1]) + '</span>' +
+          (r[2] == null ? '' : '<span class="recd">\u2191 ' + fmtVolume(r[1] - r[2]) + '</span>') + '</div>';
+      }).join('');
+      $('rec-sheet').hidden = false;
+    }
     var m = e.target.closest('[data-prs]');
     var pop = $('pr-pop');
     if (!m) { pop.hidden = true; return; }
@@ -9978,7 +10008,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             (detailEdit ? '<span></span>' : '') + '</div>' +
             rows.map(function (st, si) {
               if (!detailEdit) {
-                return '<div class="drow"><span class="no">' + esc(st.label) + medal(st) + '</span>' +
+                return '<div class="drow"><span class="no">' + esc(st.label) + medal(st, e.name) + '</span>' +
                   '<span class="c">' + (st.weight === '' ? '&ndash;' : esc(st.weight)) +
                   plateMark(st, 'platec') + '</span>' +
                   '<span class="c">' + esc(st.reps) + '</span>' +
