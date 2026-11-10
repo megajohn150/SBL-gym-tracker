@@ -281,21 +281,34 @@ These pairs do the same job in two places, so a fix to one is a bug left in the 
 - `recomputeRecords` / `bestsFor` / `myRecords` — three walks of the history that each
   compute heaviest, Epley 1RM and best set
 
-## Supabase deployments are manual
+## Supabase: Claude has access through an MCP connector
 
-The Supabase CLI is **not installed** and there is no migration runner. SQL goes into the
-dashboard SQL editor by hand; the Edge Function is pasted into the dashboard function editor.
-`supabase-realtime-3.sql` is generated from `supabase-social.sql` and exists only as the block
-to paste — regenerate it rather than editing it, and rename it when it changes so the user can
-tell versions apart. Its header carries two check queries (trigger count, `live_self` body) and
-one for `live_session`. `push_send` contains a `<PUSH_SECRET>` placeholder that is substituted
-in the dashboard; the real secret must never be committed.
+The `gym-tracker` project (id `nzagghskfwdosmopiuuk`, eu-west-1, Postgres 17) is connected to
+Claude as an MCP server. Its tools are deferred: load them with `ToolSearch` (query
+`select:mcp__bfe03fa0-b049-472a-947a-a8da016a9c6b__execute_sql,...`) before calling. Verified
+working on 10 Nov 2026: `list_projects`, `list_tables`, `list_migrations`, `list_edge_functions`.
 
-None of this shows in the repo: the code looks identical deployed and not deployed. Push,
-realtime and `live_session` are deployed; check the user's memory or ask before proposing to
-"wire up" anything server-side again. A missing table or policy fails silently in the client
-(the queries just return an error that the page ignores), so "nothing shows up" after a new
-SQL feature means checking the database before the code.
+What that buys: `apply_migration` (DDL, tracked), `execute_sql` (queries and data fixes),
+`list_tables` / `list_extensions`, `deploy_edge_function` / `get_edge_function` (the `notify`
+function, v3, `verify_jwt` off), `query_logs`, `get_advisors` (run it after any RLS change).
+So the dashboard paste is no longer the only route.
+
+How to work with it:
+
+- `supabase-social.sql` stays the **source of truth**. Change it first, then apply the same SQL
+  with `apply_migration` and commit both together. `supabase-realtime-3.sql` is the old
+  paste-by-hand block, generated from it; regenerate it only if the user still wants a paste.
+- `list_migrations` is **empty**: everything so far was pasted by hand, so the migration table
+  knows nothing of the existing schema. Do not try to replay `supabase-social.sql` onto it;
+  read the live state with `list_tables` / `execute_sql` and write a small incremental migration.
+- Before a destructive statement (drop, delete, rewrite of `tracker`, `posts`, `profiles`),
+  say what it touches and ask. The database holds the user's real training log, 274 posts
+  and friends' data, and there is no branch or backup set up here.
+- `push_send` carries a `<PUSH_SECRET>` placeholder in the repo. Never write the real secret
+  into a migration or into git; keep the placeholder in files and substitute it only inside
+  the call, or leave that one function for the user.
+- A missing table or policy still fails silently in the client, so after a SQL change check
+  the database (`list_tables`, `get_advisors`) before the code.
 
 ## Service worker
 
