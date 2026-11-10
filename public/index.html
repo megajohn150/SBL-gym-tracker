@@ -287,7 +287,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 
 /* --- theme options --- */
 .opt{display:flex;align-items:center;gap:13px;width:100%;padding:12px var(--cardpad);border-bottom:var(--dash)}
-.opt:last-child{border-bottom:none}
+.opt:last-child,#mellow-row[aria-expanded="false"]{border-bottom:none}
+#mellow-sub .opt{padding-left:calc(var(--cardpad) + 20px)}
 .opt .txt{flex:1;min-width:0}
 .opt .nm{display:block;font-weight:600;font-family:var(--display);letter-spacing:var(--nametrack)}
 .opt .ds{display:block;font-size:.8rem;color:var(--fg-3);margin-top:1px}
@@ -2535,16 +2536,23 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           <span class="txt"><span class="nm">Receipt</span><span class="ds">Thermal paper, dashed rules, centred.</span></span>
           <span class="tick">&#10003;</span>
         </button>
-        <button class="opt" data-pick-theme="mellow">
+        <button class="opt" id="mellow-row" aria-expanded="false">
           <span class="swatch sw-mellow"><i></i><i></i><i></i></span>
-          <span class="txt"><span class="nm">Mellow</span><span class="ds">Butter cream and forest green. Always light.</span></span>
+          <span class="txt"><span class="nm">Mellow</span><span class="ds">Butter cream, in green or brown. Always light.</span></span>
           <span class="tick">&#10003;</span>
         </button>
-        <button class="opt" data-pick-theme="cocoa">
-          <span class="swatch sw-cocoa"><i></i><i></i><i></i></span>
-          <span class="txt"><span class="nm">Cocoa</span><span class="ds">Butter cream and dark brown. Always light.</span></span>
-          <span class="tick">&#10003;</span>
-        </button>
+        <div id="mellow-sub" hidden>
+          <button class="opt" data-pick-theme="mellow">
+            <span class="swatch sw-mellow"><i></i><i></i><i></i></span>
+            <span class="txt"><span class="nm">Forest green</span></span>
+            <span class="tick">&#10003;</span>
+          </button>
+          <button class="opt" data-pick-theme="cocoa">
+            <span class="swatch sw-cocoa"><i></i><i></i><i></i></span>
+            <span class="txt"><span class="nm">Dark brown</span></span>
+            <span class="tick">&#10003;</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -2967,7 +2975,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4242';
+  var APP_VERSION = '3.4243';
 
   /* =========================================================
      STORE
@@ -11095,9 +11103,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     document.querySelectorAll('[data-pick-theme]').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.pickTheme === skin));
     });
+    var m = skin === 'mellow' || skin === 'cocoa';
+    $('mellow-row').setAttribute('aria-pressed', String(m));
+    if (m) setMellow(true);
     paintPresets();
     paintMeta();
   }
+  function setMellow(open) {
+    $('mellow-sub').hidden = !open;
+    $('mellow-row').setAttribute('aria-expanded', String(open));
+  }
+  $('mellow-row').addEventListener('click', function () { setMellow($('mellow-sub').hidden); });
   function paintPresets() {
     var now = (load('mode') || 'system') + ' ' + (load('skin') || 'receipt');
     document.querySelectorAll('[data-preset]').forEach(function (b) {
