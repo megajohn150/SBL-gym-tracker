@@ -2967,7 +2967,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4241';
+  var APP_VERSION = '3.4242';
 
   /* =========================================================
      STORE
@@ -6441,9 +6441,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var ex = session.exercises[session.idx];
     if (!ex || session.exercises.length < 2) return;
     var go = function () {
-      session.exercises.splice(session.idx, 1);
-      session.idx = Math.max(0, Math.min(session.idx, session.exercises.length - 1));
+      var at = session.idx;
+      session.exercises.splice(at, 1);
+      session.idx = Math.max(0, Math.min(at, session.exercises.length - 1));
       drawSession();
+      if (ex.sets.some(logged)) toastUndo(ex.name + ' dropped', function () {
+        if (!session) return;
+        session.exercises.splice(Math.min(at, session.exercises.length), 0, ex);
+        session.idx = Math.min(at, session.exercises.length - 1);
+        drawSession();
+      });
     };
     if (ex.sets.some(logged)) {
       askConfirm('Drop ' + ex.name + '?',
@@ -10524,11 +10531,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function discardSession() {
     askConfirm('Discard workout?', 'Everything logged in this session will be lost.',
       'Discard', function () {
+        var dead = session;
         session = null;
         saveSession();
         stopRest();
         if (current() === 's-session') popTo('workout');
         drawDock();
+        toastUndo('Workout discarded', function () {
+          if (session) return;     // a new one was started meanwhile; do not clobber it
+          session = dead;
+          saveSession();
+          drawDock();
+        });
       });
   }
 
