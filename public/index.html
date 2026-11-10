@@ -2967,7 +2967,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4245';
+  var APP_VERSION = '3.4246';
 
   /* =========================================================
      STORE
@@ -6832,8 +6832,26 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     padSet(cur === '0' ? String(k) : cur + k);
   }
 
+  // holding backspace rubs the whole number out; the tap that ends the hold must not also delete a digit
+  var bkT = null, bkHeld = false;
+  $('pad-grid').addEventListener('pointerdown', function (e) {
+    if (!e.target.closest('[data-k="bk"]')) return;
+    bkHeld = false;
+    clearTimeout(bkT);
+    bkT = setTimeout(function () {
+      if (!session || !padTarget) return;
+      bkHeld = true;
+      padFresh = false;
+      padSet('');
+      if (navigator.vibrate) navigator.vibrate(8);
+    }, 450);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+    $('pad-grid').addEventListener(ev, function () { clearTimeout(bkT); });
+  });
   $('pad-grid').addEventListener('click', function (e) {
     var b = e.target.closest('[data-k]');
+    if (b && b.dataset.k === 'bk' && bkHeld) { bkHeld = false; return; }
     if (b && !b.classList.contains('off')) padHit(b.dataset.k);
   });
   // no backdrop any more, so anything else you touch puts the pad away
