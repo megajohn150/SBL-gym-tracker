@@ -1437,7 +1437,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   display:block;margin-top:3px;font-size:.58rem;color:var(--fg-3);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.hmrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.whbox{position:relative;display:flex;gap:10px;margin-bottom:14px;background:var(--surface);border:var(--border);border-radius:var(--radius);overflow:hidden}
+.whbox::after{content:'';position:absolute;left:8px;right:8px;top:36px;height:36px;border-radius:9px;background:var(--fg);opacity:.08;pointer-events:none}
+.whcol{flex:1;min-width:0;text-align:center}
+.whlab{display:block;padding-top:8px;font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;font-weight:700;color:var(--fg-2)}
+.wheel{height:108px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.wheel::-webkit-scrollbar{display:none}
+.wheel i{display:block;height:36px;line-height:36px;font-style:normal;font-size:1.05rem;font-weight:600;scroll-snap-align:center}
+.wheel s{display:block;height:36px}
 .datebtn{
   width:100%;margin:.6rem 0 14px;padding:11px var(--cardpad);text-align:left;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
@@ -2812,12 +2819,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
     </div>
     <div class="dpick-grid" id="dp-grid"></div>
-    <div class="hmrow" style="margin:1.1rem 0 14px">
-      <span class="field" style="padding:0"><label for="dp-h">Hour</label>
-        <input type="text" id="dp-h" inputmode="numeric"></span>
-      <span class="field" style="padding:0"><label for="dp-m">Minute</label>
-        <input type="text" id="dp-m" inputmode="numeric"></span>
-    </div>
+    <div id="dp-wheels" style="margin-top:1.1rem"></div>
     <button class="btn btn-primary" id="dp-save">Save</button>
   </div>
 </div>
@@ -2967,7 +2969,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4246';
+  var APP_VERSION = '3.4247';
 
   /* =========================================================
      STORE
@@ -7141,7 +7143,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       id: uid(),
       name: session.name,
       note: (session.note || '').trim(),
-      date: new Date().toISOString(),
+      // the day and time a workout shows is when it began, not when it ended
+      date: new Date(session.startedAt).toISOString(),
       seconds: seconds || sessionSeconds(),
       routineId: session.routineId || null,
       // only what was actually logged is worth keeping
@@ -10121,12 +10124,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       (detailEdit
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
           '<button class="datebtn" id="d-date">' + fullDate(pendingDate || w.date) + '</button>' +
-          '<div class="hmrow">' +
-            '<span class="field" style="padding:0"><label for="d-h">Hours</label>' +
-            '<input type="text" id="d-h" inputmode="numeric" value="' + Math.floor(w.seconds / 3600) + '"></span>' +
-            '<span class="field" style="padding:0"><label for="d-m">Minutes</label>' +
-            '<input type="text" id="d-m" inputmode="numeric" value="' + Math.round((w.seconds % 3600) / 60) + '"></span>' +
-          '</div>'
+          wheelBox([{ id: 'd-h', label: 'Hours', n: 24, val: Math.min(23, Math.floor(w.seconds / 3600)) },
+                    { id: 'd-m', label: 'Minutes', n: 60, val: Math.min(59, Math.round((w.seconds % 3600) / 60)) }])
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
@@ -10223,6 +10222,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     paint($('detail-body'), head + muscles + body + '<div style="height:1.5rem"></div>');
     $('detail-body').querySelectorAll('[data-note-e]').forEach(grow);
+    wheelsSet($('detail-body'));
     if ($('d-wnote')) grow($('d-wnote'));
   }
 
@@ -10287,6 +10287,32 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var pendingDate = null;                 // only applied when the edit is saved
   var dp = { y: 0, m: 0, pick: null };
 
+  // iOS-style drum: a snapping scroll list whose value is mirrored into a hidden
+  // input, so the code that reads '#d-h' and friends never learns it is a wheel
+  function wheelBox(cols) {
+    return '<div class="whbox">' + cols.map(function (c) {
+      var items = '';
+      for (var i = 0; i < c.n; i++) items += '<i>' + pad2(i) + '</i>';
+      return '<div class="whcol"><span class="whlab">' + c.label + '</span>' +
+        '<div class="wheel" data-wf="' + c.id + '"><s></s>' + items + '<s></s></div>' +
+        '<input type="hidden" id="' + c.id + '" value="' + c.val + '"></div>';
+    }).join('') + '</div>';
+  }
+  function wheelsSet(root) {
+    root.querySelectorAll('.wheel').forEach(function (w) {
+      w.scrollTop = Number($(w.dataset.wf).value) * 36;
+    });
+  }
+  document.addEventListener('scroll', function (e) {
+    var w = e.target;
+    if (!w.classList || !w.classList.contains('wheel')) return;
+    var inp = $(w.dataset.wf), v = String(Math.max(0, Math.min(w.querySelectorAll('i').length - 1,
+      Math.round(w.scrollTop / 36))));
+    if (inp.value === v) return;
+    inp.value = v;
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
+
   function drawDatePick() {
     $('dp-title').textContent = MONTHS[dp.m] + ' ' + dp.y;
     var days = new Date(dp.y, dp.m + 1, 0).getDate();
@@ -10306,10 +10332,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     dp.pick = new Date(pendingDate || detailW.date);
     dp.y = dp.pick.getFullYear();
     dp.m = dp.pick.getMonth();
-    $('dp-h').value = pad2(dp.pick.getHours());
-    $('dp-m').value = pad2(dp.pick.getMinutes());
+    $('dp-wheels').innerHTML = wheelBox([
+      { id: 'dp-h', label: 'Hour', n: 24, val: dp.pick.getHours() },
+      { id: 'dp-m', label: 'Minute', n: 60, val: dp.pick.getMinutes() }]);
     drawDatePick();
     $('date-sheet').hidden = false;
+    wheelsSet($('dp-wheels'));
   }
   function closeDatePick() { $('date-sheet').hidden = true; }
   document.querySelector('[data-date-close]').addEventListener('click', closeDatePick);
@@ -10328,8 +10356,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     dp.pick = new Date(dp.y, dp.m, Number(b.dataset.d));
     drawDatePick();
   });
-  $('dp-h').addEventListener('input', function () { digits(this); });
-  $('dp-m').addEventListener('input', function () { digits(this); });
 
   $('dp-save').addEventListener('click', function () {
     if (!detailW || !dp.pick) { closeDatePick(); return; }
@@ -10466,7 +10492,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (e.target.dataset && e.target.dataset.f) cleanNumber(e.target);
     if (e.target.dataset && e.target.dataset.noteE !== undefined) grow(e.target);
     if (e.target.id === 'd-wnote') grow(e.target);
-    if (e.target.id === 'd-h' || e.target.id === 'd-m') digits(e.target);
     detailDirty = true;
     drawSaveBar();
   });
