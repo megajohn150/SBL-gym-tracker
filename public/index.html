@@ -606,7 +606,6 @@ body.in-session .tabs{display:none}
 .wex{padding-top:.5rem}
 .wex li{display:flex;justify-content:space-between;gap:1rem;padding:.26rem 0;font-size:.76rem;color:var(--fg-2)}
 .wex em{font-style:normal;color:var(--fg-3);white-space:nowrap}
-.wex [data-lbx]{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 /* the list marker from the old Brutal template */
 .wex li > span:first-child::before,
 .rtline > span:first-child::before{content:">";margin-right:.5em;color:var(--fg-3)}
@@ -3007,7 +3006,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4265';
+  var APP_VERSION = '3.4266';
 
   /* =========================================================
      STORE
@@ -4239,15 +4238,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     }
     if (e.target.closest('[data-openu]') || e.target.closest('[data-act]')) return;
     if (e.target.closest('[data-postsmore]')) { loadUserPosts(true); return; }
-    var lx = e.target.closest('[data-lbx]');
-    if (lx) { openLb(lx.dataset.lbx, lx.textContent); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
 
   /* --- comparing yourself with a friend --- */
   var cmp = null;     // { id, p, mine, theirs, fr, k, all } behind the two Compare screens
-  var lbN = '';                  // the exercise's name as the card spelt it, for a title when it is not in your list
   var lbK = null, lbFr = null;   // the exercise a leaderboard is for, and the friends it ranks
 
   function recOf(p, k) { return ((p && p.stats && p.stats.records) || {})[k]; }
@@ -4357,6 +4353,28 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         ? '<button class="mmore" data-cmore>See ' + (list.length - shown.length) + ' more</button>' : ''));
   }
 
+  // the lowercased name when you and this friend both have a weight logged for the lift, and it is in your list
+  function sharedWith(uid2, name, mine) {
+    var k = nameKey(name), their = lbFr && lbFr[uid2];
+    if (!their || !mine || !mine[k] || !recOf(their, k)) return '';
+    return store.exercises.some(function (e) { return nameKey(e.name) === k; }) ? k : '';
+  }
+
+  // the comparison screen of one lift, entered from the friend's session instead of from their profile
+  function openCmpFromDetail(k) {
+    var id = detailUid, c;
+    if (!id || !lbFr || !lbFr[id]) return;
+    c = cmp = { id: id, p: lbFr[id], fr: lbFr, all: false };
+    openCmpEx(k);
+    // their records may have moved since the list was loaded
+    loadCmpFriends().then(function (m) {
+      if (cmp !== c || !m[id]) return;
+      lbFr = c.fr = m;
+      c.p = m[id];
+      if (current() === 's-cmpex') drawCmpEx();
+    });
+  }
+
   function openCmpEx(k) {
     cmp.k = k;
     push('cmpex');
@@ -4411,9 +4429,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   // from a comparison, or from the exercise itself
-  function openLb(k, name) {
+  function openLb(k) {
     lbK = k;
-    lbN = name || '';
     push('lb');
     drawLb();
     if (!lbFr) loadCmpFriends().then(function (m) { if (lbK === k) { lbFr = m; drawLb(); } });
@@ -4421,11 +4438,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function drawLb() {
     var x = store.exercises.filter(function (e) { return nameKey(e.name) === lbK; })[0];
-    $('lb-title').textContent = x ? x.name : (lbN || 'Leaderboard');
+    $('lb-title').textContent = x ? x.name : 'Leaderboard';
     paint($('lb-body'),
       '<div class="dsec" style="border-top:none;margin-top:0">Leaderboard · heaviest weight</div>' +
-      (lbFr ? (board(lbK).map(function (r) { return lbCard(r, true); }).join('') ||
-              '<div class="note" style="padding:0 var(--pad)">Nobody has a weight logged for this one yet.</div>')
+      (lbFr ? board(lbK).map(function (r) { return lbCard(r, true); }).join('')
             : '<div class="note" style="padding:0 var(--pad)">Loading…</div>') +
       '');
   }
@@ -8194,8 +8210,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '</div>' +
         '<ul class="wex">' + shown.map(function (e) {
           var n = countSets(e);
-          // on a friend's card the name opens the leaderboard for that exercise
-          return '<li><span' + (who ? ' data-lbx="' + esc(nameKey(e.name)) + '"' : '') + '>' + esc(e.name) + '</span>' +
+          return '<li><span>' + esc(e.name) + '</span>' +
             '<em>' + n + ' set' + (n === 1 ? '' : 's') + '</em></li>';
         }).join('') + '</ul>' +
         (rest > 0 ? '<div class="wmore">See ' + rest + ' more exercise' + (rest === 1 ? '' : 's') + '</div>' : '') +
@@ -10433,8 +10448,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('home-list').addEventListener('click', function (e) {
     if (e.target.closest('[data-openu]') || e.target.closest('[data-act]')) return;
     if (e.target.closest('[data-feedmore]')) { loadFeed(true); return; }
-    var lx = e.target.closest('[data-lbx]');
-    if (lx) { openLb(lx.dataset.lbx, lx.textContent); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
@@ -10462,8 +10475,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!w) return;
     detailRO = !!uid2;
     detailWho = uid2 ? (social.people[uid2] || { username: 'friend' }) : null;
+    detailUid = uid2 || '';
     drawDetail(w);
     push('detail');
+    // the friends' records decide which of their lifts are shared; they are loaded once and kept
+    if (uid2 && !lbFr) loadCmpFriends().then(function (m) {
+      if (!lbFr) lbFr = m;
+      if (current() === 's-detail' && detailRO && detailW === w) drawDetail(w);
+    });
   }
 
   // slices of muscles.jpg: [column, row] in a 5 x 3 sheet
@@ -10549,7 +10568,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       (w / 2 - ART_CY[c[1]] * k).toFixed(1) + 'px"></span>';
   }
 
-  var detailW = null, detailEdit = false, detailRO = false, detailWho = null;
+  var detailW = null, detailEdit = false, detailRO = false, detailWho = null, detailUid = '';
 
   // The sheet a medal opens: what the set did and how far it moved each record it broke.
   var REC_NAME = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
@@ -10720,17 +10739,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           : '') + '</div>'
       : '';
 
-    var last = w.exercises.length - 1;
+    var last = w.exercises.length - 1, mineRec = detailRO ? myRecords() : null;
     var body = '<div class="dsec">Workout</div>' + w.exercises.map(function (e, ei) {
       // while editing, blank sets have to show up — they are what you type into
       var rows = detailEdit ? e.sets : e.sets.filter(logged);
       // the head opens that exercise's own page, unless it is one of the old
       // movements that no longer lives in the library
-      var known = !detailEdit && e.exId && byId(e.exId);
-      var tag = known ? 'button' : 'div';
+      var known = !detailEdit && !detailRO && e.exId && byId(e.exId);
+      // in a friend's session, a lift you both have a weight for opens the two of you side by side
+      var shared = detailRO ? sharedWith(detailUid, e.name, mineRec) : '';
+      var tag = (known || shared) ? 'button' : 'div';
       return '<div class="dex' + (detailEdit ? ' edit' : '') + '">' +
         '<div class="dexline"><' + tag + ' class="dexhead"' +
-        (known ? ' data-ex-open="' + esc(e.exId) + '"' : '') + '>' + muscleArt(e.muscle) +
+        (known ? ' data-ex-open="' + esc(e.exId) + '"' : shared ? ' data-cmp-ex="' + esc(shared) + '"' : '') +
+        '>' + muscleArt(e.muscle) +
         '<span class="dext"><span class="nm">' + esc(e.name) + '</span>' +
         '<span class="meta">' + esc(e.muscle || '') + (e.unilateral ? ' &middot; unilateral' : '') +
         '</span></span></' + tag + '>' +
@@ -11056,6 +11078,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     }
     var x = e.target.closest('[data-ex-open]');
     if (x) { openHistory(x.dataset.exOpen); return; }
+    var cx = e.target.closest('[data-cmp-ex]');
+    if (cx) { openCmpFromDetail(cx.dataset.cmpEx); return; }
     if (e.target.closest('#detail-menu')) { detailMenu(); return; }
     var b = e.target.closest('[data-split]');
     if (!b) return;
