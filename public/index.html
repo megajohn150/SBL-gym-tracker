@@ -864,6 +864,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   padding:18px var(--cardpad);box-shadow:0 20px 50px -20px rgba(0,0,0,.7);
 }
 .sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
+/* a question asked from inside another sheet has to sit on top of it */
+#confirm-sheet{z-index:25}
 .sheet-card{
   position:relative;width:100%;max-width:440px;background:var(--bg);
   border-top:var(--border);padding:16px var(--pad) calc(env(safe-area-inset-bottom) + 16px);
@@ -2407,6 +2409,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           <span class="val" id="set-bkrem-val">30 days</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <button class="row" id="set-snaps">
+          <span class="lab">Previous versions</span>
+          <span class="val" id="set-snaps-val"></span>
+          <span class="chev">&rsaquo;</span>
+        </button>
         <button class="row" id="set-hevy">
           <span class="lab">Import from Hevy</span>
           <span class="val">CSV</span>
@@ -2905,6 +2912,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet" id="snap-sheet" hidden>
+  <div class="sheet-bg" data-snap-close></div>
+  <div class="sheet-card">
+    <h3>Previous versions</h3>
+    <p class="hint" style="padding:0 0 11px;text-align:center">One copy of everything on this phone is kept
+      each day you open the app. Restoring one replaces what is here and in the cloud.</p>
+    <div class="cutlist" id="snap-list"></div>
+  </div>
+</div>
+
 <div class="sheet" id="bk-sheet" hidden>
   <div class="sheet-bg" data-bk-close></div>
   <div class="sheet-card">
@@ -2967,7 +2984,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4258';
+  var APP_VERSION = '3.4259';
 
   /* =========================================================
      STORE
@@ -4880,7 +4897,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-stat-ready') drawReady();
     if (id === 's-stat-month') drawStatMonth();
     if (id === 's-stat-stall') drawStatStall();
-    if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); }
+    if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
     if (id === 's-music') drawMusic();
     if (id === 's-resttimer') drawRestCfg();
     if (id === 's-rtview') drawRtView();
@@ -7917,6 +7934,93 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('bk-days').addEventListener('blur', function () { this.value = bk.days; });
   [$('bk-done'), document.querySelector('[data-bk-close]')].forEach(function (b) {
     b.addEventListener('click', function () { $('bk-days').blur(); $('bk-sheet').hidden = true; });
+  });
+
+  /* --- previous versions: one copy of the whole store a day, kept on this phone ---
+     The cloud holds a single row that every save overwrites, so a bug that writes
+     bad data up would take the only good copy with it. These live in IndexedDB
+     (localStorage is too small for seven copies of a long log). */
+  var SNAP_KEEP = 7;
+
+  function snapOpen(cb) {
+    try {
+      var r = indexedDB.open('tracker-snaps', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('s', { keyPath: 'at' }); };
+      r.onsuccess = function () { cb(r.result); };
+      r.onerror = function () { cb(null); };
+    } catch (e) { cb(null); }
+  }
+
+  // newest first
+  function snapList(cb) {
+    snapOpen(function (db) {
+      if (!db) { cb([]); return; }
+      var q = db.transaction('s').objectStore('s').getAll();
+      q.onsuccess = function () { cb((q.result || []).sort(function (a, b) { return b.at - a.at; })); };
+      q.onerror = function () { cb([]); };
+    });
+  }
+
+  // at most one a day unless forced; an empty store never takes the place of a full one
+  function snapTake(force, cb) {
+    cb = cb || function () {};
+    if (!store.workouts.length && !store.exercises.length) { cb(); return; }
+    snapList(function (list) {
+      var day = new Date().toDateString();
+      if (!force && list[0] && new Date(list[0].at).toDateString() === day) { cb(); return; }
+      snapOpen(function (db) {
+        if (!db) { cb(); return; }
+        var tx = db.transaction('s', 'readwrite'), os = tx.objectStore('s');
+        os.put({ at: Date.now(), w: store.workouts.length, x: store.exercises.length,
+                 r: store.routines.length, data: JSON.stringify(store) });
+        list.slice(SNAP_KEEP - 1).forEach(function (o) { os.delete(o.at); });
+        tx.oncomplete = function () { cb(); };
+        tx.onerror = function () { cb(); };
+      });
+    });
+  }
+
+  function drawSnapRow() {
+    snapList(function (l) { $('set-snaps-val').textContent = l.length ? l.length + ' saved' : 'none yet'; });
+  }
+
+  function drawSnaps() {
+    snapList(function (l) {
+      $('snap-list').innerHTML = l.length ? l.map(function (o) {
+        return '<button class="cutrow" data-snap="' + o.at + '"><span class="t">' +
+          fullDate(new Date(o.at).toISOString()) + '</span><span class="v">' + o.w + ' workouts</span></button>';
+      }).join('') : '<p class="hint" style="text-align:center">Nothing saved yet.</p>';
+    });
+  }
+
+  $('set-snaps').addEventListener('click', function () { drawSnaps(); $('snap-sheet').hidden = false; });
+  document.querySelector('[data-snap-close]').addEventListener('click', function () { $('snap-sheet').hidden = true; });
+
+  $('snap-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-snap]');
+    if (!b) return;
+    var at = Number(b.dataset.snap);
+    snapList(function (l) {
+      var o = l.filter(function (x) { return x.at === at; })[0], raw;
+      try { raw = JSON.parse(o.data); } catch (err) { toast('That copy is unreadable'); return; }
+      askConfirm('Restore this version?',
+        o.w + ' workouts, ' + o.x + ' exercises, ' + o.r + ' routines. What is here now is saved as a version first, ' +
+        'so you can come back to it.', 'Restore', function () {
+          snapTake(true, function () {
+            store = {
+              exercises: raw.exercises || [], routines: (raw.routines || []).map(migrate),
+              workouts: raw.workouts || [], gone: raw.gone || [], targets: raw.targets || {},
+              injuries: raw.injuries || [], profile: raw.profile || store.profile
+            };
+            saveStore();
+            redrawAll();
+            cloudPush(true);                     // the cloud row is overwritten, not merged
+            $('snap-sheet').hidden = true;
+            drawSnapRow();
+            toast('Version restored');
+          });
+        });
+    });
   });
 
   function drawHome() {
@@ -11407,6 +11511,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   mo.observe(document.getElementById('s-exercises'), { attributes: true, attributeFilter: ['class'] });
 
   $('app-version').innerHTML = 'Current version: <b>' + APP_VERSION + '</b>';
+
+  snapTake();
 
   initAuth();
 
