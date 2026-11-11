@@ -3003,7 +3003,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4263';
+  var APP_VERSION = '3.4264';
 
   /* =========================================================
      STORE
@@ -3783,24 +3783,71 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function loadFeed(more) {
     var ids = friendIds();
     if (!sb || !ids.length) { social.feed = []; social.more = false; drawHome(); return Promise.resolve(); }
-    var from = more ? social.feed.length : 0;
+    // Older pages are read in full, as ever. The first page is mostly what this phone already
+    // holds: a cheap list says which posts exist and when each last changed, and only the
+    // new or edited ones come down in full. A deleted post is simply absent from the list.
+    if (more) {
+      return sb.from('posts').select('user_id,id,date,data').in('user_id', ids)
+        .order('date', { ascending: false }).range(social.feed.length, social.feed.length + FEED_PAGE - 1)
+        .then(function (res) {
+          var rows = (res.data || []).map(function (row) {
+            var w = row.data || {};
+            w.id = row.id; w.by = row.user_id; w.date = row.date;
+            return w;
+          });
+          social.feed = social.feed.concat(rows);
+          social.more = rows.length === FEED_PAGE;
+          drawHome();
+          return loadReacts();
+        });
+    }
+    var tok = ++feedTok;
     return Promise.all([
-      sb.from('posts').select('user_id,id,date,data').in('user_id', ids)
-        .order('date', { ascending: false }).range(from, from + FEED_PAGE - 1),
-      more ? Promise.resolve({ data: [] })
-        : sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
+      sb.from('posts').select('user_id,id,date,updated_at').in('user_id', ids)
+        .order('date', { ascending: false }).range(0, FEED_PAGE - 1),
+      sb.from('profiles').select('user_id,username,name,pic').in('user_id', ids)
     ]).then(function (res) {
+      // a failed look says nothing about what is in the feed, and a newer one is on its way
+      if (res[0].error || tok !== feedTok) return;
       (res[1].data || []).forEach(function (p) { social.people[p.user_id] = p; });
-      var rows = (res[0].data || []).map(function (row) {
-        var w = row.data || {};
-        w.id = row.id; w.by = row.user_id; w.date = row.date;
-        return w;
+      var list = res[0].data || [], cache = feedCacheLoad(), need = [];
+      var key = function (uid2, id) { return uid2 + '|' + id; };
+      list.forEach(function (r) {
+        var c = cache[key(r.user_id, r.id)];
+        if (!c || c.u !== r.updated_at) need.push(r.id);
       });
-      social.feed = more ? social.feed.concat(rows) : rows;
-      social.more = rows.length === FEED_PAGE;
-      drawHome();
-      return loadReacts();
+      var got = need.length
+        ? sb.from('posts').select('user_id,id,date,data,updated_at').in('user_id', ids).in('id', need)
+        : Promise.resolve({ data: [] });
+      return got.then(function (g) {
+        if (g.error || tok !== feedTok) return;
+        (g.data || []).forEach(function (row) {
+          var w = row.data || {};
+          w.id = row.id; w.by = row.user_id; w.date = row.date;
+          cache[key(row.user_id, row.id)] = { u: row.updated_at, w: w };
+        });
+        var next = {}, rows = [];
+        list.forEach(function (r) {
+          var c = cache[key(r.user_id, r.id)];
+          if (!c) return;                  // gone between the two looks
+          c.w.date = r.date;
+          next[key(r.user_id, r.id)] = c;
+          rows.push(c.w);
+        });
+        if (need.length || Object.keys(next).length !== Object.keys(cache).length) {
+          save('feed-' + me.id, JSON.stringify(next));
+        }
+        social.feed = rows;
+        social.more = list.length === FEED_PAGE;
+        drawHome();
+        return loadReacts();
+      });
     });
+  }
+
+  var feedTok = 0;
+  function feedCacheLoad() {
+    try { return me ? JSON.parse(load('feed-' + me.id) || '{}') || {} : {}; } catch (e) { return {}; }
   }
 
   function loadSocial() {
@@ -4810,6 +4857,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             localStorage.removeItem('tracker-music');
             localStorage.removeItem('tracker-data');
             localStorage.removeItem('tracker-session');
+            // "this device keeps no copy": friends' cached sessions and the saved versions go too
+            if (me) localStorage.removeItem('tracker-feed-' + me.id);
+            try { indexedDB.deleteDatabase('tracker-snaps'); } catch (e) {}
             location.reload();
           });
         });
