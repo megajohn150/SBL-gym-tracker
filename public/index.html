@@ -1437,36 +1437,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   display:block;margin-top:3px;font-size:.58rem;color:var(--fg-3);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.whbox{position:relative;display:flex;gap:10px;margin-bottom:14px;background:var(--surface);border:var(--border);border-radius:var(--radius);overflow:hidden}
-.whbox::after{content:'';position:absolute;left:8px;right:8px;top:36px;height:36px;border-radius:9px;background:var(--fg);opacity:.08;pointer-events:none}
-.whcol{flex:1;min-width:0;text-align:center}
-.whlab{display:block;padding-top:8px;font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;font-weight:700;color:var(--fg-2)}
-.wheel{height:108px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.wheel::-webkit-scrollbar{display:none}
-.wheel i{display:block;height:36px;line-height:36px;font-style:normal;font-size:1.05rem;font-weight:600;scroll-snap-align:center}
-.wheel s{display:block;height:36px}
 .datebtn{
-  width:100%;margin:.6rem 0 14px;padding:11px var(--cardpad);text-align:left;
+  display:block;width:100%;box-sizing:border-box;margin:.6rem 0 14px;padding:11px var(--cardpad);text-align:left;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
   font-size:.9rem;font-weight:600;color:var(--fg);
 }
-.dpick-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem}
-.dpick-head b{
-  font-family:var(--display);font-size:1rem;font-weight:var(--namew);
-  letter-spacing:var(--nametrack);text-transform:var(--namecase);
-}
-.dpick-head button{width:36px;padding:4px 0;font-size:1.2rem;color:var(--fg-2)}
-.dpick-dow{
-  display:grid;grid-template-columns:repeat(7,1fr);padding-bottom:5px;text-align:center;
-  font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3);font-weight:700;
-}
-.dpick-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.dpick-grid span{padding:9px 0}
-.dpick-grid button{
-  padding:9px 0;text-align:center;font-size:.85rem;font-weight:600;
-  border-radius:calc(var(--radius) - 4px);color:var(--fg);
-}
-.dpick-grid button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .dcut{
   display:flex;align-items:center;gap:10px;margin:1rem var(--pad) .3rem;
   font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);
@@ -2807,23 +2782,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
-<div class="sheet center" id="date-sheet" hidden>
-  <div class="sheet-bg" data-date-close></div>
-  <div class="sheet-card">
-    <div class="dpick-head">
-      <button id="dp-prev" aria-label="Previous month">&lsaquo;</button>
-      <b id="dp-title">&mdash;</b>
-      <button id="dp-next" aria-label="Next month">&rsaquo;</button>
-    </div>
-    <div class="dpick-dow">
-      <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
-    </div>
-    <div class="dpick-grid" id="dp-grid"></div>
-    <div id="dp-wheels" style="margin-top:1.1rem"></div>
-    <button class="btn btn-primary" id="dp-save">Save</button>
-  </div>
-</div>
-
 <div class="sheet" id="meta-sheet" hidden>
   <div class="sheet-bg" data-meta-close></div>
   <div class="sheet-card">
@@ -2969,7 +2927,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4247';
+  var APP_VERSION = '3.4248';
 
   /* =========================================================
      STORE
@@ -10123,9 +10081,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         : '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button>') + '</div>' +
       (detailEdit
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
-          '<button class="datebtn" id="d-date">' + fullDate(pendingDate || w.date) + '</button>' +
-          wheelBox([{ id: 'd-h', label: 'Hours', n: 24, val: Math.min(23, Math.floor(w.seconds / 3600)) },
-                    { id: 'd-m', label: 'Minutes', n: 60, val: Math.min(59, Math.round((w.seconds % 3600) / 60)) }])
+          '<input type="datetime-local" class="datebtn" id="d-date" value="' + localStamp(pendingDate || w.date) + '">' +
+          '<input type="time" class="datebtn" id="d-dur" aria-label="Duration" value="' +
+            pad2(Math.min(23, Math.floor(w.seconds / 3600))) + ':' + pad2(Math.min(59, Math.round((w.seconds % 3600) / 60))) + '">'
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
@@ -10222,7 +10180,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     paint($('detail-body'), head + muscles + body + '<div style="height:1.5rem"></div>');
     $('detail-body').querySelectorAll('[data-note-e]').forEach(grow);
-    wheelsSet($('detail-body'));
     if ($('d-wnote')) grow($('d-wnote'));
   }
 
@@ -10284,93 +10241,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('save-bar').hidden = !(detailEdit && detailDirty);
   }
   /* --- picking a new date for a finished workout --- */
+  // the value the native pickers speak: local time, no zone
+  function localStamp(iso) {
+    var d = new Date(iso);
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
+      'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function durSeconds() {
+    var t = $('d-dur').value.split(':');
+    return Math.max(60, (Number(t[0]) || 0) * 3600 + (Number(t[1]) || 0) * 60);
+  }
   var pendingDate = null;                 // only applied when the edit is saved
-  var dp = { y: 0, m: 0, pick: null };
-
-  // iOS-style drum: a snapping scroll list whose value is mirrored into a hidden
-  // input, so the code that reads '#d-h' and friends never learns it is a wheel
-  function wheelBox(cols) {
-    return '<div class="whbox">' + cols.map(function (c) {
-      var items = '';
-      for (var i = 0; i < c.n; i++) items += '<i>' + pad2(i) + '</i>';
-      return '<div class="whcol"><span class="whlab">' + c.label + '</span>' +
-        '<div class="wheel" data-wf="' + c.id + '"><s></s>' + items + '<s></s></div>' +
-        '<input type="hidden" id="' + c.id + '" value="' + c.val + '"></div>';
-    }).join('') + '</div>';
-  }
-  function wheelsSet(root) {
-    root.querySelectorAll('.wheel').forEach(function (w) {
-      w.scrollTop = Number($(w.dataset.wf).value) * 36;
-    });
-  }
-  document.addEventListener('scroll', function (e) {
-    var w = e.target;
-    if (!w.classList || !w.classList.contains('wheel')) return;
-    var inp = $(w.dataset.wf), v = String(Math.max(0, Math.min(w.querySelectorAll('i').length - 1,
-      Math.round(w.scrollTop / 36))));
-    if (inp.value === v) return;
-    inp.value = v;
-    inp.dispatchEvent(new Event('input', { bubbles: true }));
-  }, true);
-
-  function drawDatePick() {
-    $('dp-title').textContent = MONTHS[dp.m] + ' ' + dp.y;
-    var days = new Date(dp.y, dp.m + 1, 0).getDate();
-    var lead = (new Date(dp.y, dp.m, 1).getDay() + 6) % 7;   // weeks start Monday
-    var html = '', i, on;
-    for (i = 0; i < lead; i++) html += '<span></span>';
-    for (i = 1; i <= days; i++) {
-      on = dp.pick && dp.pick.getFullYear() === dp.y &&
-        dp.pick.getMonth() === dp.m && dp.pick.getDate() === i;
-      html += '<button data-d="' + i + '" aria-pressed="' + (!!on) + '">' + i + '</button>';
-    }
-    $('dp-grid').innerHTML = html;
-  }
-
-  function openDatePick() {
-    if (!detailW) return;
-    dp.pick = new Date(pendingDate || detailW.date);
-    dp.y = dp.pick.getFullYear();
-    dp.m = dp.pick.getMonth();
-    $('dp-wheels').innerHTML = wheelBox([
-      { id: 'dp-h', label: 'Hour', n: 24, val: dp.pick.getHours() },
-      { id: 'dp-m', label: 'Minute', n: 60, val: dp.pick.getMinutes() }]);
-    drawDatePick();
-    $('date-sheet').hidden = false;
-    wheelsSet($('dp-wheels'));
-  }
-  function closeDatePick() { $('date-sheet').hidden = true; }
-  document.querySelector('[data-date-close]').addEventListener('click', closeDatePick);
-
-  $('dp-prev').addEventListener('click', function () {
-    if (--dp.m < 0) { dp.m = 11; dp.y--; }
-    drawDatePick();
-  });
-  $('dp-next').addEventListener('click', function () {
-    if (++dp.m > 11) { dp.m = 0; dp.y++; }
-    drawDatePick();
-  });
-  $('dp-grid').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-d]');
-    if (!b) return;
-    dp.pick = new Date(dp.y, dp.m, Number(b.dataset.d));
-    drawDatePick();
-  });
-
-  $('dp-save').addEventListener('click', function () {
-    if (!detailW || !dp.pick) { closeDatePick(); return; }
-    var h = Math.min(23, Number($('dp-h').value) || 0);
-    var mi = Math.min(59, Number($('dp-m').value) || 0);
-    pendingDate = new Date(dp.pick.getFullYear(), dp.pick.getMonth(), dp.pick.getDate(),
-      h, mi, 0).toISOString();
-    closeDatePick();
-    detailDirty = true;
-    drawSaveBar();
-    // only the button's label changes; redrawing would throw away whatever
-    // else is being edited at the moment
-    $('d-date').textContent = fullDate(pendingDate);
-  });
-
   var editBase = null;
 
   // sets and order change in place, so walking away has to put them back
@@ -10393,10 +10274,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!detailEdit || !detailW) return;
     var name = $('d-name') ? $('d-name').value.trim() : '';
     if (name) detailW.name = name;
-    if ($('d-h')) {
-      detailW.seconds = Math.max(60,
-        (Number($('d-h').value) || 0) * 3600 + (Number($('d-m').value) || 0) * 60);
-    }
+    if ($('d-dur') && $('d-dur').value) detailW.seconds = durSeconds();
     if ($('d-wnote')) detailW.note = $('d-wnote').value.trim();
     document.querySelectorAll('#detail-body [data-note-e]').forEach(function (ta) {
       detailW.exercises[Number(ta.dataset.noteE)].note = ta.value.trim();
@@ -10456,10 +10334,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       // the feed and the numbering read the array order, so keep it by date
       store.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
     }
-    if ($('d-h')) {
-      detailW.seconds = Math.max(60,
-        (Number($('d-h').value) || 0) * 3600 + (Number($('d-m').value) || 0) * 60);
-    }
+    if ($('d-dur') && $('d-dur').value) detailW.seconds = durSeconds();
     if ($('d-wnote')) detailW.note = $('d-wnote').value.trim();
     document.querySelectorAll('#detail-body [data-note-e]').forEach(function (ta) {
       detailW.exercises[Number(ta.dataset.noteE)].note = ta.value.trim();
@@ -10492,6 +10367,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (e.target.dataset && e.target.dataset.f) cleanNumber(e.target);
     if (e.target.dataset && e.target.dataset.noteE !== undefined) grow(e.target);
     if (e.target.id === 'd-wnote') grow(e.target);
+    if (e.target.id === 'd-date' && e.target.value) pendingDate = new Date(e.target.value).toISOString();
     detailDirty = true;
     drawSaveBar();
   });
@@ -10562,7 +10438,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     }
     var x = e.target.closest('[data-ex-open]');
     if (x) { openHistory(x.dataset.exOpen); return; }
-    if (e.target.closest('#d-date')) { openDatePick(); return; }
     if (e.target.closest('#detail-menu')) { detailMenu(); return; }
     var b = e.target.closest('[data-split]');
     if (!b) return;
