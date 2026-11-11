@@ -3019,7 +3019,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4275';
+  var APP_VERSION = '3.4276';
 
   /* =========================================================
      STORE
@@ -8028,12 +8028,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('report-bar').hidden = true;
   });
 
+  // Home shows thirty sessions and asks for thirty more at the bottom, until there are none left
+  var HOME_PAGE = 30, homeShown = HOME_PAGE, PROF_PAGE = 30, profShown = PROF_PAGE;
   var feedFilter = load('feedf') || 'all';
   $('feed-filter').addEventListener('click', function (e) {
     var b = e.target.closest('[data-ff]');
     if (!b) return;
     feedFilter = b.dataset.ff;
     save('feedf', feedFilter);
+    homeShown = HOME_PAGE;
     drawHome();
   });
 
@@ -8232,10 +8235,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       b.setAttribute('aria-pressed', String(b.dataset.ff === ff));
     });
     if (ff !== 'all') rows = rows.filter(function (r) { return (ff === 'me') === !r.who; });
-    paint($('home-list'), (rows.length ? rows.map(function (r) {
+    // more to show: sessions already here beyond this page, or friends' older ones still on the server
+    var more = rows.length > homeShown || (ff !== 'me' && social.more);
+    paint($('home-list'), (rows.length ? rows.slice(0, homeShown).map(function (r) {
       return workoutCard(r.w, r.n, r.who);
     }).join('') : '<div class="note">Nothing here yet.</div>') +
-      (social.more ? '<button class="mmore" data-feedmore>Older sessions from friends</button>' : ''));
+      (more ? '<button class="mmore" data-feedmore>Load more</button>' : ''));
+  }
+
+  // how many sessions the Home filter has, without the ones still on the server
+  function homeCount() {
+    var ff = social.feed.length ? feedFilter : 'all';
+    return ff === 'me' ? store.workouts.length : ff === 'friends' ? social.feed.length
+      : store.workouts.length + social.feed.length;
   }
 
   function workoutCard(w, ordinal, who) {
@@ -9154,14 +9166,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('p-qx').hidden = !q;
     $('p-empty').hidden = total > 0;
     $('p-none').hidden = !total || shown.length > 0;
-    $('p-feed').innerHTML = shown.map(function (x) {
+    $('p-feed').innerHTML = shown.slice(0, profShown).map(function (x) {
       return workoutCard(x.w, x.no);
-    }).join('');
+    }).join('') + (shown.length > profShown ? '<button class="mmore" data-pmore>Load more</button>' : '');
   }
 
-  $('p-q').addEventListener('input', drawPFeed);
+  // a new search starts from the first thirty again
+  $('p-q').addEventListener('input', function () { profShown = PROF_PAGE; drawPFeed(); });
   $('p-qx').addEventListener('click', function () {
     $('p-q').value = '';
+    profShown = PROF_PAGE;
     drawPFeed();
     $('p-q').focus();
   });
@@ -9284,6 +9298,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var b = e.target.closest('[data-wf]');
     if (!b) return;
     pFilter = b.dataset.wf;
+    profShown = PROF_PAGE;
     closeWf();
     drawProfile();
   });
@@ -10513,6 +10528,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
 
   $('p-feed').addEventListener('click', function (e) {
+    if (e.target.closest('[data-pmore]')) { profShown += PROF_PAGE; drawPFeed(); return; }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w);
   });
@@ -10553,7 +10569,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   $('home-list').addEventListener('click', function (e) {
     if (e.target.closest('[data-openu]') || e.target.closest('[data-act]')) return;
-    if (e.target.closest('[data-feedmore]')) { loadFeed(true); return; }
+    if (e.target.closest('[data-feedmore]')) {
+      homeShown += HOME_PAGE;
+      // the next page is not all here yet: friends' older sessions come from the server
+      if (social.more && feedFilter !== 'me' && homeCount() < homeShown) loadFeed(true);
+      drawHome();
+      return;
+    }
     var card = e.target.closest('[data-w]');
     if (card) openWorkout(card.dataset.w, card.dataset.u);
   });
