@@ -126,6 +126,7 @@ self.addEventListener('push', function (e) {
 function goHash(go) {
   if (!go) return '';
   if (go.go === 'u') return '#go=u:' + go.id;
+  if (go.go === 'r') return '#go=r:1';
   return '#go=' + go.go + ':' + go.pu + ':' + go.pi;
 }
 

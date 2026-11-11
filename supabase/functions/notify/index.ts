@@ -36,7 +36,9 @@ const SELF: Record<string, { title: string; body: string }> = {
   stale: {
     title: 'Tracker',
     body: 'Finished your workout? You still have a session in progress.'
-  }
+  },
+  // sent by the database on Sundays, to whoever trained that week
+  recap: { title: 'Tracker', body: 'Your week is wrapped. Tap to see how it went.' }
 };
 
 Deno.serve(async (req) => {
@@ -62,7 +64,7 @@ Deno.serve(async (req) => {
   // where a tap should land: the session for a like, its comments for a comment
   // or a reply, the person for a follow. Its own notification opens the app.
   const go = self
-    ? {}
+    ? (kind === 'recap' ? { go: 'r' } : {})
     : kind === 'follow'
       ? { go: 'u', id: actor }
       : { go: kind === 'like' ? 'w' : 'c', pu: post_user, pi: post_id };

@@ -524,3 +524,26 @@ end $$;
 drop trigger if exists live_on_sess on public.live_session;
 create trigger live_on_sess after insert or update or delete on public.live_session
   for each row execute function public.live_sess();
+
+-- ------------------------------------------------------------------
+-- 11. Niedzielny recap. W niedzielę o 17:00 UTC (18:00 zimą, 19:00
+--     latem w Polsce) idzie push do każdego, kto ma włączone
+--     powiadomienia i trenował w tym tygodniu (pon-nd, UTC). Tekst i
+--     miejsce, w które prowadzi stuknięcie, są w funkcji notify.
+-- ------------------------------------------------------------------
+create or replace function public.weekly_recap_push() returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  u uuid;
+begin
+  for u in
+    select distinct p.user_id from public.posts p
+    where p.date >= date_trunc('week', now())
+      and exists (select 1 from public.push_subs s where s.user_id = p.user_id)
+  loop
+    perform public.push_send('recap', u, null, null, null);
+  end loop;
+end $$;
+revoke execute on function public.weekly_recap_push() from public, anon, authenticated;
+
+select cron.schedule('weekly-recap', '0 17 * * 0', $$select public.weekly_recap_push()$$);
