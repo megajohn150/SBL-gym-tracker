@@ -474,7 +474,7 @@ button.cell.blank{color:var(--fg-3);font-weight:400}
 }
 .sfoot .prev{text-align:left;font-weight:700}
 .sfoot .next{text-align:right;font-weight:700}
-.sfoot button[disabled]{opacity:.3;cursor:default}
+.sfoot button[disabled],.sfoot .prev.dim{opacity:.3;cursor:default}
 .mids{justify-self:center;display:flex;gap:10px}
 .sfoot .mid{
   width:40px;height:40px;display:grid;place-items:center;
@@ -2929,7 +2929,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4256';
+  var APP_VERSION = '3.4257';
 
   /* =========================================================
      STORE
@@ -6516,8 +6516,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '</div></div>';
     }).join('');
 
-    $('sess-prev').disabled = session.idx === 0;
-    $('sess-next').disabled = done;
+    padNav(done);
     showChip();
     padReveal();
   }
@@ -6705,10 +6704,30 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('s-session').classList.add('padon');
     el.blur();
     padMark();
+    padNav();
     padReveal();
   }
 
   // the shorter list must not leave the box you are typing in out of sight
+  // While the pad is up the footer's arrows walk its fields instead of the
+  // exercises: weight, reps, RIR. Prev at weight has nowhere to go, so it is
+  // only dimmed (not disabled, a disabled button would not close the pad).
+  function padNav(done) {
+    var p = $('sess-prev'), n = $('sess-next'), f = padTarget && padTarget.f;
+    if (f) {
+      p.innerHTML = f === 'weight' ? '&larr; Prev' : '&larr; Weight';
+      n.innerHTML = f === 'weight' ? 'Reps &rarr;' : 'RIR &rarr;';
+      p.disabled = n.disabled = false;
+      p.classList.toggle('dim', f === 'weight');
+      return;
+    }
+    p.innerHTML = '&larr; Prev';
+    n.innerHTML = 'Next &rarr;';
+    p.classList.remove('dim');
+    p.disabled = session.idx === 0;
+    n.disabled = done === undefined ? session.idx >= session.exercises.length : done;
+  }
+
   function padReveal() {
     var el = padCell(), pane = el && el.closest('.sscroll');
     if (!pane) return;
@@ -6723,6 +6742,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('pad-sheet').hidden = true;
     $('s-session').classList.remove('padon');
     padMark();
+    padNav();
   }
 
   // A typed number moves the medals of the ticked sets without redrawing the row the pad is on.
@@ -6820,7 +6840,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   document.addEventListener('click', function (e) {
     // a key that redraws the pad has detached its own target by now, so ask the event's path
     if (!padTarget || e.composedPath().indexOf($('pad-sheet')) >= 0 ||
-        e.target.closest('input[data-f], [data-fill]')) return;
+        e.target.closest('input[data-f], [data-fill], #sess-prev, #sess-next')) return;
     closePad();
   });
 
@@ -6909,10 +6929,25 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawSession();
   });
 
+  // with the pad up the arrows move between its fields; the last stop is the RIR sheet
+  function padWalk(dir) {
+    var f = padTarget.f, i = padTarget.i;
+    if (dir < 0 && f === 'weight') { closePad(); return; }
+    if (dir > 0 && f === 'reps') {
+      closePad();
+      rirWhere = 'session';
+      rirTarget = i;
+      openRir(session.exercises[session.idx].sets[i].rir);
+      return;
+    }
+    openPad($('sess-sets').querySelector('[data-f="' + (dir < 0 ? 'weight' : 'reps') + '"][data-i="' + i + '"]'));
+  }
   $('sess-prev').addEventListener('click', function () {
+    if (padTarget) { padWalk(-1); return; }
     if (session.idx > 0) { session.idx--; drawSession(); window.scrollTo(0, 0); }
   });
   $('sess-next').addEventListener('click', function () {
+    if (padTarget) { padWalk(1); return; }
     if (session.idx < session.exercises.length) { session.idx++; drawSession(); window.scrollTo(0, 0); }
   });
 
