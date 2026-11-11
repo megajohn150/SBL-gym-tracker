@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light" data-skin="receipt">
+<html lang="en" data-theme="light" data-skin="cocoa">
 <head>
 <meta charset="utf-8">
 <title>Tracker</title>
@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Tracker">
-<meta name="theme-color" content="#fafafa" id="theme-color">
+<meta name="theme-color" content="#f4ead5" id="theme-color">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo/icon-180.png">
 <link rel="stylesheet" href="fonts/fonts.css">
@@ -3019,7 +3019,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4282';
+  var APP_VERSION = '3.4283';
 
   /* =========================================================
      STORE
@@ -11767,6 +11767,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
      ========================================================= */
   // skins that have no dark side: the saved mode is kept, so leaving one brings it back
   var LIGHT_ONLY = { mellow: true, cocoa: true };
+  var DEFAULT_SKIN = 'cocoa';       // what a first launch, or a fresh install, looks like
   function applyMode(mode) {
     var lit = LIGHT_ONLY[root.getAttribute('data-skin')];
     root.setAttribute('data-theme', lit ? 'light' : mode === 'system' ? (mq.matches ? 'dark' : 'light') : mode);
@@ -11793,8 +11794,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var k = load('skin');
     if (k !== 'mellow' && k !== 'cocoa') { save('skin', 'mellow'); applySkin('mellow'); }
   });
+  // the look on screen as a preset string; a light-only skin has no mode of its own
+  function nowPreset() {
+    var skin = load('skin') || DEFAULT_SKIN;
+    return (LIGHT_ONLY[skin] ? 'light' : (load('mode') || 'system')) + ' ' + skin;
+  }
   function paintPresets() {
-    var now = (load('mode') || 'system') + ' ' + (load('skin') || 'receipt');
+    var now = nowPreset();
     document.querySelectorAll('[data-preset]').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.preset === now));
     });
@@ -11829,8 +11835,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var list = [].map.call(document.querySelectorAll('[data-preset]'),
       function (b) { return b.dataset.preset; });
     if (!list.length) return;
-    var now = (load('mode') || 'system') + ' ' + (load('skin') || 'receipt');
-    var i = list.indexOf(now);
+    var i = list.indexOf(nowPreset());
     usePreset(list[(i + 1) % list.length]);
   }
 
@@ -11862,7 +11867,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
      ========================================================= */
   loadStore();
   applyMode(load('mode') || 'system');
-  applySkin(load('skin') || 'receipt');
+  applySkin(load('skin') || DEFAULT_SKIN);
   drawExercises();
   drawRoutines();
   try {
