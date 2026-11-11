@@ -1102,7 +1102,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
 .whogo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
-.strk{align-self:flex-start;margin:.7rem var(--pad) 0;padding:4px 10px;border:1px solid var(--fg-3);border-radius:999px;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
+.strk{flex:none;padding:4px 10px;border:1px solid var(--fg-3);border-radius:999px;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
 .strk.t2{border-color:var(--accent);color:var(--accent)}
 .strk.t3{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 /* this week at a glance, and the filter over the feed under it */
@@ -3006,7 +3006,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4266';
+  var APP_VERSION = '3.4267';
 
   /* =========================================================
      STORE
@@ -4158,10 +4158,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '<button data-ufollow="following"><b>' + userView.fing + '</b><i>Following</i></button>' +
       '</span></span></div>' +
       (p.bio ? '<p class="pbio">' + esc(p.bio) + '</p>' : '') +
-      // a streak of two weeks or more, louder as it grows; only friends see how they train
-      (friend && stats.streak >= 2
-        ? '<span class="strk' + (stats.streak >= 12 ? ' t3' : stats.streak >= 4 ? ' t2' : '') + '">' +
-          stats.streak + ' week streak</span>' : '') +
       (me && id === me.id ? ''
         : '<div style="padding:.6rem var(--pad) 0">' +
           '<button class="followbtn' + (follows ? ' off' : '') + '" data-follow="' + id + '">' +
@@ -4179,7 +4175,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     weeks.forEach(function (w) { max = Math.max(max, w.secs); });
     var thisWeek = weeks[weeks.length - 1].secs;
     var chart = '<div class="pchart">' +
-      '<div class="pchart-h"><span><b>' + fmtDuration(thisWeek) + '</b> <i>this week</i></span></div>' +
+      '<div class="pchart-h"><span><b>' + fmtDuration(thisWeek) + '</b> <i>this week</i></span>' +
+      // a streak of two weeks or more, louder as it grows, where your own profile keeps its range picker
+      (stats.streak >= 2
+        ? '<span class="strk' + (stats.streak >= 12 ? ' t3' : stats.streak >= 4 ? ' t2' : '') + '">' +
+          stats.streak + ' week streak</span>' : '') + '</div>' +
       '<div class="pbars">' + weeks.map(function (w) {
         return '<button class="pbar" data-tip="' +
           esc(fmtDuration(w.secs) + '  \u00b7  week of ' + w.from.getDate() + ' ' + MONTHS[w.from.getMonth()]) +
