@@ -1102,6 +1102,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
 .whogo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
+.strecw{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;padding:1.1rem var(--pad) .3rem;border-top:var(--dash);font-family:var(--display);font-weight:var(--namew);font-size:.95rem}
+.strecw i{font-style:normal;font-family:var(--font);font-size:.72rem;font-weight:600;color:var(--fg-3)}
 .strk{flex:none;padding:4px 10px;border:1px solid var(--fg-3);border-radius:999px;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
 .strk.t2{border-color:var(--accent);color:var(--accent)}
 .strk.t3{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -2262,6 +2264,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <div class="stath">Other</div>
         <button data-push="stat-injuries"><b>Injuries</b><span id="stats-inj"></span></button>
         <button data-push="stat-ready"><b>Muscle readiness</b><span>72 h</span></button>
+        <button data-push="stat-records"><b>All records</b><span id="stats-rec"></span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
         <div class="stath">Report</div>
         <button data-push="stat-week"><b>Weekly recap</b><span id="stats-week"></span></button>
@@ -2324,6 +2327,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll" id="strdy-body"></div>
   </section>
 
+  <section class="screen" id="s-stat-records" data-tab="profile" data-title="Records">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Records</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="strec-body"></div>
+  </section>
+
   <section class="screen" id="s-stat-stall" data-tab="profile" data-title="No recent records">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
@@ -2337,7 +2349,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
       <h1>Weekly recap</h1>
-      <span></span>
+      <button class="iconbtn" id="wr-share" style="justify-self:end" aria-label="Share the week">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+      </button>
     </div>
     <div class="scroll" id="wrecap-body"></div>
   </section>
@@ -3006,7 +3020,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4267';
+  var APP_VERSION = '3.4268';
 
   /* =========================================================
      STORE
@@ -5001,6 +5015,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drawWeekRecap();
     }
     if (id === 's-stat-stall') drawStatStall();
+    if (id === 's-stat-records') drawStatRecords();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
     if (id === 's-music') drawMusic();
     if (id === 's-resttimer') drawRestCfg();
@@ -6100,6 +6115,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
   });
 
+  // How long it usually takes: the average of the last five times it was run, or of as many as there are
+  function rtEstimate(r) {
+    var secs = runsOf(r).filter(function (w) { return w.seconds > 0; })
+      .sort(function (a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 5)
+      .map(function (w) { return w.seconds; });
+    if (!secs.length) return '';
+    var m = Math.max(1, Math.round(secs.reduce(function (x, y) { return x + y; }, 0) / secs.length / 60));
+    return ' \u2248 ' + m + (m === 1 ? ' min' : ' mins');
+  }
+
   function drawRoutines() {
     var has = store.routines.length > 0;
     $('routine-empty').hidden = has;
@@ -6115,7 +6140,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<span class="rtmeta">' +
             '<span>' + n + ' exercise' + (n === 1 ? '' : 's') + '</span>' +
             '<i>&middot;</i>' +
-            '<span>' + t + ' set' + (t === 1 ? '' : 's') + '</span>' +
+            '<span>' + t + ' set' + (t === 1 ? '' : 's') + rtEstimate(r) + '</span>' +
             (f
               ? '<i>&middot;</i><span class="rtfrom' + (f.dead ? ' off' : ' tap') +
                 '" data-whose="' + esc(f.by) + '">' +
@@ -7381,15 +7406,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   $('sum-done').addEventListener('click', function () { pop(); });
 
-  // The summary as a picture, in the colours and the typeface of the skin you are using
-  function shareSummary() {
-    var w = summaryW;
-    if (!w) return;
+  // A picture in the colours and the typeface of the skin you are using. `draw` paints onto it;
+  // the finished image goes to the share sheet where there is one, and is downloaded where there is not.
+  var IMG_PAD = 84;
+  function shareCanvas(fileName, W, H, draw) {
     var cs = getComputedStyle(document.documentElement);
     var c = function (n) { return cs.getPropertyValue(n).trim() || '#888'; };
     var face = getComputedStyle(document.body).fontFamily, disp = cs.getPropertyValue('--display').trim() || face;
-    var W = 1080, H = 1350, pad = 84;
-    var t = workoutTotals(w), rows = w.exercises.filter(function (e) { return countSets(e); }).slice(0, 7);
     Promise.all([document.fonts.load('700 40px ' + disp), document.fonts.load('400 30px ' + face)])
       .catch(function () {}).then(function () {
         var cv = document.createElement('canvas');
@@ -7397,53 +7420,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         var g = cv.getContext('2d');
         g.fillStyle = c('--bg'); g.fillRect(0, 0, W, H);
         g.textBaseline = 'alphabetic';
-        function txt(s, x, y, size, weight, color, align, font) {
+        function txt(str, x, y, size, weight, color, align, font) {
           g.font = weight + ' ' + size + 'px ' + (font || face);
           g.fillStyle = color; g.textAlign = align || 'left';
-          // shrink a long name until it fits the card
-          var max = W - 2 * pad - (align === 'right' ? 0 : 0);
-          while (g.measureText(s).width > max && size > 20) { size -= 2; g.font = weight + ' ' + size + 'px ' + (font || face); }
-          g.fillText(s, x, y);
+          // shrink a long line until it fits the card
+          while (g.measureText(str).width > W - 2 * IMG_PAD && size > 20) {
+            size -= 2; g.font = weight + ' ' + size + 'px ' + (font || face);
+          }
+          g.fillText(str, x, y);
         }
-        txt('TRACKER', pad, 130, 30, 700, c('--fg-3'));
-        txt(w.name, pad, 250, 96, 800, c('--fg'), 'left', disp);
-        txt(fullDate(w.date), pad, 310, 32, 400, c('--fg-2'));
-        // three numbers
-        var cells = [[fmtDuration(w.seconds), 'TIME'], [fmtKg(t.volume), 'VOLUME'], [String(t.sets), 'SETS']];
-        var cw = (W - 2 * pad - 2 * 24) / 3;
-        cells.forEach(function (cell, i) {
-          var x = pad + i * (cw + 24);
-          g.fillStyle = c('--surface'); g.fillRect(x, 380, cw, 190);
-          g.strokeStyle = c('--line'); g.lineWidth = 2; g.strokeRect(x, 380, cw, 190);
-          txt(cell[0], x + 28, 478, 54, 700, c('--fg'), 'left', disp);
-          txt(cell[1], x + 28, 534, 24, 700, c('--fg-3'));
-        });
-        if (w.records) txt(w.records + (w.records === 1 ? ' PR' : " PR's"), pad, 650, 44, 700, c('--accent'), 'left', disp);
-        var y = w.records ? 740 : 690;
-        rows.forEach(function (e) {
-          var best = null;
-          e.sets.filter(logged).forEach(function (st) {
-            if (!best || num(st.weight) * num(st.reps) > num(best.weight) * num(best.reps)) best = st;
-          });
-          var n = countSets(e);
-          g.strokeStyle = c('--line'); g.lineWidth = 2;
-          g.beginPath(); g.moveTo(pad, y + 30); g.lineTo(W - pad, y + 30); g.stroke();
-          g.font = '600 36px ' + face;
-          var right = n + ' set' + (n === 1 ? '' : 's') + (best && num(best.weight) ? '  \u00b7  ' + best.weight + ' \u00d7 ' + best.reps : '');
-          txt(right, W - pad, y, 30, 400, c('--fg-3'), 'right');
-          g.font = '600 36px ' + face;
-          var name = e.name;
-          while (g.measureText(name).width > W - 2 * pad - g.measureText(right).width - 30 && name.length > 4) name = name.slice(0, -2);
-          if (name !== e.name) name += '\u2026';
-          g.fillStyle = c('--fg'); g.textAlign = 'left'; g.fillText(name, pad, y);
-          y += 82;
-        });
-        if (w.exercises.filter(function (e) { return countSets(e); }).length > rows.length) {
-          txt('+ ' + (w.exercises.filter(function (e) { return countSets(e); }).length - rows.length) + ' more', pad, y, 30, 400, c('--fg-3'));
-        }
+        draw(g, c, txt, face, disp, W);
         cv.toBlob(function (blob) {
           if (!blob) { toast('Could not make the image'); return; }
-          var file = new File([blob], 'workout-' + w.date.slice(0, 10) + '.png', { type: 'image/png' });
+          var file = new File([blob], fileName, { type: 'image/png' });
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             navigator.share({ files: [file] }).catch(function () {});   // dismissing the sheet is not an error
             return;
@@ -7454,6 +7443,51 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
         }, 'image/png');
       });
+  }
+
+  // three boxed numbers side by side
+  function imgCells(g, c, txt, disp, W, y, cells) {
+    var cw = (W - 2 * IMG_PAD - 2 * 24) / 3;
+    cells.forEach(function (cell, i) {
+      var x = IMG_PAD + i * (cw + 24);
+      g.fillStyle = c('--surface'); g.fillRect(x, y, cw, 190);
+      g.strokeStyle = c('--line'); g.lineWidth = 2; g.strokeRect(x, y, cw, 190);
+      txt(cell[0], x + 28, y + 98, 54, 700, c('--fg'), 'left', disp);
+      txt(cell[1], x + 28, y + 154, 24, 700, c('--fg-3'));
+    });
+  }
+
+  function shareSummary() {
+    var w = summaryW;
+    if (!w) return;
+    var pad = IMG_PAD, t = workoutTotals(w);
+    var named = w.exercises.filter(function (e) { return countSets(e); }), rows = named.slice(0, 7);
+    shareCanvas('workout-' + w.date.slice(0, 10) + '.png', 1080, 1350, function (g, c, txt, face, disp, W) {
+      txt('TRACKER', pad, 130, 30, 700, c('--fg-3'));
+      txt(w.name, pad, 250, 96, 800, c('--fg'), 'left', disp);
+      txt(fullDate(w.date), pad, 310, 32, 400, c('--fg-2'));
+      imgCells(g, c, txt, disp, W, 380, [[fmtDuration(w.seconds), 'TIME'], [fmtKg(t.volume), 'VOLUME'], [String(t.sets), 'SETS']]);
+      if (w.records) txt(w.records + (w.records === 1 ? ' PR' : " PR's"), pad, 650, 44, 700, c('--accent'), 'left', disp);
+      var y = w.records ? 740 : 690;
+      rows.forEach(function (e) {
+        var best = null;
+        e.sets.filter(logged).forEach(function (st) {
+          if (!best || num(st.weight) * num(st.reps) > num(best.weight) * num(best.reps)) best = st;
+        });
+        var n = countSets(e);
+        g.strokeStyle = c('--line'); g.lineWidth = 2;
+        g.beginPath(); g.moveTo(pad, y + 30); g.lineTo(W - pad, y + 30); g.stroke();
+        var right = n + ' set' + (n === 1 ? '' : 's') + (best && num(best.weight) ? '  ·  ' + best.weight + ' × ' + best.reps : '');
+        txt(right, W - pad, y, 30, 400, c('--fg-3'), 'right');
+        g.font = '600 36px ' + face;
+        var name = e.name;
+        while (g.measureText(name).width > W - 2 * pad - g.measureText(right).width - 30 && name.length > 4) name = name.slice(0, -2);
+        if (name !== e.name) name += '…';
+        g.fillStyle = c('--fg'); g.textAlign = 'left'; g.fillText(name, pad, y);
+        y += 82;
+      });
+      if (named.length > rows.length) txt('+ ' + (named.length - rows.length) + ' more', pad, y, 30, 400, c('--fg-3'));
+    });
   }
   $('sum-share').addEventListener('click', shareSummary);
 
@@ -7987,10 +8021,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     el.hidden = !store.workouts.length;
     if (el.hidden) return;
     var from = monday(new Date()), r = statsFor(from, addDays(from, 7));
-    var goal = 0;
+    var goal = 0, goalDays = Number((store.targets.Total || {}).days) || 0;
     Object.keys(store.targets).forEach(function (m) { goal += Number((store.targets[m] || {}).sets) || 0; });
     el.innerHTML =
-      '<div><b>' + r.workouts + '</b><i>This week</i></div>' +
+      '<div><b' + (goalDays && r.workouts >= goalDays ? ' class="hit"' : '') + '>' + r.workouts +
+        (goalDays ? ' <small>/ ' + goalDays + '</small>' : '') + '</b><i>This week</i></div>' +
       '<div><b' + (goal && r.sets >= goal ? ' class="hit"' : '') + '>' + r.sets +
         (goal ? ' <small>/ ' + goal + '</small>' : '') + '</b><i>Sets</i></div>' +
       '<div><b>' + weekStreak(store.workouts) + '</b><i>Week streak</i></div>';
@@ -9517,7 +9552,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('tg-body').innerHTML =
       '<div class="thead"><span class="nm">Muscle</span>' +
         '<span class="t2">Sets</span><span class="t2">Days</span></div>' +
-      '<div class="rows">' + ms.map(function (m) {
+      '<div class="rows"><div class="trow"><span class="nm">Total</span><span style="width:82px;flex:none"></span>' +
+        '<input class="cell" type="text" inputmode="numeric" maxlength="1" data-tgoal ' +
+          'value="' + ((store.targets.Total || {}).days || '') + '" placeholder="&ndash;" autocomplete="off"></div></div>' +
+      '<div class="rows" style="margin-top:.9rem">' + ms.map(function (m) {
         var t = store.targets[m] || {};
         return '<div class="trow"><span class="nm">' + esc(m) + '</span>' +
           '<input class="cell" type="text" inputmode="numeric" maxlength="2" ' +
@@ -9526,7 +9564,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<button class="cell' + (t.days ? '' : ' blank') + '" data-tday="' + esc(m) + '">' +
             (t.days || '&ndash;') + '</button></div>';
       }).join('') + '</div>' +
-      '<div class="note">A week runs Monday to Sunday. Set count and the body map both ' +
+      '<div class="note">A week runs Monday to Sunday. Total is how many workouts you want in a week. ' +
+      'Set count and the body map both ' +
       'read these, and a muscle you leave blank is simply not counted against anything.</div>';
   }
 
@@ -9539,6 +9578,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // typing straight into the field, so only digits and only up to twenty
   $('tg-body').addEventListener('input', function (e) {
+    var g = e.target.closest('[data-tgoal]');
+    if (g) {                                    // workouts a week: one digit, one to seven
+      var d = g.value.replace(/[^0-9]/g, '').replace(/^0+/, '').slice(0, 1);
+      if (Number(d) > 7) d = '7';
+      if (d !== g.value) g.value = d;
+      setTarget('Total', 'days', Number(d));
+      return;
+    }
     var i = e.target.closest('[data-tset]');
     if (!i) return;
     var v = i.value.replace(/[^0-9]/g, '').replace(/^0+/, '').slice(0, 2);
@@ -9613,6 +9660,36 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     out.sort(function (a, b) { return b.weeks - a.weeks; });
     return out;
   }
+
+  // every record you have set, newest session first; a tap opens the session it came from
+  function drawStatRecords() {
+    var total = 0, out = '';
+    store.workouts.slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); })
+      .forEach(function (w) {
+        var prs = workoutPRs(w), names = Object.keys(prs);
+        if (!names.length) return;
+        out += '<button class="strecw" data-rw="' + esc(w.id) + '"><span>' + esc(w.name) + '</span><i>' +
+          dmy(new Date(w.date)) + '</i></button>' + names.map(function (k) {
+            return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' + Object.keys(prs[k]).map(function (cat) {
+              total++;
+              var v = prs[k][cat];
+              return '<span class="pr"><svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
+                'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
+                '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
+                '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>' +
+                cat + ' \u2013 ' + (cat === 'Volume' ? fmtKg(v) : (Math.round(v * 100) / 100) + ' kg') + '</span>';
+            }).join('') + '</div>';
+          }).join('');
+      });
+    $('strec-body').innerHTML = out
+      ? '<div class="prcount" style="padding-top:1rem">' + total + (total === 1 ? ' record' : ' records') + '</div>' + out
+      : '<div class="empty"><p class="big">No records yet</p>' +
+        '<p class="small">The first time you do a lift only sets the bar. Beat it and it lands here.</p></div>';
+  }
+  $('strec-body').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-rw]');
+    if (b) openWorkout(b.dataset.rw);
+  });
 
   function drawStatStall() {
     var list = stallList();
@@ -10131,6 +10208,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       ? '<button class="mmore" data-wrmore>' + (wrMore ? 'Show less' : 'See ' + (names.length - 3) + ' more') + '</button>'
       : '') || '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged this week.</div>';
 
+    var goalDays = Number((store.targets.Total || {}).days) || 0;
     var pr = prBlock(monthPRs(from, to)), streak = wrOff
       ? weekStreak(store.workouts.filter(function (w) { return new Date(w.date) < to; }), from)
       : weekStreak();
@@ -10140,7 +10218,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '>&lsaquo;</button><span class="lab">' + (wrOff === 0 ? 'This week \u00b7 ' : wrOff === 1 ? 'Last week \u00b7 ' : '') +
         recapTitle(from) + yr + '</span><button data-wrnav="-1" aria-label="Later week"' + (wrOff ? '' : ' disabled') +
         '>&rsaquo;</button></div>' +
-      '<div class="mhead">' + cur.workouts + (cur.workouts === 1 ? ' workout' : ' workouts') +
+      '<div class="mhead">' + cur.workouts + (goalDays ? ' / ' + goalDays : '') +
+        (cur.workouts === 1 && !goalDays ? ' workout' : ' workouts') +
         gap(cur.workouts, prev.workouts) + '</div>' +
       strip +
       '<div class="dsec">Summary</div>' +
@@ -10167,6 +10246,40 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) wrGo(dx > 0 ? 1 : -1);
     }, { passive: true });
   })();
+  // the week on the screen, as a picture
+  $('wr-share').addEventListener('click', function () {
+    var from = addDays(monday(new Date()), -7 * wrOff), to = addDays(from, 7), pad = IMG_PAD;
+    var cur = statsFor(from, to), prs = monthPRs(from, to), nPR = 0;
+    Object.keys(prs).forEach(function (k) { nPR += Object.keys(prs[k]).length; });
+    var goalDays = Number((store.targets.Total || {}).days) || 0;
+    var streak = wrOff
+      ? weekStreak(store.workouts.filter(function (w) { return new Date(w.date) < to; }), from)
+      : weekStreak();
+    var names = Object.keys(cur.by).filter(function (m) { return cur.by[m] > 0; }).sort(function (a, b) {
+      return cur.by[b] - cur.by[a] || a.localeCompare(b);
+    }).slice(0, 5);
+    shareCanvas('week-' + from.toISOString().slice(0, 10) + '.png', 1080, 1350, function (g, c, txt, face, disp, W) {
+      txt('TRACKER', pad, 130, 30, 700, c('--fg-3'));
+      txt('Weekly recap', pad, 250, 96, 800, c('--fg'), 'left', disp);
+      txt(recapTitle(from), pad, 310, 32, 400, c('--fg-2'));
+      txt(cur.workouts + (goalDays ? ' / ' + goalDays : '') + (cur.workouts === 1 && !goalDays ? ' workout' : ' workouts'),
+        pad, 440, 72, 700, c('--fg'), 'left', disp);
+      imgCells(g, c, txt, disp, W, 490, [[fmtDuration(cur.seconds), 'TIME'], [fmtKg(cur.volume), 'VOLUME'], [String(cur.sets), 'SETS']]);
+      var line = [];
+      if (streak) line.push(streak + ' week streak');
+      if (nPR) line.push(nPR + (nPR === 1 ? ' new PR' : ' new PRs'));
+      if (line.length) txt(line.join('  \u00b7  '), pad, 760, 40, 700, c('--accent'), 'left', disp);
+      var top = cur.by[names[0]] || 1, y = 850;
+      names.forEach(function (m) {
+        txt(m, pad, y, 34, 600, c('--fg'));
+        txt(String(cur.by[m]), W - pad, y, 34, 700, c('--fg-2'), 'right', disp);
+        g.fillStyle = c('--line'); g.fillRect(pad, y + 16, W - 2 * pad, 14);
+        g.fillStyle = c('--accent'); g.fillRect(pad, y + 16, Math.max(8, (W - 2 * pad) * cur.by[m] / top), 14);
+        y += 96;
+      });
+    });
+  });
+
   $('wrecap-body').addEventListener('click', function (e) {
     var nav = e.target.closest('[data-wrnav]');
     if (nav) { wrGo(Number(nav.dataset.wrnav)); return; }
