@@ -3,7 +3,7 @@
    basement with no signal. The Supabase API is never cached — stale
    training data would be worse than none. */
 
-var V = 'tracker-v10';
+var V = 'tracker-v11';
 
 var CORE = [
   './',
@@ -19,8 +19,18 @@ var CORE = [
   './imgs/avatars-light.jpg',
   './imgs/arm.jpg',
   './imgs/arm-light.jpg',
+  './fonts/Fraunces-latin-63f165.woff2',
+  './fonts/Fraunces-latin-ext-1fba8b.woff2',
+  './fonts/Inter-latin-1ab1ad.woff2',
+  './fonts/Inter-latin-ext-749a30.woff2',
+  './fonts/JetBrainsMono-latin-1cd702.woff2',
+  './fonts/JetBrainsMono-latin-ext-76306e.woff2',
+  './fonts/Newsreader-latin-7ab0b8.woff2',
+  './fonts/Newsreader-latin-ext-7a09be.woff2',
+  './fonts/Newsreader-latin-ext-7abfa5.woff2',
+  './fonts/Newsreader-latin-f0c28d.woff2',
+  './fonts/fonts.css',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap'
 ];
 
 self.addEventListener('install', function (e) {
@@ -46,7 +56,7 @@ self.addEventListener('activate', function (e) {
 
 function cacheable(url) {
   return url.origin === self.location.origin ||
-    /jsdelivr\.net$|gstatic\.com$|googleapis\.com$/.test(url.hostname);
+    /jsdelivr\.net$/.test(url.hostname);
 }
 
 self.addEventListener('fetch', function (e) {

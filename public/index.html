@@ -12,9 +12,7 @@
 <meta name="theme-color" content="#fafafa" id="theme-color">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo/icon-180.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <style>
 /* ===========================================================
@@ -1102,6 +1100,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
 .whogo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
+/* this week at a glance, and the filter over the feed under it */
+.wkbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:1rem var(--pad) 0}
+.wkbar > div{border:var(--border);border-radius:var(--radius);background:var(--surface);padding:10px 12px}
+.wkbar b{display:block;font-family:var(--display);font-size:1.15rem;font-weight:700;white-space:nowrap}
+.wkbar b small{font-size:.7rem;font-weight:600;color:var(--fg-3)}
+.wkbar b.hit{color:var(--green)}
+.wkbar i{display:block;margin-top:3px;font-style:normal;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
+.feedf{margin:1rem var(--pad) 0}
+.feedf + .feed{padding-top:var(--gap)}
+/* the cloud has not got the latest changes: a dot after the Profile tab */
+.tabs button.unsynced::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--red);vertical-align:middle}
 /* someone else's routine, read only */
 .ctl .val{font-size:.85rem;font-weight:700}
 .rocue{
@@ -1676,6 +1685,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
     <div class="scroll">
     <div id="live-bars"></div>
+    <div class="wkbar" id="wk-bar" hidden></div>
+    <div class="reportbar" id="bk-bar" hidden>
+      <button class="go" id="bk-go"></button>
+      <button class="x" id="bk-x" aria-label="Remind me tomorrow">&times;</button>
+    </div>
+    <div class="pseg feedf" id="feed-filter" hidden>
+      <button data-ff="all" aria-pressed="true">All</button>
+      <button data-ff="me" aria-pressed="false">Me</button>
+      <button data-ff="friends" aria-pressed="false">Friends</button>
+    </div>
     <div class="reportbar" id="report-bar" hidden>
       <button class="go" id="report-go"></button>
       <button class="x" id="report-x" aria-label="Dismiss">&times;</button>
@@ -2076,6 +2095,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
     <div class="scroll" id="summary-body"></div>
     <div class="footbar">
+      <button class="btn btn-ghost" id="sum-share">Share image</button>
       <button class="btn btn-primary" id="sum-done">Done</button>
     </div>
   </section>
@@ -2379,6 +2399,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <button class="row" id="set-import">
           <span class="lab">Import backup</span>
           <span class="val">JSON</span>
+          <span class="chev">&rsaquo;</span>
+        </button>
+        <span class="row"><span class="lab">Last backup</span><span class="val" id="set-bklast">never</span></span>
+        <button class="row" id="set-bkrem">
+          <span class="lab">Backup reminder</span>
+          <span class="val" id="set-bkrem-val">30 days</span>
           <span class="chev">&rsaquo;</span>
         </button>
         <button class="row" id="set-hevy">
@@ -2879,6 +2905,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet" id="bk-sheet" hidden>
+  <div class="sheet-bg" data-bk-close></div>
+  <div class="sheet-card">
+    <h3>Backup reminder</h3>
+    <label class="privrow"><span>Remind me<i>A note on Home once the last backup is older than this</i></span>
+      <input type="checkbox" id="bk-on"></label>
+    <div class="field" id="bk-days-row" style="padding:0 0 1rem"><label for="bk-days">Days between backups</label>
+      <input type="text" id="bk-days" inputmode="numeric" maxlength="3" autocomplete="off"></div>
+    <button class="btn btn-primary" id="bk-done">Done</button>
+  </div>
+</div>
+
 <div class="sheet" id="rir-sheet" hidden>
   <div class="sheet-bg" data-sheet-close></div>
   <div class="sheet-card">
@@ -2929,7 +2967,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4257';
+  var APP_VERSION = '3.4258';
 
   /* =========================================================
      STORE
@@ -3042,9 +3080,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var me = null;
   var cloud = { rev: 0, timer: null, dirty: false, pulled: false, dataSig: '', sessSig: '' };
 
+  // the red dot after the Profile tab: changes are waiting and the cloud is out of reach
+  function syncDot(on) {
+    var t = document.querySelector('.tabs [data-tab="profile"]');
+    if (t) t.classList.toggle('unsynced', !!on);
+  }
+  addEventListener('offline', function () { syncDot(cloud.dirty); });
+
   function syncState(s) {
     var el = document.getElementById('set-sync');
     if (el) el.textContent = { busy: 'Saving\u2026', ok: 'Synced', err: 'Offline', off: '\u2014' }[s];
+    syncDot(s === 'err');
   }
 
   // Workouts are joined by id, so two devices writing on their own
@@ -4834,7 +4880,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-stat-ready') drawReady();
     if (id === 's-stat-month') drawStatMonth();
     if (id === 's-stat-stall') drawStatStall();
-    if (id === 's-settings') { drawPushRow(); drawLiveRow(); }
+    if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); }
     if (id === 's-music') drawMusic();
     if (id === 's-resttimer') drawRestCfg();
     if (id === 's-rtview') drawRtView();
@@ -7199,6 +7245,82 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   $('sum-done').addEventListener('click', function () { pop(); });
 
+  // The summary as a picture, in the colours and the typeface of the skin you are using
+  function shareSummary() {
+    var w = summaryW;
+    if (!w) return;
+    var cs = getComputedStyle(document.documentElement);
+    var c = function (n) { return cs.getPropertyValue(n).trim() || '#888'; };
+    var face = getComputedStyle(document.body).fontFamily, disp = cs.getPropertyValue('--display').trim() || face;
+    var W = 1080, H = 1350, pad = 84;
+    var t = workoutTotals(w), rows = w.exercises.filter(function (e) { return countSets(e); }).slice(0, 7);
+    Promise.all([document.fonts.load('700 40px ' + disp), document.fonts.load('400 30px ' + face)])
+      .catch(function () {}).then(function () {
+        var cv = document.createElement('canvas');
+        cv.width = W; cv.height = H;
+        var g = cv.getContext('2d');
+        g.fillStyle = c('--bg'); g.fillRect(0, 0, W, H);
+        g.textBaseline = 'alphabetic';
+        function txt(s, x, y, size, weight, color, align, font) {
+          g.font = weight + ' ' + size + 'px ' + (font || face);
+          g.fillStyle = color; g.textAlign = align || 'left';
+          // shrink a long name until it fits the card
+          var max = W - 2 * pad - (align === 'right' ? 0 : 0);
+          while (g.measureText(s).width > max && size > 20) { size -= 2; g.font = weight + ' ' + size + 'px ' + (font || face); }
+          g.fillText(s, x, y);
+        }
+        txt('TRACKER', pad, 130, 30, 700, c('--fg-3'));
+        txt(w.name, pad, 250, 96, 800, c('--fg'), 'left', disp);
+        txt(fullDate(w.date), pad, 310, 32, 400, c('--fg-2'));
+        // three numbers
+        var cells = [[fmtDuration(w.seconds), 'TIME'], [fmtKg(t.volume), 'VOLUME'], [String(t.sets), 'SETS']];
+        var cw = (W - 2 * pad - 2 * 24) / 3;
+        cells.forEach(function (cell, i) {
+          var x = pad + i * (cw + 24);
+          g.fillStyle = c('--surface'); g.fillRect(x, 380, cw, 190);
+          g.strokeStyle = c('--line'); g.lineWidth = 2; g.strokeRect(x, 380, cw, 190);
+          txt(cell[0], x + 28, 478, 54, 700, c('--fg'), 'left', disp);
+          txt(cell[1], x + 28, 534, 24, 700, c('--fg-3'));
+        });
+        if (w.records) txt(w.records + (w.records === 1 ? ' PR' : " PR's"), pad, 650, 44, 700, c('--accent'), 'left', disp);
+        var y = w.records ? 740 : 690;
+        rows.forEach(function (e) {
+          var best = null;
+          e.sets.filter(logged).forEach(function (st) {
+            if (!best || num(st.weight) * num(st.reps) > num(best.weight) * num(best.reps)) best = st;
+          });
+          var n = countSets(e);
+          g.strokeStyle = c('--line'); g.lineWidth = 2;
+          g.beginPath(); g.moveTo(pad, y + 30); g.lineTo(W - pad, y + 30); g.stroke();
+          g.font = '600 36px ' + face;
+          var right = n + ' set' + (n === 1 ? '' : 's') + (best && num(best.weight) ? '  \u00b7  ' + best.weight + ' \u00d7 ' + best.reps : '');
+          txt(right, W - pad, y, 30, 400, c('--fg-3'), 'right');
+          g.font = '600 36px ' + face;
+          var name = e.name;
+          while (g.measureText(name).width > W - 2 * pad - g.measureText(right).width - 30 && name.length > 4) name = name.slice(0, -2);
+          if (name !== e.name) name += '\u2026';
+          g.fillStyle = c('--fg'); g.textAlign = 'left'; g.fillText(name, pad, y);
+          y += 82;
+        });
+        if (w.exercises.filter(function (e) { return countSets(e); }).length > rows.length) {
+          txt('+ ' + (w.exercises.filter(function (e) { return countSets(e); }).length - rows.length) + ' more', pad, y, 30, 400, c('--fg-3'));
+        }
+        cv.toBlob(function (blob) {
+          if (!blob) { toast('Could not make the image'); return; }
+          var file = new File([blob], 'workout-' + w.date.slice(0, 10) + '.png', { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file] }).catch(function () {});   // dismissing the sheet is not an error
+            return;
+          }
+          var url = URL.createObjectURL(blob), a = document.createElement('a');
+          a.href = url; a.download = file.name;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+        }, 'image/png');
+      });
+  }
+  $('sum-share').addEventListener('click', shareSummary);
+
   /* =========================================================
      BACKUP
      One JSON file holds the whole store, so the history can
@@ -7220,6 +7342,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    save('bk-last', new Date().toISOString());
+    drawBackupRows();
+    drawBackupBar();
     var val = $('set-export-val');
     val.textContent = 'Saved';
     setTimeout(function () { val.textContent = 'JSON'; }, 2500);
@@ -7711,9 +7836,94 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('report-bar').hidden = true;
   });
 
+  var feedFilter = load('feedf') || 'all';
+  $('feed-filter').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-ff]');
+    if (!b) return;
+    feedFilter = b.dataset.ff;
+    save('feedf', feedFilter);
+    drawHome();
+  });
+
+  // Monday to Sunday: workouts, sets against the sum of the weekly set targets, and the week streak
+  function drawWeekBar() {
+    var el = $('wk-bar');
+    el.hidden = !store.workouts.length;
+    if (el.hidden) return;
+    var from = monday(new Date()), r = statsFor(from, addDays(from, 7));
+    var goal = 0;
+    Object.keys(store.targets).forEach(function (m) { goal += Number((store.targets[m] || {}).sets) || 0; });
+    el.innerHTML =
+      '<div><b>' + r.workouts + '</b><i>This week</i></div>' +
+      '<div><b' + (goal && r.sets >= goal ? ' class="hit"' : '') + '>' + r.sets +
+        (goal ? ' <small>/ ' + goal + '</small>' : '') + '</b><i>Sets</i></div>' +
+      '<div><b>' + weekStreak(store.workouts) + '</b><i>Week streak</i></div>';
+  }
+
+  /* --- backup reminder: a note on Home when the last export is older than N days --- */
+  var bk = { on: true, days: 30 };
+  try {
+    var bkRaw = JSON.parse(load('bk-cfg')) || {};
+    bk.on = bkRaw.on !== false;
+    bk.days = Math.max(1, Math.min(365, Number(bkRaw.days) || 30));
+  } catch (e) {}
+
+  // an app that has never been exported starts counting the day it first asks, not at once
+  function bkSince() {
+    var t = Date.parse(load('bk-last'));
+    if (t) return t;
+    t = Date.parse(load('bk-base'));
+    if (!t) { t = Date.now(); save('bk-base', new Date(t).toISOString()); }
+    return t;
+  }
+  function bkAge() { return Math.floor((Date.now() - bkSince()) / 864e5); }
+
+  function drawBackupBar() {
+    var due = bk.on && store.workouts.length && bkAge() >= bk.days &&
+      Date.now() - (Number(load('bk-snooze')) || 0) > 864e5;
+    $('bk-bar').hidden = !due;
+    if (!due) return;
+    $('bk-go').innerHTML = '<b>Time for a backup</b><span>' +
+      (load('bk-last') ? 'Last one was ' + bkAge() + ' days ago' : 'You have not made one yet') +
+      ' \u00b7 tap to save it</span>';
+  }
+  $('bk-go').addEventListener('click', exportData);
+  $('bk-x').addEventListener('click', function () {
+    save('bk-snooze', String(Date.now()));       // asks again tomorrow
+    drawBackupBar();
+  });
+
+  function drawBackupRows() {
+    $('set-bklast').textContent = load('bk-last') ? relDate(load('bk-last')) : 'never';
+    $('set-bkrem-val').textContent = bk.on ? 'Every ' + bk.days + (bk.days === 1 ? ' day' : ' days') : 'Off';
+  }
+  function keepBk() { save('bk-cfg', JSON.stringify(bk)); drawBackupRows(); drawBackupBar(); }
+  $('set-bkrem').addEventListener('click', function () {
+    $('bk-on').checked = bk.on;
+    $('bk-days').value = bk.days;
+    $('bk-days-row').hidden = !bk.on;
+    $('bk-sheet').hidden = false;
+  });
+  $('bk-on').addEventListener('change', function () {
+    bk.on = this.checked;
+    $('bk-days-row').hidden = !bk.on;
+    keepBk();
+  });
+  $('bk-days').addEventListener('input', function () {
+    var v = this.value.replace(/[^0-9]/g, '').slice(0, 3);
+    this.value = v;
+    if (v) { bk.days = Math.max(1, Math.min(365, Number(v))); keepBk(); }
+  });
+  $('bk-days').addEventListener('blur', function () { this.value = bk.days; });
+  [$('bk-done'), document.querySelector('[data-bk-close]')].forEach(function (b) {
+    b.addEventListener('click', function () { $('bk-days').blur(); $('bk-sheet').hidden = true; });
+  });
+
   function drawHome() {
     drawLiveBars();                    // the names on them may have just arrived
     drawReportBar();
+    drawBackupBar();
+    drawWeekBar();
     var total = store.workouts.length;
     var rows = store.workouts.map(function (w, i) { return { w: w, n: total - i, who: null }; });
 
@@ -7725,9 +7935,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var has = rows.length > 0;
     $('home-empty').hidden = has;
     $('home-list').hidden = !has;
-    paint($('home-list'), rows.map(function (r) {
+    // the filter only means something while there are friends' sessions to filter out
+    var ff = social.feed.length ? feedFilter : 'all';
+    $('feed-filter').hidden = !social.feed.length;
+    document.querySelectorAll('[data-ff]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.ff === ff));
+    });
+    if (ff !== 'all') rows = rows.filter(function (r) { return (ff === 'me') === !r.who; });
+    paint($('home-list'), (rows.length ? rows.map(function (r) {
       return workoutCard(r.w, r.n, r.who);
-    }).join('') +
+    }).join('') : '<div class="note">Nothing here yet.</div>') +
       (social.more ? '<button class="mmore" data-feedmore>Older sessions from friends</button>' : ''));
   }
 
