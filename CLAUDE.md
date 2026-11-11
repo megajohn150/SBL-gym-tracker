@@ -259,7 +259,11 @@ theirs changes (`liveView.sel` / `.own`).
 sets against the summed set targets, week streak; the workouts cell reads `targets.Total`),
 the backup reminder, the Sunday recap card (`drawRecapBar`, Sundays only; the `WR_SHOWCASE` flag, now
 false, forces it on every day), the previous month's report card, the All / Me / Friends filter
-(`feedFilter`, shown only when `social.feed` has friends' sessions) and the feed.
+(`feedFilter`, shown only when `social.feed` has friends' sessions) and the feed. The feed
+and the profile's workout list draw thirty cards (`HOME_PAGE`, `PROF_PAGE`) and add thirty per
+"Load more"; this only trims what is drawn, so records, stats and Compare, which read the
+data, are unaffected. When Home runs out of sessions it already holds, the same button pulls
+friends' older ones with `loadFeed(true)`.
 
 **Weekly recap and shared images.** `drawWeekRecap` is the monthly report for a week:
 `wrOff` weeks back (arrows or swipe, clamped to the first workout and to this week), reset to
