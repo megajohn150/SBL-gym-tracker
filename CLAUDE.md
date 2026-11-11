@@ -257,8 +257,8 @@ theirs changes (`liveView.sel` / `.own`).
 
 **Home.** `drawHome` draws, top to bottom: live cards, the week bar (`drawWeekBar`: workouts,
 sets against the summed set targets, week streak; the workouts cell reads `targets.Total`),
-the backup reminder, the Sunday recap card (`drawRecapBar`, Sundays only; the `WR_SHOWCASE` flag, now
-false, forces it on every day), the previous month's report card, the All / Me / Friends filter
+the backup reminder, the Sunday recap card (`drawRecapBar`, from 20:00 Warsaw time on Sundays, the hour
+of the push; the `WR_SHOWCASE` flag, now false, forces it on every day), the previous month's report card, the All / Me / Friends filter
 (`feedFilter`, shown only when `social.feed` has friends' sessions) and the feed. The feed
 and the profile's workout list draw thirty cards (`HOME_PAGE`, `PROF_PAGE`) and add thirty per
 "Load more"; this only trims what is drawn, so records, stats and Compare, which read the
