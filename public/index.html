@@ -2948,6 +2948,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet" id="est-sheet" hidden>
+  <div class="sheet-bg" data-est-close></div>
+  <div class="sheet-card">
+    <h3 id="est-title">Last workouts</h3>
+    <p class="hint" style="padding:0 0 11px;text-align:center">The estimate is the average of these.</p>
+    <div class="cutlist" id="est-list"></div>
+  </div>
+</div>
+
 <div class="sheet" id="snap-sheet" hidden>
   <div class="sheet-bg" data-snap-close></div>
   <div class="sheet-card">
@@ -3020,7 +3029,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4269';
+  var APP_VERSION = '3.4270';
 
   /* =========================================================
      STORE
@@ -6117,15 +6126,33 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
   });
 
-  // How long it usually takes: the average of the last five times it was run, or of as many as there are
-  function rtEstimate(r) {
-    var secs = runsOf(r).filter(function (w) { return w.seconds > 0; })
-      .sort(function (a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 5)
-      .map(function (w) { return w.seconds; });
-    if (!secs.length) return '';
-    var m = Math.max(1, Math.round(secs.reduce(function (x, y) { return x + y; }, 0) / secs.length / 60));
-    return ' \u2248 ' + m + (m === 1 ? ' min' : ' mins');
+  // the last five times this routine was run, newest first
+  function rtLastRuns(r) {
+    return runsOf(r).filter(function (w) { return w.seconds > 0; })
+      .sort(function (a, b) { return new Date(b.date) - new Date(a.date); }).slice(0, 5);
   }
+
+  // How long it usually takes: the average of those, or of as many as there are. A tap lists them.
+  function rtEstimate(r) {
+    var runs = rtLastRuns(r);
+    if (!runs.length) return '';
+    var m = Math.max(1, Math.round(runs.reduce(function (x, w) { return x + w.seconds; }, 0) / runs.length / 60));
+    return '<i>&middot;</i><span data-est="' + esc(r.id) + '">' + m + (m === 1 ? ' min' : ' mins') + '</span>';
+  }
+
+  // what the estimate is made of
+  function openEstimate(id) {
+    var r = routineById(id);
+    if (!r) return;
+    $('est-title').textContent = r.name;
+    $('est-list').innerHTML = rtLastRuns(r).map(function (w) {
+      var d = new Date(w.date);
+      return '<div class="cutrow"><span class="t">' + relDate(w.date) + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) +
+        '</span><span class="v">' + fmtDuration(w.seconds) + '</span></div>';
+    }).join('');
+    $('est-sheet').hidden = false;
+  }
+  document.querySelector('[data-est-close]').addEventListener('click', function () { $('est-sheet').hidden = true; });
 
   function drawRoutines() {
     var has = store.routines.length > 0;
@@ -6142,7 +6169,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<span class="rtmeta">' +
             '<span>' + n + ' exercise' + (n === 1 ? '' : 's') + '</span>' +
             '<i>&middot;</i>' +
-            '<span>' + t + ' set' + (t === 1 ? '' : 's') + rtEstimate(r) + '</span>' +
+            '<span>' + t + ' set' + (t === 1 ? '' : 's') + '</span>' + rtEstimate(r) +
             (f
               ? '<i>&middot;</i><span class="rtfrom' + (f.dead ? ' off' : ' tap') +
                 '" data-whose="' + esc(f.by) + '">' +
@@ -6172,6 +6199,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   $('routine-list').addEventListener('click', function (e) {
     // these two sit inside the card's own button, so they are looked for first
+    var est = e.target.closest('[data-est]');
+    if (est) { e.stopPropagation(); openEstimate(est.dataset.est); return; }
     var fans = e.target.closest('[data-fans]');
     if (fans) { e.stopPropagation(); openFans(fans.dataset.fans); return; }
     var whose = e.target.closest('[data-whose]');
@@ -6215,7 +6244,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       var b = bucketAt(out, new Date(w.date).getTime());
       if (!b) return;
       var t = workoutTotals(w);
-      var v = rvMetric === 'reps' ? t.reps : t.volume;
+      var v = rvMetric === 'reps' ? t.reps : rvMetric === 'time' ? (w.seconds || 0) : t.volume;
       if (v > b.v) { b.v = v; b.prW = w.id; }
     });
     return out;
@@ -6223,7 +6252,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function rvLabel(v) {
     if (!v) return ['\u2013', ''];
-    return rvMetric === 'reps' ? [String(Math.round(v)), 'reps'] : [fmtVolume(v), ''];
+    return rvMetric === 'reps' ? [String(Math.round(v)), 'reps']
+      : rvMetric === 'time' ? [fmtDuration(v), ''] : [fmtVolume(v), ''];
   }
 
   function drawRtView() {
@@ -6269,6 +6299,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '<div class="pseg">' +
         '<button data-rvmetric="vol" aria-pressed="' + (rvMetric === 'vol') + '">Volume</button>' +
         '<button data-rvmetric="reps" aria-pressed="' + (rvMetric === 'reps') + '">Reps</button>' +
+        '<button data-rvmetric="time" aria-pressed="' + (rvMetric === 'time') + '">Time</button>' +
       '</div></div>';
 
     var rows = r.items.map(function (it, i) {
