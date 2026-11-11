@@ -172,6 +172,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .rtopen{display:block;width:100%;padding:16px 14px 0;text-align:center}
 .rtmeta{display:block;font-size:.8rem;color:var(--fg-3)}
 .rtmeta i{font-style:normal;opacity:.4;margin:0 .2ch}
+/* the estimate opens the list of runs it was made from: the faintest hint that it is a button */
+.rtmeta [data-est]{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .rtfrom{
   display:inline-block;padding:0 6px;border:var(--dash);border-radius:999px;
   font-size:.72rem;color:var(--fg-2);
@@ -3017,7 +3019,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4271';
+  var APP_VERSION = '3.4272';
 
   /* =========================================================
      STORE

@@ -526,16 +526,19 @@ create trigger live_on_sess after insert or update or delete on public.live_sess
   for each row execute function public.live_sess();
 
 -- ------------------------------------------------------------------
--- 11. Niedzielny recap. W niedzielę o 17:00 UTC (18:00 zimą, 19:00
---     latem w Polsce) idzie push do każdego, kto ma włączone
---     powiadomienia i trenował w tym tygodniu (pon-nd, UTC). Tekst i
---     miejsce, w które prowadzi stuknięcie, są w funkcji notify.
+-- 11. Niedzielny recap. W niedzielę o 20:00 czasu polskiego idzie push
+--     do każdego, kto ma włączone powiadomienia i trenował w tym
+--     tygodniu (pon-nd). pg_cron liczy w UTC, a godzina polska zmienia
+--     się z czasem letnim, więc zadanie budzi się o 18:00 i 19:00 UTC,
+--     a funkcja puszcza tylko tę z nich, która jest 20:00 w Warszawie.
+--     Tekst i miejsce, w które prowadzi stuknięcie, są w funkcji notify.
 -- ------------------------------------------------------------------
 create or replace function public.weekly_recap_push() returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare
   u uuid;
 begin
+  if extract(hour from now() at time zone 'Europe/Warsaw') <> 20 then return; end if;
   for u in
     select distinct p.user_id from public.posts p
     where p.date >= date_trunc('week', now())
@@ -546,4 +549,4 @@ begin
 end $$;
 revoke execute on function public.weekly_recap_push() from public, anon, authenticated;
 
-select cron.schedule('weekly-recap', '0 17 * * 0', $$select public.weekly_recap_push()$$);
+select cron.schedule('weekly-recap', '0 18,19 * * 0', $$select public.weekly_recap_push()$$);
