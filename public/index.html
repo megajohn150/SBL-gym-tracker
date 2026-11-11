@@ -1437,10 +1437,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   display:block;margin-top:3px;font-size:.58rem;color:var(--fg-3);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.datebtn{
-  display:block;width:100%;box-sizing:border-box;margin:.6rem 0 14px;padding:11px var(--cardpad);text-align:left;
+.dtrow{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:10px;margin:.6rem 0 0}
+.dtrow>span{font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;font-weight:700;color:var(--fg-2)}
+.dtrow input{
+  min-width:0;width:100%;box-sizing:border-box;padding:9px 10px;text-align:center;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
-  font-size:.9rem;font-weight:600;color:var(--fg);
+  font:inherit;font-size:.9rem;font-weight:600;color:var(--fg);
 }
 .dcut{
   display:flex;align-items:center;gap:10px;margin:1rem var(--pad) .3rem;
@@ -2927,7 +2929,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4248';
+  var APP_VERSION = '3.4249';
 
   /* =========================================================
      STORE
@@ -10081,9 +10083,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         : '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button>') + '</div>' +
       (detailEdit
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
-          '<input type="datetime-local" class="datebtn" id="d-date" value="' + localStamp(pendingDate || w.date) + '">' +
-          '<input type="time" class="datebtn" id="d-dur" aria-label="Duration" value="' +
-            pad2(Math.min(23, Math.floor(w.seconds / 3600))) + ':' + pad2(Math.min(59, Math.round((w.seconds % 3600) / 60))) + '">'
+          '<label class="dtrow"><span>Started</span><input type="datetime-local" id="d-date" value="' +
+            localStamp(pendingDate || w.date) + '"></label>' +
+          '<label class="dtrow" style="margin-bottom:14px"><span>Duration</span><input type="time" id="d-dur" value="' +
+            pad2(Math.min(23, Math.floor(w.seconds / 3600))) + ':' + pad2(Math.min(59, Math.round((w.seconds % 3600) / 60))) + '"></label>'
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
