@@ -1103,14 +1103,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
 .whogo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
 /* this week at a glance, and the filter over the feed under it */
-.wkbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:1rem var(--pad) 0}
-.wkbar > div{border:var(--border);border-radius:var(--radius);background:var(--surface);padding:10px 12px}
+.wkbar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:.2rem var(--pad) 0}
+.wkbar > div{border:var(--border);border-radius:var(--radius);background:var(--surface);padding:6px 10px}
 .wkbar b{display:block;font-family:var(--display);font-size:1.15rem;font-weight:700;white-space:nowrap}
 .wkbar b small{font-size:.7rem;font-weight:600;color:var(--fg-3)}
 .wkbar b.hit{color:var(--green)}
-.wkbar i{display:block;margin-top:3px;font-style:normal;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
-.feedf{margin:1rem var(--pad) 0}
-.feedf + .feed{padding-top:var(--gap)}
+.wkbar i{display:block;margin-top:1px;font-style:normal;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
+.feedf{margin:.6rem var(--pad) 0}
+.feedf button{padding:6px 2px}
+.feedf + .feed{padding-top:10px}
+/* Home's own header keeps less air under it, so the cards under it start higher */
+#s-home .head{padding-bottom:.5rem}
+#s-home .reportbar{margin-top:.6rem}
 /* the cloud has not got the latest changes: a dot after the Profile tab */
 .tabs button.unsynced::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--red);vertical-align:middle}
 /* someone else's routine, read only */
@@ -2999,7 +3003,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4261';
+  var APP_VERSION = '3.4262';
 
   /* =========================================================
      STORE
@@ -9216,7 +9220,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var weeks = {};
     (list || store.workouts).forEach(function (w) {
       var t = new Date(w.date).getTime();
-      weeks[Math.floor((monday - t) / 6048e5)] = true;   // 0 = this week, 1 = last week...
+      // ceil, not floor: a day after Monday is a negative distance, and floor made this week -1
+      weeks[Math.ceil((monday - t) / 6048e5)] = true;   // 0 = this week, 1 = last week...
     });
     var n = 0, i = weeks[0] ? 0 : 1;                      // an empty current week does not break it
     while (weeks[i]) { n++; i++; }
@@ -9961,9 +9966,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   /* --- the weekly recap: the report of a month, for a week --- */
-  // SHOWCASE: the note on Home appears every day, as if it were Sunday, so the look can be judged.
-  // Switch it off and it comes on Sundays only.
-  var WR_SHOWCASE = true;
+  // SHOWCASE: true shows the note on Home every day, as if it were Sunday, to judge the look.
+  // False, as it is, and it comes on Sundays only.
+  var WR_SHOWCASE = false;
 
   function recapTitle(from) {
     var last = addDays(from, 6);
@@ -9989,6 +9994,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     save('wr-seen', dmy(monday(new Date())));
     $('wr-bar').hidden = true;
   });
+
+  var wrMore = false;
 
   function drawWeekRecap() {
     var from = monday(new Date()), to = addDays(from, 7), pfrom = addDays(from, -7);
@@ -10016,11 +10023,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       return cur.by[b] - cur.by[a] || a.localeCompare(b);
     });
     var top = cur.by[names[0]] || 1;
-    var muscles = names.slice(0, 6).map(function (m) {
+    var muscles = (wrMore ? names : names.slice(0, 3)).map(function (m) {
       return '<div class="mrow"><span class="nm">' + esc(m) + '</span>' +
         '<span class="mbar"><i style="width:' + (cur.by[m] / top * 100) + '%"></i></span>' +
         '<span class="n">' + cur.by[m] + '</span></div>';
-    }).join('') || '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged this week.</div>';
+    }).join('') + (names.length > 3
+      ? '<button class="mmore" data-wrmore>' + (wrMore ? 'Show less' : 'See ' + (names.length - 3) + ' more') + '</button>'
+      : '') || '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged this week.</div>';
 
     var pr = prBlock(monthPRs(from, to)), streak = weekStreak();
     $('wrecap-body').innerHTML =
@@ -10043,7 +10052,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   $('wrecap-body').addEventListener('click', function (e) {
     var d = e.target.closest('[data-rw]');
-    if (d) openWorkout(d.dataset.rw);
+    if (d) { openWorkout(d.dataset.rw); return; }
+    if (e.target.closest('[data-wrmore]')) { wrMore = !wrMore; drawWeekRecap(); }
   });
 
   function drawStatMonth() {
