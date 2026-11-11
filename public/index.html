@@ -2984,7 +2984,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4259';
+  var APP_VERSION = '3.4260';
 
   /* =========================================================
      STORE
@@ -7951,12 +7951,21 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     } catch (e) { cb(null); }
   }
 
-  // newest first
+  // The database belongs to the browser, not to the account, so every copy says whose it is.
+  // The boot runs before the sign-in has answered: the last account here is the owner then.
+  // A copy made before this field existed is taken to be that same account's.
+  function snapOwner() { return (me && me.id) || load('uid') || ''; }
+
+  // this account's copies, newest first
   function snapList(cb) {
     snapOpen(function (db) {
       if (!db) { cb([]); return; }
       var q = db.transaction('s').objectStore('s').getAll();
-      q.onsuccess = function () { cb((q.result || []).sort(function (a, b) { return b.at - a.at; })); };
+      q.onsuccess = function () {
+        var who = snapOwner();
+        cb((q.result || []).filter(function (o) { return (o.u || load('uid') || '') === who; })
+          .sort(function (a, b) { return b.at - a.at; }));
+      };
       q.onerror = function () { cb([]); };
     });
   }
@@ -7971,7 +7980,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       snapOpen(function (db) {
         if (!db) { cb(); return; }
         var tx = db.transaction('s', 'readwrite'), os = tx.objectStore('s');
-        os.put({ at: Date.now(), w: store.workouts.length, x: store.exercises.length,
+        os.put({ at: Date.now(), u: snapOwner(), w: store.workouts.length, x: store.exercises.length,
                  r: store.routines.length, data: JSON.stringify(store) });
         list.slice(SNAP_KEEP - 1).forEach(function (o) { os.delete(o.at); });
         tx.oncomplete = function () { cb(); };
