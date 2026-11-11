@@ -2929,7 +2929,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4253';
+  var APP_VERSION = '3.4254';
 
   /* =========================================================
      STORE
@@ -7145,11 +7145,22 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('summary-body').innerHTML =
       '<div class="sumhead"><span class="eyebrow">Workout saved</span>' +
       '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
-      '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2></div>' +
-      '<div class="sumline">' + fullDate(w.date) + '</div>' +
-      '<div style="padding:0 var(--pad)">' + statsRow(w, t) + '</div>' +
+      '<span class="wtime" id="s-time">' + fmtDuration(w.seconds) + '</span></h2></div>' +
+      '<div style="padding:0 var(--pad)">' + whenFields('s', w.date, w.seconds) + statsRow(w, t) + '</div>' +
       (pr.count ? '<div class="dsec">Records</div>' + pr.html : '');
   }
+
+  // the log is the truth the moment a picker moves; nothing is redrawn, or the picker would close
+  $('summary-body').addEventListener('input', function (e) {
+    var w = summaryW, id = e.target.id;
+    if (!w || !e.target.value || (id !== 's-date' && id !== 's-dur')) return;
+    if (id === 's-date') w.date = new Date(e.target.value).toISOString();
+    else { w.seconds = durSeconds('s-dur'); $('s-time').textContent = fmtDuration(w.seconds); }
+    store.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+    recomputeRecords();
+    saveStore();
+    drawHome();
+  });
 
   $('sum-done').addEventListener('click', function () { pop(); });
 
@@ -10083,10 +10094,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         : '<button class="dmenu" id="detail-menu" aria-label="Workout menu">&#8942;</button>') + '</div>' +
       (detailEdit
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
-          '<div class="dtrow"><label for="d-date">Started</label><label for="d-dur">Duration</label>' +
-            '<input type="datetime-local" id="d-date" value="' + localStamp(pendingDate || w.date) + '">' +
-            '<input type="time" id="d-dur" value="' + pad2(Math.min(23, Math.floor(w.seconds / 3600))) + ':' +
-            pad2(Math.min(59, Math.round((w.seconds % 3600) / 60))) + '"></div>'
+          whenFields('d', pendingDate || w.date, w.seconds)
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
           (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
@@ -10250,8 +10258,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
       'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
   }
-  function durSeconds() {
-    var t = $('d-dur').value.split(':');
+  // Started + Duration pickers, shared by the workout editor and the summary
+  function whenFields(pre, date, seconds) {
+    return '<div class="dtrow"><label for="' + pre + '-date">Started</label>' +
+      '<label for="' + pre + '-dur">Duration</label>' +
+      '<input type="datetime-local" id="' + pre + '-date" value="' + localStamp(date) + '">' +
+      '<input type="time" id="' + pre + '-dur" value="' + pad2(Math.min(23, Math.floor(seconds / 3600))) + ':' +
+      pad2(Math.min(59, Math.round((seconds % 3600) / 60))) + '"></div>';
+  }
+  function durSeconds(id) {
+    var t = $(id).value.split(':');
     return Math.max(60, (Number(t[0]) || 0) * 3600 + (Number(t[1]) || 0) * 60);
   }
   var pendingDate = null;                 // only applied when the edit is saved
@@ -10277,7 +10293,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!detailEdit || !detailW) return;
     var name = $('d-name') ? $('d-name').value.trim() : '';
     if (name) detailW.name = name;
-    if ($('d-dur') && $('d-dur').value) detailW.seconds = durSeconds();
+    if ($('d-dur') && $('d-dur').value) detailW.seconds = durSeconds('d-dur');
     if ($('d-wnote')) detailW.note = $('d-wnote').value.trim();
     document.querySelectorAll('#detail-body [data-note-e]').forEach(function (ta) {
       detailW.exercises[Number(ta.dataset.noteE)].note = ta.value.trim();
@@ -10337,7 +10353,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       // the feed and the numbering read the array order, so keep it by date
       store.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
     }
-    if ($('d-dur') && $('d-dur').value) detailW.seconds = durSeconds();
+    if ($('d-dur') && $('d-dur').value) detailW.seconds = durSeconds('d-dur');
     if ($('d-wnote')) detailW.note = $('d-wnote').value.trim();
     document.querySelectorAll('#detail-body [data-note-e]').forEach(function (ta) {
       detailW.exercises[Number(ta.dataset.noteE)].note = ta.value.trim();
