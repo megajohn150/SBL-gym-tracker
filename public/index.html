@@ -1102,8 +1102,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .reportbar .x{padding:13px 14px;font-size:1.1rem;color:var(--fg-3)}
 
 .whogo{display:flex;align-items:center;gap:11px;flex:1;min-width:0;text-align:left}
-.strecw{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;padding:1.1rem var(--pad) .3rem;border-top:var(--dash);font-family:var(--display);font-weight:var(--namew);font-size:.95rem}
-.strecw i{font-style:normal;font-family:var(--font);font-size:.72rem;font-weight:600;color:var(--fg-3)}
 .strk{flex:none;padding:4px 10px;border:1px solid var(--fg-3);border-radius:999px;font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
 .strk.t2{border-color:var(--accent);color:var(--accent)}
 .strk.t3{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -2264,7 +2262,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <div class="stath">Other</div>
         <button data-push="stat-injuries"><b>Injuries</b><span id="stats-inj"></span></button>
         <button data-push="stat-ready"><b>Muscle readiness</b><span>72 h</span></button>
-        <button data-push="stat-records"><b>All records</b><span id="stats-rec"></span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
         <div class="stath">Report</div>
         <button data-push="stat-week"><b>Weekly recap</b><span id="stats-week"></span></button>
@@ -2325,15 +2322,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span></span>
     </div>
     <div class="scroll" id="strdy-body"></div>
-  </section>
-
-  <section class="screen" id="s-stat-records" data-tab="profile" data-title="Records">
-    <div class="bar">
-      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
-      <h1>Records</h1>
-      <span></span>
-    </div>
-    <div class="scroll" id="strec-body"></div>
   </section>
 
   <section class="screen" id="s-stat-stall" data-tab="profile" data-title="No recent records">
@@ -3029,7 +3017,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4270';
+  var APP_VERSION = '3.4271';
 
   /* =========================================================
      STORE
@@ -5026,7 +5014,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drawWeekRecap();
     }
     if (id === 's-stat-stall') drawStatStall();
-    if (id === 's-stat-records') drawStatRecords();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
     if (id === 's-music') drawMusic();
     if (id === 's-resttimer') drawRestCfg();
@@ -9694,36 +9681,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     out.sort(function (a, b) { return b.weeks - a.weeks; });
     return out;
   }
-
-  // every record you have set, newest session first; a tap opens the session it came from
-  function drawStatRecords() {
-    var total = 0, out = '';
-    store.workouts.slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); })
-      .forEach(function (w) {
-        var prs = workoutPRs(w), names = Object.keys(prs);
-        if (!names.length) return;
-        out += '<button class="strecw" data-rw="' + esc(w.id) + '"><span>' + esc(w.name) + '</span><i>' +
-          dmy(new Date(w.date)) + '</i></button>' + names.map(function (k) {
-            return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' + Object.keys(prs[k]).map(function (cat) {
-              total++;
-              var v = prs[k][cat];
-              return '<span class="pr"><svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
-                'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
-                '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
-                '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>' +
-                cat + ' \u2013 ' + (cat === 'Volume' ? fmtKg(v) : (Math.round(v * 100) / 100) + ' kg') + '</span>';
-            }).join('') + '</div>';
-          }).join('');
-      });
-    $('strec-body').innerHTML = out
-      ? '<div class="prcount" style="padding-top:1rem">' + total + (total === 1 ? ' record' : ' records') + '</div>' + out
-      : '<div class="empty"><p class="big">No records yet</p>' +
-        '<p class="small">The first time you do a lift only sets the bar. Beat it and it lands here.</p></div>';
-  }
-  $('strec-body').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-rw]');
-    if (b) openWorkout(b.dataset.rw);
-  });
 
   function drawStatStall() {
     var list = stallList();
