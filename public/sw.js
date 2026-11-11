@@ -66,19 +66,29 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (/supabase\.co$/.test(url.hostname)) return;      // auth and sync always go to the network
 
-  // the page itself: fresh when online, last good copy when not
+  // the page itself: fresh when the network answers, the last good copy when it does not,
+  // and also when it is merely slow: a gym with one bar of signal must not hold the app
+  // on a white screen. The slow fetch carries on and refreshes the copy for next time.
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req).then(function (r) {
-        var copy = r.clone();
-        caches.open(V).then(function (c) { c.put('./index.html', copy); });
-        return r;
-      }).catch(function () {
-        return caches.match('./index.html').then(function (hit) {
-          return hit || caches.match('./');
-        });
-      })
-    );
+    var cached = function () {
+      return caches.match('./index.html').then(function (hit) { return hit || caches.match('./'); });
+    };
+    var fresh = fetch(req).then(function (r) {
+      var copy = r.clone();
+      caches.open(V).then(function (c) { c.put('./index.html', copy); });
+      return r;
+    });
+    e.waitUntil(fresh.catch(function () {}));
+    e.respondWith(new Promise(function (resolve) {
+      var done = false;
+      function give(r) { if (!done && r) { done = true; resolve(r); } }
+      // with no copy to fall back on, there is nothing to hurry for
+      var t = setTimeout(function () { cached().then(give); }, 3000);
+      fresh.then(function (r) { clearTimeout(t); give(r); }, function () {
+        clearTimeout(t);
+        cached().then(function (hit) { if (hit) give(hit); else if (!done) { done = true; resolve(Response.error()); } });
+      });
+    }));
     return;
   }
 

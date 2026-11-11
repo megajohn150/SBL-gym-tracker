@@ -1692,6 +1692,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button class="go" id="bk-go"></button>
       <button class="x" id="bk-x" aria-label="Remind me tomorrow">&times;</button>
     </div>
+    <div class="reportbar" id="wr-bar" hidden>
+      <button class="go" id="wr-go"></button>
+      <button class="x" id="wr-x" aria-label="Dismiss">&times;</button>
+    </div>
     <div class="pseg feedf" id="feed-filter" hidden>
       <button data-ff="all" aria-pressed="true">All</button>
       <button data-ff="me" aria-pressed="false">Me</button>
@@ -2253,6 +2257,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <button data-push="stat-ready"><b>Muscle readiness</b><span>72 h</span></button>
         <button data-push="stat-stall"><b>No recent records</b><span>4+ weeks</span></button>
         <div class="stath">Report</div>
+        <button data-push="stat-week"><b>Weekly recap</b><span id="stats-week"></span></button>
         <button data-push="stat-month"><b>Monthly report</b><span id="stats-month"></span></button>
       </div>
     </div>
@@ -2319,6 +2324,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span></span>
     </div>
     <div class="scroll" id="ststall-body"></div>
+  </section>
+
+  <section class="screen" id="s-stat-week" data-tab="profile" data-title="Weekly recap">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Weekly recap</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="wrecap-body"></div>
   </section>
 
   <section class="screen" id="s-stat-month" data-tab="profile" data-title="Monthly report">
@@ -2654,6 +2668,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <div class="pop-wrap">
     <div class="pop-menu">
       <button id="rv-edit">Edit routine</button>
+      <button id="rv-dup">Duplicate routine</button>
       <button id="rv-mine" hidden>Make it mine</button>
       <button id="rv-unfollow" class="danger" hidden>Unfollow routine</button>
     </div>
@@ -2984,7 +2999,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4260';
+  var APP_VERSION = '3.4261';
 
   /* =========================================================
      STORE
@@ -4884,6 +4899,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       var lastm = new Date();
       lastm = new Date(lastm.getFullYear(), lastm.getMonth() - 1, 1);
       $('stats-month').textContent = MONTHS[lastm.getMonth()] + ' ' + lastm.getFullYear();
+      $('stats-week').textContent = recapTitle(monday(new Date()));
     }
     if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
@@ -4896,6 +4912,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-stat-injuries') drawInjuries();
     if (id === 's-stat-ready') drawReady();
     if (id === 's-stat-month') drawStatMonth();
+    if (id === 's-stat-week') drawWeekRecap();
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
     if (id === 's-music') drawMusic();
@@ -6101,6 +6118,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var f = r.follow;
     $('rv-title').textContent = r.name || 'Routine';
     $('rv-edit').hidden = !!f;
+    $('rv-dup').hidden = !!f;           // a followed one becomes yours with Make it mine
     $('rv-mine').hidden = !f;
     $('rv-unfollow').hidden = !f;
     $('rv-unfollow').textContent = (f && f.dead) ? 'Remove routine' : 'Unfollow routine';
@@ -6185,6 +6203,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('rv-edit').addEventListener('click', function () {
     $('rv-pop').hidden = true;
     openRoutine(rvId);
+  });
+  // a copy of your own routine, right under it; it is not shared or followed, whatever the original is
+  $('rv-dup').addEventListener('click', function () {
+    $('rv-pop').hidden = true;
+    var r = routineById(rvId);
+    if (!r || r.follow) return;
+    var copy = JSON.parse(JSON.stringify(r));
+    copy.id = uid();
+    delete copy.shared;
+    copy.name = routineName(r.name);
+    store.routines.splice(store.routines.indexOf(r) + 1, 0, copy);
+    saveStore();
+    drawRoutines();
+    toast('Duplicated as ' + copy.name);
   });
   $('rv-mine').addEventListener('click', function () {
     $('rv-pop').hidden = true;
@@ -8036,6 +8068,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawLiveBars();                    // the names on them may have just arrived
     drawReportBar();
     drawBackupBar();
+    drawRecapBar();
     drawWeekBar();
     var total = store.workouts.length;
     var rows = store.workouts.map(function (w, i) { return { w: w, n: total - i, who: null }; });
@@ -9926,6 +9959,92 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         }).join('')
     };
   }
+
+  /* --- the weekly recap: the report of a month, for a week --- */
+  // SHOWCASE: the note on Home appears every day, as if it were Sunday, so the look can be judged.
+  // Switch it off and it comes on Sundays only.
+  var WR_SHOWCASE = true;
+
+  function recapTitle(from) {
+    var last = addDays(from, 6);
+    return from.getMonth() === last.getMonth()
+      ? from.getDate() + '\u2013' + last.getDate() + ' ' + MONTHS[last.getMonth()]
+      : from.getDate() + ' ' + MONTHS[from.getMonth()] + ' \u2013 ' + last.getDate() + ' ' + MONTHS[last.getMonth()];
+  }
+
+  function drawRecapBar() {
+    var from = monday(new Date());
+    var show = store.workouts.length && (WR_SHOWCASE || new Date().getDay() === 0) &&
+      load('wr-seen') !== dmy(from);
+    $('wr-bar').hidden = !show;
+    if (show) $('wr-go').innerHTML = '<b>Your week is wrapped</b><span>' + recapTitle(from) +
+      ' \u00b7 see how it went</span>';
+  }
+  $('wr-go').addEventListener('click', function () {
+    save('wr-seen', dmy(monday(new Date())));
+    $('wr-bar').hidden = true;
+    push('stat-week');
+  });
+  $('wr-x').addEventListener('click', function () {
+    save('wr-seen', dmy(monday(new Date())));
+    $('wr-bar').hidden = true;
+  });
+
+  function drawWeekRecap() {
+    var from = monday(new Date()), to = addDays(from, 7), pfrom = addDays(from, -7);
+    var cur = statsFor(from, to), prev = statsFor(pfrom, from);
+    function gap(a, b, fmt) {
+      var d = a - b;
+      if (!d) return '';
+      return '<i class="' + (d > 0 ? 'up' : 'down') + '">(' + (d > 0 ? '+' : '\u2212') +
+        (fmt ? fmt(Math.abs(d)) : Math.round(Math.abs(d) * 10) / 10) + ')</i>';
+    }
+
+    // Monday to Sunday, the days you trained filled in and named
+    var byDay = {};
+    store.workouts.forEach(function (w) {
+      var d = new Date(w.date);
+      if (d >= from && d < to) byDay[dayKey(d)] = w;
+    });
+    var strip = '<div class="stdays">' + ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (n, i) {
+      var d = addDays(from, i), w = byDay[dayKey(d)];
+      return '<div' + (w ? ' class="on" data-rw="' + esc(w.id) + '"' : '') + '><span class="d">' + n.toUpperCase() +
+        '</span><span class="n">' + d.getDate() + '</span>' + (w ? '<span class="w">' + esc(w.name) + '</span>' : '') + '</div>';
+    }).join('') + '</div>';
+
+    var names = Object.keys(cur.by).filter(function (m) { return cur.by[m] > 0; }).sort(function (a, b) {
+      return cur.by[b] - cur.by[a] || a.localeCompare(b);
+    });
+    var top = cur.by[names[0]] || 1;
+    var muscles = names.slice(0, 6).map(function (m) {
+      return '<div class="mrow"><span class="nm">' + esc(m) + '</span>' +
+        '<span class="mbar"><i style="width:' + (cur.by[m] / top * 100) + '%"></i></span>' +
+        '<span class="n">' + cur.by[m] + '</span></div>';
+    }).join('') || '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged this week.</div>';
+
+    var pr = prBlock(monthPRs(from, to)), streak = weekStreak();
+    $('wrecap-body').innerHTML =
+      '<div class="mtitle">' + recapTitle(from) + '</div>' +
+      '<div class="mhead">' + cur.workouts + (cur.workouts === 1 ? ' workout' : ' workouts') +
+        gap(cur.workouts, prev.workouts) + '</div>' +
+      strip +
+      '<div class="dsec">Summary</div>' +
+      '<div class="wstats big" style="padding:0 var(--pad)">' +
+        '<div><span class="k">Duration</span><span class="v">' + fmtDuration(cur.seconds) +
+          gap(cur.seconds, prev.seconds, fmtDuration) + '</span></div>' +
+        '<div><span class="k">Volume</span><span class="v">' + fmtKg(cur.volume) +
+          gap(cur.volume, prev.volume, fmtKg) + '</span></div>' +
+        '<div><span class="k">Sets</span><span class="v">' + cur.sets + gap(cur.sets, prev.sets) + '</span></div>' +
+        '<div><span class="k">Streak</span><span class="v">' + streak + (streak === 1 ? ' week' : ' weeks') + '</span></div>' +
+      '</div>' +
+      '<div class="dsec">Muscle distribution</div>' + muscles +
+      (pr.count ? '<div class="dsec">Records</div>' + pr.html : '') +
+      '<div class="note">Against the week before. Weeks run Monday to Sunday.</div>';
+  }
+  $('wrecap-body').addEventListener('click', function (e) {
+    var d = e.target.closest('[data-rw]');
+    if (d) openWorkout(d.dataset.rw);
+  });
 
   function drawStatMonth() {
     // a report is written once the month is over, so this is the last full one
