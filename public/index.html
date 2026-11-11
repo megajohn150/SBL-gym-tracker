@@ -3003,7 +3003,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4262';
+  var APP_VERSION = '3.4263';
 
   /* =========================================================
      STORE
@@ -4916,7 +4916,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-stat-injuries') drawInjuries();
     if (id === 's-stat-ready') drawReady();
     if (id === 's-stat-month') drawStatMonth();
-    if (id === 's-stat-week') drawWeekRecap();
+    // a look at an older week lasts until you leave; coming back from one of its workouts is not leaving
+    if (id === 's-stat-week') {
+      if (!leaving || leaving.id !== 's-detail') { wrOff = 0; wrMore = false; }
+      drawWeekRecap();
+    }
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
     if (id === 's-music') drawMusic();
@@ -9214,8 +9218,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   /* --- calendar --- */
   function dayKey(d) { return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
 
-  function weekStreak(list) {
-    var now = new Date(), day = (now.getDay() + 6) % 7;
+  // `at` asks as of another week: the one a past recap is about
+  function weekStreak(list, at) {
+    var now = at || new Date(), day = (now.getDay() + 6) % 7;
     var monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).getTime();
     var weeks = {};
     (list || store.workouts).forEach(function (w) {
@@ -9995,10 +10000,26 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('wr-bar').hidden = true;
   });
 
-  var wrMore = false;
+  var wrMore = false, wrOff = 0;     // wrOff: how many weeks back the recap is looking
+
+  // the oldest week worth going back to is the one with your first workout in it
+  function wrMax() {
+    var first = Infinity;
+    store.workouts.forEach(function (w) { first = Math.min(first, new Date(w.date).getTime()); });
+    if (first === Infinity) return 0;
+    return Math.max(0, Math.round((monday(new Date()) - monday(new Date(first))) / 6048e5));
+  }
+  function wrGo(n) {
+    var next = Math.max(0, Math.min(wrMax(), wrOff + n));
+    if (next === wrOff) return;
+    wrOff = next;
+    wrMore = false;
+    drawWeekRecap();
+    $('s-stat-week').querySelector('.scroll').scrollTop = 0;
+  }
 
   function drawWeekRecap() {
-    var from = monday(new Date()), to = addDays(from, 7), pfrom = addDays(from, -7);
+    var from = addDays(monday(new Date()), -7 * wrOff), to = addDays(from, 7), pfrom = addDays(from, -7);
     var cur = statsFor(from, to), prev = statsFor(pfrom, from);
     function gap(a, b, fmt) {
       var d = a - b;
@@ -10031,9 +10052,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       ? '<button class="mmore" data-wrmore>' + (wrMore ? 'Show less' : 'See ' + (names.length - 3) + ' more') + '</button>'
       : '') || '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged this week.</div>';
 
-    var pr = prBlock(monthPRs(from, to)), streak = weekStreak();
+    var pr = prBlock(monthPRs(from, to)), streak = wrOff
+      ? weekStreak(store.workouts.filter(function (w) { return new Date(w.date) < to; }), from)
+      : weekStreak();
+    var yr = from.getFullYear() !== new Date().getFullYear() ? ' ' + from.getFullYear() : '';
     $('wrecap-body').innerHTML =
-      '<div class="mtitle">' + recapTitle(from) + '</div>' +
+      '<div class="stweek"><button data-wrnav="1" aria-label="Earlier week"' + (wrOff >= wrMax() ? ' disabled' : '') +
+        '>&lsaquo;</button><span class="lab">' + (wrOff === 0 ? 'This week \u00b7 ' : wrOff === 1 ? 'Last week \u00b7 ' : '') +
+        recapTitle(from) + yr + '</span><button data-wrnav="-1" aria-label="Later week"' + (wrOff ? '' : ' disabled') +
+        '>&rsaquo;</button></div>' +
       '<div class="mhead">' + cur.workouts + (cur.workouts === 1 ? ' workout' : ' workouts') +
         gap(cur.workouts, prev.workouts) + '</div>' +
       strip +
@@ -10050,7 +10077,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       (pr.count ? '<div class="dsec">Records</div>' + pr.html : '') +
       '<div class="note">Against the week before. Weeks run Monday to Sunday.</div>';
   }
+  // a swipe along the screen moves a week: right for older, left for newer
+  (function () {
+    var sx = 0, sy = 0;
+    $('wrecap-body').addEventListener('touchstart', function (e) {
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    $('wrecap-body').addEventListener('touchend', function (e) {
+      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) wrGo(dx > 0 ? 1 : -1);
+    }, { passive: true });
+  })();
   $('wrecap-body').addEventListener('click', function (e) {
+    var nav = e.target.closest('[data-wrnav]');
+    if (nav) { wrGo(Number(nav.dataset.wrnav)); return; }
     var d = e.target.closest('[data-rw]');
     if (d) { openWorkout(d.dataset.rw); return; }
     if (e.target.closest('[data-wrmore]')) { wrMore = !wrMore; drawWeekRecap(); }
