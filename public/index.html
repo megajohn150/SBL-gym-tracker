@@ -3027,7 +3027,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4288';
+  var APP_VERSION = '3.4289';
 
   /* =========================================================
      STORE
@@ -8020,6 +8020,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // the clock is taken as it stands; both it and the date are editable later
   $('sess-end').addEventListener('click', function () {
+    if (!session.exercises.some(function (e) { return e.sets.some(logged); })) {
+      askConfirm('Empty workout', 'No set has any reps logged, so there is nothing to save.',
+        'Discard workout', dropSession);
+      return;
+    }
     var open = 0;
     session.exercises.forEach(function (e) {
       e.sets.forEach(function (st) { if (!st.done) open++; });
@@ -11260,22 +11265,23 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
 
   /* --- session menu: pause and discard --- */
+  function dropSession() {
+    var dead = session;
+    session = null;
+    saveSession();
+    stopRest();
+    if (current() === 's-session') popTo('workout');
+    drawDock();
+    toastUndo('Workout discarded', function () {
+      if (session) return;     // a new one was started meanwhile; do not clobber it
+      session = dead;
+      saveSession();
+      drawDock();
+    });
+  }
+
   function discardSession() {
-    askConfirm('Discard workout?', 'Everything logged in this session will be lost.',
-      'Discard', function () {
-        var dead = session;
-        session = null;
-        saveSession();
-        stopRest();
-        if (current() === 's-session') popTo('workout');
-        drawDock();
-        toastUndo('Workout discarded', function () {
-          if (session) return;     // a new one was started meanwhile; do not clobber it
-          session = dead;
-          saveSession();
-          drawDock();
-        });
-      });
+    askConfirm('Discard workout?', 'Everything logged in this session will be lost.', 'Discard', dropSession);
   }
 
   function togglePause() {
