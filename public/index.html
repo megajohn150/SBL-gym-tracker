@@ -1976,6 +1976,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         </div>
         <div class="endor" aria-hidden="true">or</div>
         <div class="endbot">
+          <div class="notebox has">
+            <textarea id="sess-wname" rows="1" maxlength="40" placeholder="Workout name"
+                      autocomplete="off"></textarea>
+          </div>
           <div class="notebox" id="sess-wnotebox">
             <textarea id="sess-wnote" rows="1" placeholder="Session note"
                       autocomplete="off"></textarea>
@@ -3023,7 +3027,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4287';
+  var APP_VERSION = '3.4288';
 
   /* =========================================================
      STORE
@@ -6677,6 +6681,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       $('sess-chips').innerHTML = '';
       $('sess-wnotebox').className = 'notebox' + (session.note ? ' has' : '');
       $('sess-wnote').value = session.note || '';
+      $('sess-wname').value = session.name;
       grow($('sess-wnote'));
       padNav(true);
       return;
@@ -6690,6 +6695,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       $('sess-reorder').hidden = session.exercises.length < 2;     // one exercise has no order
       $('sess-wnotebox').className = 'notebox' + (session.note ? ' has' : '');
       $('sess-wnote').value = session.note || '';
+      $('sess-wname').value = session.name;
       grow($('sess-wnote'));
     }
 
@@ -6847,6 +6853,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('sess-notebox').className = 'notebox' + (this.value.trim() ? ' has' : '');
     grow(this);
     placeWarn();
+    saveSession();
+  });
+
+  $('sess-wname').addEventListener('input', function () {
+    if (!session) return;
+    var n = this.value.replace(/\s+/g, ' ').trim();
+    if (!n) return;                  // a workout with no name would read as a blank card
+    session.name = n;
+    $('sess-title').textContent = n;
     saveSession();
   });
 
