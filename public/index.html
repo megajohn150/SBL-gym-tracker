@@ -1766,6 +1766,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <div class="rows" id="routine-list"></div>
     </div>
 
+    <div style="padding:6px var(--pad) 22px">
+      <button class="btn btn-ghost" id="rt-empty-start">Start empty workout</button>
+    </div>
+
     </div>
 
     <div class="footbar" style="grid-template-columns:2fr 1fr">
@@ -3019,7 +3023,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4285';
+  var APP_VERSION = '3.4286';
 
   /* =========================================================
      STORE
@@ -6610,6 +6614,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     push('session');
   }
 
+  $('rt-empty-start').addEventListener('click', function () {
+    session = { name: 'Workout', startedAt: Date.now(), pausedAt: null, idx: 0, routineId: null, exercises: [] };
+    touchStale();
+    push('session');
+  });
+
   /* --- changing the line-up mid-workout --- */
   function addToSession(exId) {
     if (!session) return;
@@ -6657,9 +6667,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var last = session.exercises.length;
     var done = session.idx >= last;                 // the closing card
     var ex = session.exercises[Math.min(session.idx, last - 1)];
-    if (!ex) return;
 
     $('sess-title').textContent = session.name;
+    if (!ex) {                      // an empty workout is only the closing card, which has "+ Add exercise"
+      ['sess-exhead', 'sess-setshead', 'sess-sets', 'sess-addwrap'].forEach(function (id) { $(id).hidden = true; });
+      $('sess-endpage').hidden = false;
+      $('sess-reorder').hidden = true;
+      $('sess-chips').innerHTML = '';
+      $('sess-wnotebox').className = 'notebox' + (session.note ? ' has' : '');
+      $('sess-wnote').value = session.note || '';
+      grow($('sess-wnote'));
+      padNav(true);
+      return;
+    }
 
     ['sess-exhead', 'sess-setshead', 'sess-sets', 'sess-addwrap'].forEach(function (id) {
       $(id).hidden = done;
