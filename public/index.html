@@ -1024,7 +1024,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 :root[data-theme="dark"] .dn-moon{opacity:1;transform:rotate(0) scale(1)}
 :root[data-theme="light"] .dn-moon{opacity:0;transform:rotate(-70deg) scale(.35)}
 :root[data-theme="light"] .dn-sun{opacity:1;transform:rotate(0) scale(1)}
-.picons{display:flex;gap:4px;flex:none}
+.picons{display:flex;gap:2px;flex:none}
+.picons .iconbtn{width:26px}
 .phead .title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
 .ptop{display:flex;align-items:center;gap:14px;padding:.6rem var(--pad) 0}
 .pid{flex:1;min-width:0}
@@ -3056,7 +3057,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4298';
+  var APP_VERSION = '3.4299';
 
   /* =========================================================
      STORE
