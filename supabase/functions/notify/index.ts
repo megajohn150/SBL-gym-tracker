@@ -38,7 +38,9 @@ const SELF: Record<string, { title: string; body: string }> = {
     body: 'Finished your workout? You still have a session in progress.'
   },
   // sent by the database on Sundays, to whoever trained that week
-  recap: { title: 'Tracker', body: 'Your week is wrapped. Tap to see how it went.' }
+  recap: { title: 'Tracker', body: 'Your week is wrapped. Tap to see how it went.' },
+  // sent by the database on the 1st, to whoever trained last month
+  report: { title: 'Tracker', body: 'Your monthly report is ready. Tap to see how the month went.' }
 };
 
 Deno.serve(async (req) => {
@@ -66,7 +68,7 @@ Deno.serve(async (req) => {
   // where a tap should land: the session for a like, its comments for a comment
   // or a reply, the person for a follow. Its own notification opens the app.
   const go = self
-    ? (kind === 'recap' ? { go: 'r' } : {})
+    ? (kind === 'recap' ? { go: 'r' } : kind === 'report' ? { go: 'm' } : {})
     : kind === 'follow'
       ? { go: 'u', id: actor }
       : { go: kind === 'like' ? 'w' : 'c', pu: post_user, pi: post_id };

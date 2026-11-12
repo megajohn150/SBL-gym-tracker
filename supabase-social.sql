@@ -552,3 +552,30 @@ end $$;
 revoke execute on function public.weekly_recap_push() from public, anon, authenticated;
 
 select cron.schedule('weekly-recap', '0 18,19 * * 0', $$select public.weekly_recap_push()$$);
+
+-- ------------------------------------------------------------------
+-- 12. Raport miesięczny. Pierwszego dnia miesiąca o 10:00 czasu
+--     polskiego idzie push do każdego, kto ma włączone powiadomienia
+--     i trenował w poprzednim miesiącu. Tak samo jak recap: cron budzi
+--     się o 08:00 i 09:00 UTC, a funkcja puszcza tę godzinę, która jest
+--     10:00 w Warszawie.
+-- ------------------------------------------------------------------
+create or replace function public.monthly_report_push() returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  u uuid;
+  here timestamp := now() at time zone 'Europe/Warsaw';
+begin
+  if extract(hour from here) <> 10 or extract(day from here) <> 1 then return; end if;
+  for u in
+    select distinct p.user_id from public.posts p
+    where p.date >= (date_trunc('month', here) - interval '1 month') at time zone 'Europe/Warsaw'
+      and p.date <  date_trunc('month', here) at time zone 'Europe/Warsaw'
+      and exists (select 1 from public.push_subs s where s.user_id = p.user_id)
+  loop
+    perform public.push_send('report', u, null, null, null);
+  end loop;
+end $$;
+revoke execute on function public.monthly_report_push() from public, anon, authenticated;
+
+select cron.schedule('monthly-report', '0 8,9 1 * *', $$select public.monthly_report_push()$$);

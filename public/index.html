@@ -3043,7 +3043,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4293';
+  var APP_VERSION = '3.4294';
 
   /* =========================================================
      STORE
@@ -3143,7 +3143,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // address first — the Supabase client wipes the hash while it looks for a
   // sign-in token of its own.
   var pendingGo = (function () {
-    var m = /^#go=(u|w|c|r):(.+)$/.exec(location.hash || '');
+    var m = /^#go=(u|w|c|r|m):(.+)$/.exec(location.hash || '');
     if (!m) return null;
     history.replaceState(null, '', location.pathname + location.search);
     var parts = m[2].split(':');
@@ -3151,6 +3151,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       ? { go: 'u', id: parts[0] }
       : m[1] === 'r'
         ? { go: 'r' }                      // the Sunday recap
+        : m[1] === 'm'
+          ? { go: 'm' }                    // the monthly report
         : { go: m[1], pu: parts[0], pi: parts.slice(1).join(':') };
   })();
 
@@ -7807,7 +7809,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     ['follow', 'New followers', 'Someone follows you'],
     ['rest', 'Rest timer', 'When your rest is over'],
     ['stale', 'Workout left running', 'A reminder when you forget to finish'],
-    ['recap', 'Weekly recap', 'Sunday evening, when your week is wrapped']
+    ['recap', 'Weekly recap', 'Sunday evening, when your week is wrapped'],
+    ['report', 'Monthly report', 'The 1st, when last month is written up']
   ];
 
   function drawPushKinds(sub) {
@@ -8839,6 +8842,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!me) { pendingGo = d; return; }      // the app is still waking up
     pendingGo = null;
     if (d.go === 'r') { push('stat-week'); return; }
+    if (d.go === 'm') { save('report-seen', reportKey()); push('stat-month'); return; }
     // on a cold start the reactions are not in yet, so clear them once they are
     goClear = d;
     clearNotesFor(d);
