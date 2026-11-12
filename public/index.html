@@ -3043,7 +3043,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4294';
+  var APP_VERSION = '3.4295';
 
   /* =========================================================
      STORE
@@ -6978,16 +6978,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return '<button data-k="' + k + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + lab + '</button>';
   }
 
-  // a step key asks for its sign on the next tap: padStep is the one being asked
-  var padStep = null, padW = false;
-  var PAD_STEPS = { s1: 1.1, s2: 1.25 };
+  var padW = false;
 
   function padGrid() {
     var w = padW;
     var rows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], ['.', 0, 'bk']];
-    var side = ['s1', 's2', 'p1', 'p2'];
+    var side = ['-1', '+1', 'p1', 'p2'];
     var PLATE_BIG = PLATE_SVG.replace('width="15" height="15"', 'width="21" height="21"');
-    var sideLab = ['&plusmn;1.1', '&plusmn;1.25', '<b>1</b>' + PLATE_BIG, '<b>2</b>' + PLATE_BIG];
+    var sideLab = ['&minus;1', '+1', '<b>1</b>' + PLATE_BIG, '<b>2</b>' + PLATE_BIG];
     var g = '';
     rows.forEach(function (row, r) {
       row.forEach(function (k) {
@@ -6996,10 +6994,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           : padKey(k, k);
       });
       if (!w) return;
-      var st = PAD_STEPS[side[r]];
-      g += st && padStep === side[r]
-        ? '<div class="signs">' + padKey('-' + st, '&minus;', 'ghost') + padKey('+' + st, '+', 'ghost') + '</div>'
-        : padKey(side[r], sideLab[r], 'ghost');
+      g += padKey(side[r], sideLab[r], 'ghost');
     });
     $('pad-grid').className = 'pad-grid' + (w ? ' w' : '');
     $('pad-grid').innerHTML = g;
@@ -7009,7 +7004,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var f = el.dataset.f, i = Number(el.dataset.i);
     padTarget = { idx: session.idx, i: i, f: f };
     padFresh = true;
-    padStep = null;
     padW = f === 'weight';
     padGrid();
     $('pad-sheet').hidden = false;
@@ -7104,15 +7098,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     var cur = st[padTarget.f] == null ? '' : String(st[padTarget.f]);
 
-    if (PAD_STEPS[k]) { padStep = k; padGrid(); return; }
     if (/^[+-]\d/.test(k)) {
       padFresh = false;
-      padStep = null;
-      padGrid();
       var kg = Math.round((num(cur) + parseFloat(k)) * 100) / 100;
       return padSet(String(kg < 0 ? 0 : kg));
     }
-    if (padStep) { padStep = null; padGrid(); }
     if (k === 'bk') { padFresh = false; return padSet(cur.slice(0, -1)); }
 
     // the first digit after opening replaces what was there, as a tap used to
