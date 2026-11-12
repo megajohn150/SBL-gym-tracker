@@ -2393,22 +2393,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       </div></div>
     </div>
 
-    <div class="group fold">
-      <button class="fold-h" aria-expanded="false"><span class="lab">Notifications</span><span class="chev">&rsaquo;</span></button>
-      <div class="fold-b"><div class="fold-in">
+    <div class="group">
       <div class="rows">
-        <button class="row" id="set-push">
-          <span class="lab">Push notifications</span>
-          <span class="val" id="set-push-val">Off</span>
+        <button class="row" data-push="notifset">
+          <span class="lab">Notifications</span>
           <span class="chev">&rsaquo;</span>
         </button>
-        <div class="row">
-          <span class="lab">Live updates</span>
-          <span class="val" id="set-live-val">Off</span>
-        </div>
       </div>
-      <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
-      </div></div>
     </div>
 
     <div class="group fold">
@@ -2471,6 +2462,30 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </section>
 
   <!-- ===================== SESSION SETTINGS ===================== -->
+  <section class="screen" id="s-notifset" data-tab="profile" data-title="Notifications">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Notifications</h1>
+      <span></span>
+    </div>
+    <div class="scroll">
+    <div class="group">
+      <div class="rows">
+        <button class="row" id="set-push">
+          <span class="lab">Push notifications</span>
+          <span class="val" id="set-push-val">Off</span>
+          <span class="chev">&rsaquo;</span>
+        </button>
+        <div class="row">
+          <span class="lab">Live updates</span>
+          <span class="val" id="set-live-val">Off</span>
+        </div>
+      </div>
+      <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
+    </div>
+    </div>
+  </section>
+
   <section class="screen" id="s-music" data-tab="profile" data-title="Music">
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
@@ -3032,7 +3047,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4290';
+  var APP_VERSION = '3.4291';
 
   /* =========================================================
      STORE
@@ -5030,6 +5045,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     }
     if (id === 's-stat-stall') drawStatStall();
     if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
+    if (id === 's-notifset') { drawPushRow(); drawLiveRow(); }
     if (id === 's-music') drawMusic();
     if (id === 's-resttimer') drawRestCfg();
     if (id === 's-rtview') drawRtView();
