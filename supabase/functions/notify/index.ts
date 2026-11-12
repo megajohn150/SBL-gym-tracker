@@ -56,9 +56,11 @@ Deno.serve(async (req) => {
     self
       ? Promise.resolve({ data: null })
       : db.from('profiles').select('username').eq('user_id', actor).maybeSingle(),
-    db.from('push_subs').select('endpoint,p256dh,auth').eq('user_id', target)
+    db.from('push_subs').select('endpoint,p256dh,auth,prefs').eq('user_id', target)
   ]);
-  if (!subs?.length) return new Response('nobody listening', { status: 200 });
+  // each device picks the kinds it wants; a missing key means on
+  const live = (subs ?? []).filter((s) => s.prefs?.[kind as string] !== false);
+  if (!live.length) return new Response('nobody listening', { status: 200 });
 
   const body = self ? self.body : (who?.username ?? 'Someone') + (LINE[kind] ?? '');
   // where a tap should land: the session for a like, its comments for a comment
@@ -75,7 +77,7 @@ Deno.serve(async (req) => {
   // a subscription the browser has thrown away answers 404 or 410, and is
   // not worth keeping around
   const dead: string[] = [];
-  await Promise.all(subs.map(async (s) => {
+  await Promise.all(live.map(async (s) => {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },

@@ -224,6 +224,8 @@ create table if not exists public.push_subs (
   auth       text not null,
   created_at timestamptz not null default now()
 );
+-- co to urządzenie chce dostawać: klucz = rodzaj pusha, false = wyłączony, brak klucza = włączony
+alter table public.push_subs add column if not exists prefs jsonb not null default '{}'::jsonb;
 create index if not exists push_subs_user_idx on public.push_subs (user_id);
 alter table public.push_subs enable row level security;
 

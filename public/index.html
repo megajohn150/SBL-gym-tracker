@@ -2466,17 +2466,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll">
     <div class="group">
       <div class="rows">
+        <div class="row">
+          <span class="lab">Live updates</span>
+          <span class="val" id="set-live-val">Off</span>
+        </div>
         <button class="row" id="set-push">
           <span class="lab">Push notifications</span>
           <span class="val" id="set-push-val">Off</span>
           <span class="chev">&rsaquo;</span>
         </button>
-        <div class="row">
-          <span class="lab">Live updates</span>
-          <span class="val" id="set-live-val">Off</span>
-        </div>
       </div>
       <p class="hint" id="set-push-note">Likes, comments and new followers, while the app is closed.</p>
+      <div id="push-kinds" hidden style="padding:.4rem var(--pad) 0"></div>
     </div>
     </div>
   </section>
@@ -3042,7 +3043,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4292';
+  var APP_VERSION = '3.4293';
 
   /* =========================================================
      STORE
@@ -7789,10 +7790,53 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     pushSub().then(function (sub) {
       pushLive = !!sub;
       val.textContent = sub ? 'On' : 'Off';
+      drawPushKinds(sub);
       note.textContent = 'Reactions, the rest timer and a workout left running, ' +
         'while the app is closed.';
     });
   }
+
+  /* One switch per kind of push. Each device keeps its own choice in its
+     push_subs row (prefs, false = off) and the notify function leaves out
+     the kinds that row has switched off, so a switch really stops the push. */
+  var PUSH_KINDS = [
+    ['like', 'Likes', 'Someone likes your workout'],
+    ['comment', 'Comments', 'Someone comments on your workout'],
+    ['reply', 'Replies', 'Someone replies to your comment'],
+    ['thread', 'Threads', 'New replies in a thread you are in'],
+    ['follow', 'New followers', 'Someone follows you'],
+    ['rest', 'Rest timer', 'When your rest is over'],
+    ['stale', 'Workout left running', 'A reminder when you forget to finish'],
+    ['recap', 'Weekly recap', 'Sunday evening, when your week is wrapped']
+  ];
+
+  function drawPushKinds(sub) {
+    var box = $('push-kinds');
+    box.hidden = !sub;
+    if (!sub || !sb || !me) return;
+    sb.from('push_subs').select('prefs').eq('endpoint', sub.endpoint).maybeSingle().then(function (r) {
+      var pr = (r.data && r.data.prefs) || {};
+      box.innerHTML = PUSH_KINDS.map(function (k) {
+        return '<label class="privrow"><span>' + k[1] + '<i>' + k[2] + '</i></span>' +
+          '<input type="checkbox" data-pk="' + k[0] + '"' + (pr[k[0]] === false ? '' : ' checked') + '></label>';
+      }).join('');
+    });
+  }
+
+  $('push-kinds').addEventListener('change', function () {
+    var pr = {};
+    Array.prototype.forEach.call(this.querySelectorAll('[data-pk]'), function (c) {
+      if (!c.checked) pr[c.dataset.pk] = false;
+    });
+    pushSub().then(function (sub) {
+      if (!sub) return;
+      return sb.from('push_subs').update({ prefs: pr }).eq('endpoint', sub.endpoint)
+        .then(function (r) { if (r.error) throw r.error; });
+    }).catch(function () {
+      toast('Could not save that');
+      pushSub().then(drawPushKinds);
+    });
+  });
 
   function pushOn() {
     if (!sb || !me) { toast('Sign in first'); return; }
