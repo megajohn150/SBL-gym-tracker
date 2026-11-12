@@ -372,6 +372,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .exchip[aria-current="true"]::after{
   content:"";position:absolute;left:28%;right:28%;bottom:6px;height:2px;background:var(--fg);
 }
+.exchip.skipped,.exchip.skipped[aria-current="true"]{opacity:.35}
+.exchip.skipped .ini{text-decoration:line-through}
+.skipoff{opacity:.35;pointer-events:none}
+.exhead.skiphead>:not(.iconbtn){opacity:.35}
+.dex.skipped{opacity:.45}
 .exchip .n{font-size:.6rem;font-weight:700;letter-spacing:.08em;color:var(--fg-3)}
 .exchip .ini{
   display:block;margin-top:9px;font-family:var(--display);font-weight:700;font-size:.8rem;letter-spacing:.02em;
@@ -2771,6 +2776,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button id="xp-swap">Swap exercise</button>
       <button id="xp-up">Move up</button>
       <button id="xp-down">Move down</button>
+      <button id="xp-skip">Skip exercise</button>
       <button id="xp-drop" class="danger">Remove from workout</button>
     </div>
   </div>
@@ -3057,7 +3063,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4300';
+  var APP_VERSION = '3.4301';
 
   /* =========================================================
      STORE
@@ -3370,7 +3376,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var out = {}, cuts = cutMap();
     store.workouts.forEach(function (w) {
       w.exercises.forEach(function (e) {
-        if (!afterCut(w, cuts[exKey(e)] || 0)) return;
+        if (e.skipped || !afterCut(w, cuts[exKey(e)] || 0)) return;
         var x = e.exId && byId(e.exId), k = nameKey(x ? x.name : e.name);
         var r = out[k] || (out[k] = [0, 0, 0]);
         e.sets.forEach(function (st) {
@@ -5336,7 +5342,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (recent) {
       var at = {};
       store.workouts.forEach(function (w) {
-        w.exercises.forEach(function (e) { if (!(at[e.exId] >= w.date)) at[e.exId] = w.date; });
+        w.exercises.forEach(function (e) { if (!e.skipped && !(at[e.exId] >= w.date)) at[e.exId] = w.date; });
       });
       hits = hits.filter(function (x) { return at[x.id]; })
         .sort(function (a, b) { return at[a.id] < at[b.id] ? 1 : -1; });
@@ -5479,7 +5485,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var key = x.id, best = bestsFor(key), cut = cutoffFor(key), rows = [];
     store.workouts.forEach(function (w) {
       w.exercises.forEach(function (e) {
-        if (exKey(e) !== key) return;
+        if (e.skipped || exKey(e) !== key) return;
         var top = 0;
         e.sets.forEach(function (st) { if (logged(st)) top = Math.max(top, num(st.weight)); });
         rows.push({ w: w, e: e, top: top, live: afterCut(w, cut) });
@@ -5542,7 +5548,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // how many workouts this exercise appears in — nothing to reset if none
   function historyCount(key) {
     return store.workouts.filter(function (w) {
-      return w.exercises.some(function (e) { return exKey(e) === key; });
+      return w.exercises.some(function (e) { return !e.skipped && exKey(e) === key; });
     }).length;
   }
 
@@ -5573,7 +5579,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     cutRows = [];
     store.workouts.forEach(function (w) {
       if (seen[w.id]) return;
-      var hit = w.exercises.filter(function (e) { return exKey(e) === x.id; })[0];
+      var hit = w.exercises.filter(function (e) { return !e.skipped && exKey(e) === x.id; })[0];
       if (!hit) return;
       seen[w.id] = 1;
       var top = 0;
@@ -6665,7 +6671,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       var t = new Date(w.date).getTime();
       if (t < when) return;
       w.exercises.forEach(function (e) {
-        if (exKey(e) === key) { last = e; when = t; }
+        if (!e.skipped && exKey(e) === key) { last = e; when = t; }
       });
     });
     return (last && last.note) || '';
@@ -6788,7 +6794,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     $('sess-chips').innerHTML = session.exercises.map(function (e, i) {
       var ed = exDone(e);
-      return '<button class="exchip' + (ed ? ' done' : '') + '" data-chip="' + i +
+      return '<button class="exchip' + (e.skipped ? ' skipped' : ed ? ' done' : '') + '" data-chip="' + i +
         '" aria-current="' + (!done && i === session.idx) + '">' +
         '<span class="n">' + (i + 1) + (ed ? ' \u2713' : '') + '</span>' +
         '<span class="ini">' + esc(e.code || initials(e.name)) + '</span>' +
@@ -6805,7 +6811,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var planned = ex.unilateral ? ex.sets.length / 2 : ex.sets.length;
     $('sess-tags').innerHTML = '<span class="extag">Sets ' + planned + '</span>' +
       (ex.reps ? '<span class="extag">Reps ' + esc(ex.reps) + '</span>' : '') +
-      (ex.unilateral ? '<span class="extag">Uni</span>' : '');
+      (ex.unilateral ? '<span class="extag">Uni</span>' : '') +
+      (ex.skipped ? '<span class="extag">Skipped</span>' : '');
 
     var PIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3-1-6ZM12 15v5"/></svg>';
     var PEN = NOTE_SVG;
@@ -6832,6 +6839,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     placeWarn();
 
     if (padTarget && padTarget.idx !== session.idx) closePad();
+
+    var sk = !done && !!ex.skipped;
+    ['sess-top', 'sess-setshead', 'sess-sets', 'sess-addwrap'].forEach(function (id) {
+      $(id).classList.toggle('skipoff', sk);
+    });
+    $('sess-exhead').classList.toggle('skiphead', sk);
 
     livePrs(ex);
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
@@ -7287,12 +7300,22 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   $('sess-prev').addEventListener('click', function () {
     if (padTarget) { padWalk(-1); return; }
-    if (session.idx > 0) { session.idx--; drawSession(); window.scrollTo(0, 0); }
+    stepEx(-1);
   });
   $('sess-next').addEventListener('click', function () {
     if (padTarget) { padWalk(1); return; }
-    if (session.idx < session.exercises.length) { session.idx++; drawSession(); window.scrollTo(0, 0); }
+    stepEx(1);
   });
+
+  // the arrows walk past skipped exercises; the end card sits one past the last
+  function stepEx(dir) {
+    var i = session.idx + dir, n = session.exercises.length;
+    while (i >= 0 && i < n && session.exercises[i].skipped) i += dir;
+    if (i < 0) return;
+    session.idx = i;
+    drawSession();
+    window.scrollTo(0, 0);
+  }
 
   /* --- finishing a workout --- */
   var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -7426,6 +7449,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     order.forEach(function (w) {
       w.records = 0;
       w.exercises.forEach(function (e) {
+        if (e.skipped) return;
         var k = exKey(e);
         var b = bests[k] || (bests[k] = { weight: 0, orm: 0, vol: 0 });
         var live = afterCut(w, cuts[k] || 0);
@@ -7450,7 +7474,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     store.workouts.forEach(function (w) {
       if (!afterCut(w, cut)) return;
       w.exercises.forEach(function (e) {
-        if (exKey(e) !== key) return;
+        if (e.skipped || exKey(e) !== key) return;
         best.seen = true;
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
@@ -7490,13 +7514,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         return {
           exId: e.exId, name: e.name, muscle: e.muscle, unilateral: e.unilateral,
           note: (e.snote || '').trim(),
-          sets: e.sets.filter(logged).map(function (st) {
+          skipped: e.skipped ? true : undefined,
+          sets: e.skipped ? [] : e.sets.filter(logged).map(function (st) {
             var out = { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir };
             if (st.plate) out.plate = plateCount(st);
             return out;
           })
         };
-      }).filter(function (e) { return e.sets.length > 0; })
+      }).filter(function (e) { return e.sets.length > 0 || e.skipped; })
     };
     store.workouts.unshift(w);
     recomputeRecords();
@@ -8142,13 +8167,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // the clock is taken as it stands; both it and the date are editable later
   $('sess-end').addEventListener('click', function () {
-    if (!session.exercises.some(function (e) { return e.sets.some(logged); })) {
+    if (!session.exercises.some(function (e) { return !e.skipped && e.sets.some(logged); })) {
       askConfirm('Empty workout', 'No set has any reps logged, so there is nothing to save.',
         'Discard workout', dropSession);
       return;
     }
     var open = 0;
     session.exercises.forEach(function (e) {
+      if (e.skipped) return;
       e.sets.forEach(function (st) { if (!st.done) open++; });
     });
     if (!open) { finishSession(Math.max(60, sessionSeconds())); return; }
@@ -8416,8 +8442,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function workoutCard(w, ordinal, who) {
     {
       var t = workoutTotals(w);
-      var shown = w.exercises.slice(0, 3);
-      var rest = w.exercises.length - shown.length;
+      var did = w.exercises.filter(function (e) { return !e.skipped; });
+      var shown = did.slice(0, 3);
+      var rest = did.length - shown.length;
       var d = new Date(w.date);
       return '<article class="wcard' + (who ? ' pal' : '') + '" data-w="' + w.id + '"' +
           (who ? ' data-u="' + esc(w.by) + '"' : '') + '>' +
@@ -11055,7 +11082,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       // in a friend's session, a lift you both have a weight for opens the two of you side by side
       var shared = detailRO ? sharedWith(detailUid, e.name, mineRec) : '';
       var tag = (known || shared) ? 'button' : 'div';
-      return '<div class="dex' + (detailEdit ? ' edit' : '') + '">' +
+      return '<div class="dex' + (detailEdit ? ' edit' : '') + (e.skipped ? ' skipped' : '') + '">' +
         '<div class="dexline"><' + tag + ' class="dexhead"' +
         (known ? ' data-ex-open="' + esc(e.exId) + '"' : shared ? ' data-cmp-ex="' + esc(shared) + '"' : '') +
         '>' + muscleArt(e.muscle) +
@@ -11105,8 +11132,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
                 '<button class="kill" data-xset="' + ei + '-' + si + '" aria-label="Remove set">&times;</button>' +
                 '</div>';
             }).join('')
-          : '<div class="wmore">Nothing logged</div>') +
-        (detailEdit
+          : '<div class="wmore">' + (e.skipped ? 'Skipped' : 'Nothing logged') + '</div>') +
+        (detailEdit && !e.skipped
           ? '<button class="addrow" data-addset="' + ei + '">+ Add set</button>'
           : '') +
         '</div>';
@@ -11300,7 +11327,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     detailW.exercises = detailW.exercises
       .map(function (x) { x.sets = x.sets.filter(logged); return x; })
-      .filter(function (x) { return x.sets.length; });
+      .filter(function (x) { return x.sets.length || x.skipped; });
     recomputeRecords();
     saveStore();
     drawHome();
@@ -11491,6 +11518,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('xp-up').hidden = session.idx === 0;
     $('xp-down').hidden = session.idx >= last;
     $('xp-drop').hidden = session.exercises.length < 2;
+    $('xp-skip').textContent = session.exercises[session.idx].skipped ? 'Unskip exercise' : 'Skip exercise';
     $('ex-pop').hidden = false;
   });
 
@@ -11607,6 +11635,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('xp-up').addEventListener('click', function () { closeExPop(); moveSessionEx(-1); });
   $('xp-down').addEventListener('click', function () { closeExPop(); moveSessionEx(1); });
   $('xp-drop').addEventListener('click', function () { closeExPop(); dropSessionEx(); });
+  // a skipped exercise stays in the line-up, greyed out, and is left out of the numbers when the workout ends
+  $('xp-skip').addEventListener('click', function () {
+    closeExPop();
+    var ex = session && session.exercises[session.idx];
+    if (!ex) return;
+    if (ex.skipped) delete ex.skipped; else ex.skipped = true;
+    closePad();
+    drawSession();
+  });
 
   // an edit made mid-workout should show up in the running session too
   function syncSessionExercise(x) {
