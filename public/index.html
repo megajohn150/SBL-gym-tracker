@@ -1617,7 +1617,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 /* the lights are pinned, so the mode buttons say so */
 /* the pictures are drawn on white and grey: redraw them as a warm grey figure with only a trace of green on a light beige disc, just a shade deeper than the cream */
 :is([data-skin="mellow"],[data-skin="cocoa"]) .dav,:is([data-skin="mellow"],[data-skin="cocoa"]) .avatar.pic{filter:url(#mellow-duo)}
-:is([data-skin="mellow"],[data-skin="cocoa"]) #seg-mode{opacity:.4;pointer-events:none}
+:is([data-skin="mellow"]) #seg-mode{opacity:.4;pointer-events:none}
 /* no sun or moon here: it frees room for the handle, and Themes still leads out */
 :is([data-skin="mellow"],[data-skin="cocoa"]) #daynight{display:none}
 :is([data-skin="mellow"],[data-skin="cocoa"]) .phead .title{font-size:1.8rem}
@@ -1632,6 +1632,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   --shadow:0 6px 18px rgba(42,28,21,.08);
 }
 [data-skin="cocoa"] .dav,[data-skin="cocoa"] .avatar.pic{filter:url(#cocoa-duo)}
+/* Cocoa after dark: the same brown, the cream turned round */
+[data-theme="dark"][data-skin="cocoa"]{
+  --bg:#1d1612;--surface:#271e18;--fg:#f0e6d6;--fg-2:#c4b5a2;--fg-3:#8f8173;
+  --line:#3a2e26;--accent:#e6d3b8;--accent-ink:#1d1612;
+  --border:1px solid #3a2e26;--dash:1px solid #3a2e26;--shadow:0 6px 18px rgba(0,0,0,.35);
+}
 
 /* ===========================================================
    SIGNAL COLOURS
@@ -2611,7 +2617,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         </button>
         <button class="opt" id="mellow-row">
           <span class="swatch sw-mellow"><i></i><i></i><i></i></span>
-          <span class="txt"><span class="nm">Mellow</span><span class="ds">Butter cream, in green or brown. Always light.</span></span>
+          <span class="txt"><span class="nm">Mellow</span><span class="ds">Butter cream, in green or brown. The brown has a dark side.</span></span>
           <span class="tick">&#10003;</span>
         </button>
         <div id="mellow-sub" class="seg two" hidden>
@@ -3050,7 +3056,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4296';
+  var APP_VERSION = '3.4297';
 
   /* =========================================================
      STORE
@@ -11932,11 +11938,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
      THEME
      ========================================================= */
   // skins that have no dark side: the saved mode is kept, so leaving one brings it back
-  var LIGHT_ONLY = { mellow: true, cocoa: true };
+  var LIGHT_ONLY = { mellow: true };
+  // Cocoa has a dark side, but it only turns up when asked for: "system" stays light there
+  function modeOf(skin, mode) {
+    if (LIGHT_ONLY[skin]) return 'light';
+    return mode === 'system' ? (skin === 'cocoa' ? 'light' : (mq.matches ? 'dark' : 'light')) : mode;
+  }
   var DEFAULT_SKIN = 'cocoa';       // what a first launch, or a fresh install, looks like
   function applyMode(mode) {
-    var lit = LIGHT_ONLY[root.getAttribute('data-skin')];
-    root.setAttribute('data-theme', lit ? 'light' : mode === 'system' ? (mq.matches ? 'dark' : 'light') : mode);
+    root.setAttribute('data-theme', modeOf(root.getAttribute('data-skin'), mode));
     document.querySelectorAll('#seg-mode button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
     });
@@ -11963,7 +11973,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // the look on screen as a preset string; a light-only skin has no mode of its own
   function nowPreset() {
     var skin = load('skin') || DEFAULT_SKIN;
-    return (LIGHT_ONLY[skin] ? 'light' : (load('mode') || 'system')) + ' ' + skin;
+    var mode = load('mode') || 'system';
+    return (skin === 'cocoa' ? (mode === 'dark' ? 'dark' : 'light') : LIGHT_ONLY[skin] ? 'light' : mode) + ' ' + skin;
   }
   function paintPresets() {
     var now = nowPreset();
