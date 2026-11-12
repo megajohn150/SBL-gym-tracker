@@ -582,7 +582,7 @@ body.in-session .tabs{display:none}
   content:"";position:absolute;left:-13px;top:0;bottom:0;width:3px;
   background:var(--accent);border-radius:2px;
 }
-.wtop{display:flex;flex-wrap:wrap;align-items:center;gap:0 11px;text-align:right}
+.wtop{display:flex;align-items:center;gap:11px;text-align:right}
 .wtop .who{flex:1;min-width:0;text-align:left}
 /* the "you" tag wraps to a second line that the fixed height clips: no room, no tag, no ellipsis */
 .wtop .who .nm{
@@ -590,12 +590,12 @@ body.in-session .tabs{display:none}
   font-size:.85rem;font-weight:600;color:var(--fg-2);
   overflow:hidden;white-space:nowrap;
 }
-.wtop .right{flex:none}
+.wtop .right{min-width:0;max-width:62%}
+.wtop .right > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wnum{display:block;font-size:9px;letter-spacing:.12em;color:var(--fg-3);font-weight:600}
 .wdate{display:block;margin-top:2px;font-size:.8rem;color:var(--fg-3)}
 .wname{
-  display:block;flex:0 0 100%;min-width:0;margin:.2rem 0 0;line-height:1.08;font-family:var(--display);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  display:block;margin:.35rem 0 0;line-height:1.08;font-family:var(--display);
   font-size:1rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
 }
 .wpr{
@@ -8561,8 +8561,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<span class="right">' +
             (ordinal ? '<span class="wnum">' + pad2(ordinal) + '</span>' : '') +
             '<span class="wdate">' + relDate(w.date) + ', ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + '</span>' +
+            '<span class="wname">' + esc(w.name) + '</span>' +
           '</span>' +
-          '<span class="wname">' + esc(w.name) + '</span>' +
         '</div>' +
         '<span class="wpr">' + (w.records ? w.records + (w.records === 1 ? ' PR' : " PR's") : "0 PR's :(") + '</span>' +
         '<div class="wstats3">' +
