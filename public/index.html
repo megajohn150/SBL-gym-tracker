@@ -2242,7 +2242,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
       <h1>Notifications</h1>
-      <span></span>
+      <button class="barend" id="notes-all" hidden>Read all</button>
     </div>
     <div class="scroll">
       <div class="nlist" id="notes-list" hidden></div>
@@ -3057,7 +3057,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4299';
+  var APP_VERSION = '3.4300';
 
   /* =========================================================
      STORE
@@ -8978,6 +8978,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     notesShown = noteList();
     $('notes-empty').hidden = notesShown.length > 0;
     $('notes-list').hidden = !notesShown.length;
+    $('notes-all').hidden = !notesShown.length;
     $('notes-list').innerHTML = notesShown.map(function (n, i) {
       return '<div class="nrow">' +
         '<button class="ngo" data-note="' + i + '">' +
@@ -8993,6 +8994,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     push('notes');
     save('notes-seen', new Date().toISOString());
     drawBell();
+  });
+
+  $('notes-all').addEventListener('click', function () {
+    notesShown.forEach(dropNote);
+    drawNotes(); drawBell();
   });
 
   $('notes-list').addEventListener('click', function (e) {
