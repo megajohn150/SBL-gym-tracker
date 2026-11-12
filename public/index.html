@@ -2487,72 +2487,92 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span></span>
     </div>
     <div class="scroll">
-    <div class="dsec" style="border-top:none;margin-top:0">Start here</div>
+    <div class="dsec" style="border-top:none;margin-top:0">First steps</div>
     <ul class="gdl">
-      <li><b>Three tabs.</b> Home is your log and your friends'. Workout holds your routines. Profile holds charts, stats and settings.</li>
-      <li><b>1. Make exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Name and target muscle are enough. Optional: a short code, a cue (one reminder shown while you train), a weight step (what the +/&minus; keys add). <b>Unilateral</b> means one side at a time, each side gets its own sets. A shoulder exercise needs a head (front, side or rear).</li>
-      <li><b>2. Make a routine.</b> Workout &rsaquo; + New routine. Add exercises, set the sets and a rep range like 8-12. Arrows reorder; &#8942; saves it.</li>
-      <li><b>3. Train.</b> Start routine, or Start empty workout and add exercises as you go.</li>
+      <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload.</li>
+      <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
+      <li><b>Three tabs.</b> Home: your log and your friends'. Workout: your routines. Profile: charts, stats, friends, settings.</li>
+      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately.</li>
+      <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;.</li>
+      <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go.</li>
     </ul>
 
-    <div class="dsec">During a workout</div>
+    <div class="dsec">Training</div>
     <ul class="gdl">
-      <li><b>Move around.</b> The strip on top jumps to any exercise; Prev / Next walk through them. A tick on a chip means all its sets are done. Tap the exercise name for its history and records.</li>
-      <li><b>Log a set.</b> Tap Weight or Reps: a number pad opens. +/&minus; add the exercise's step, the plate keys add 2.3 kg per plate, holding backspace clears the box. Arrows on the bottom walk weight, reps, RIR.</li>
-      <li><b>RIR</b> is reps left in reserve. F means failure.</li>
-      <li><b>Last time.</b> Grey numbers are what you did last time. Tap the set number to fill them in; tap it again once the set is full to tick it done. The small +/&minus; in a box is the change since last time.</li>
-      <li><b>Medals.</b> A ticked set that beats your heaviest weight, est. 1RM or best set gets a medal; tap it for the old record.</li>
-      <li><b>Sets.</b> Add Set below the list. Swipe a set left to delete it.</li>
-      <li><b>Notes.</b> The note box is for this exercise today; next time it shows as "Last time". A red warning square means this exercise trains an injured muscle.</li>
-      <li><b>Exercise menu (&#8942; by the name).</b> Edit the exercise; edit sets and reps (saved to your routine); <b>Swap</b> for another of the same muscle, this workout only; move up or down; <b>Skip</b> (greyed out and left out of every number; tap Unskip to undo); remove.</li>
-      <li><b>Top menu.</b> Add exercise, pause, discard. The back arrow leaves the workout running: a bar at the bottom of the app takes you back.</li>
-      <li><b>Timer button</b> in the footer starts a rest timer; it is a push-notification too if the phone sleeps. If you set a Spotify or SoundCloud link, its button sits beside it.</li>
-      <li><b>Finish.</b> After the last exercise: reorder, add one more, rename the workout, write a session note, End workout. The summary shows your records and can share an image.</li>
+      <li><b>Moving around.</b> The strip on top jumps to any exercise (a tick = all sets done); Prev / Next walk through them; the end card is after the last one. Tap the exercise name to open its history and records.</li>
+      <li><b>Logging.</b> Tap Weight or Reps and the number pad opens. +/&minus; add the exercise's step; the plate keys add 2.3 kg per plate (1 or 2); holding backspace clears the box. While the pad is open Prev / Next walk weight, reps, RIR. RIR (reps in reserve) is how many reps you had left; F is failure.</li>
+      <li><b>Last time.</b> Grey numbers in the boxes are what you did last time; the small +/&minus; in a box is the change since then. Tap the set number to fill in last time's numbers (or the set above, if the exercise is new). When the set is full, tap it again to tick it done. Rubbing a number out un-ticks it.</li>
+      <li><b>Sets.</b> Add Set under the list. Swipe a set left, then Delete (unilateral: both sides go).</li>
+      <li><b>Medals.</b> A ticked set that beats your heaviest weight, estimated 1RM or best set (weight x reps) gets a medal and a short banner. Tap the medal to see the old record. The first time you do an exercise only sets the bar; nothing to beat yet.</li>
+      <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
+      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle, this workout only); Move up or down; <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
+      <li><b>Top menu (&#8942;).</b> Add exercise, Pause (the clock stops), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
+      <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
+      <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
     </ul>
 
     <div class="dsec">Routines</div>
     <ul class="gdl">
-      <li>Tap a routine to edit it; the card shows how long it usually takes (tap for the last runs). "View muscles targeted" shows a body map.</li>
-      <li>Reorder routines with Reorder. In a routine, &#8942; &rsaquo; <b>Enable following</b> lets friends follow it: your changes reach them, nothing of theirs comes back.</li>
-      <li>On a friend's profile open their routine: <b>Follow routine</b> keeps it in step with theirs (read only, "Make it mine" to take your own copy), <b>Copy routine</b> copies it once.</li>
+      <li>A card shows exercises, sets and the usual duration (average of the last five runs; tap it to see them). Tap the card to open the routine: a chart of every run (Volume / Reps / Time, line or bars, range), its exercises, and "View muscles targeted" (a body map).</li>
+      <li>&#8942; on that screen: Edit routine, Duplicate routine. Editing shows a bar at the bottom: Save or the x to discard. Reorder on the Workout tab drags cards into order. In the editor, &#8942; also has Delete (finished workouts stay).</li>
+      <li><b>Enable following</b> (editor &#8942;): friends can follow this routine. Your changes reach them; nothing they do reaches yours. "Shared" on the card shows who follows it.</li>
+      <li><b>Following a friend's routine.</b> On their profile open a routine: <b>Follow routine</b> adds it to yours and keeps it in step with theirs (you can run it, and change how you log it: standard or unilateral, side, weight step, cue). <b>Copy routine</b> copies it once. If they stop sharing, it freezes. &#8942; &rsaquo; Make it mine cuts the link so you can edit; Unfollow removes it.</li>
+    </ul>
+
+    <div class="dsec">Exercises list and page</div>
+    <ul class="gdl">
+      <li>Search by name or muscle. When picking for a routine or workout, switch between Recently used and By muscle.</li>
+      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts.</li>
+      <li>Delete an exercise from its edit screen; it leaves your routines too, past workouts keep it, and Undo is offered.</li>
     </ul>
 
     <div class="dsec">Home</div>
     <ul class="gdl">
-      <li><b>Week bar:</b> workouts and sets this week (against your targets) and your week streak, weeks in a row with a workout.</li>
-      <li><b>Feed:</b> your sessions and your friends'. All / Me / Friends filter appears once friends train. Open a workout to see it, like and comment, or (yours) Edit workout, Save as routine, Delete.</li>
-      <li>A card at the top appears when a friend is training right now. The bell holds notifications; the magnifier finds people by username.</li>
-      <li>Cards may offer the Sunday recap, last month's report and a backup reminder.</li>
-      <li><b>Update:</b> drag down from the top of Home, Workout or Profile to reload the newest version.</li>
+      <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
+      <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live), a backup reminder, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
+      <li><b>Feed:</b> your workouts and your friends'; All / Me / Friends appears once friends have trained. 30 cards at a time, Load more for the rest. Magnifier finds people; bell shows notifications.</li>
+      <li><b>A workout.</b> Tap a card to open it: totals with the change versus your last run of that routine, muscle split, every set (tap a medal for the old record; a plate icon means plates were used). &#8942;: <b>Edit workout</b> (name, start, duration, notes, weights, reps, RIR, plates, add/remove/reorder sets and exercises; Save or x at the bottom), <b>Save as routine</b>, Delete (Undo offered).</li>
+      <li><b>Like and comment.</b> Thumb to like (hold it to see who liked). Bubble opens comments: write, Reply, Delete your own. Likes and comments made offline are sent later.</li>
+      <li><b>Bell.</b> Likes, comments, replies, threads you joined, new followers. Tap one to open it, x or Read all to clear.</li>
+      <li><b>Update.</b> Drag down from the top of Home, Workout, Profile or Settings to reload the newest version ("Version updated" appears after).</li>
     </ul>
 
     <div class="dsec">Profile</div>
     <ul class="gdl">
-      <li>The chart shows Duration, Volume or Reps over a range you pick. Under it: Exercises, Calendar (month to multi-year), Stats, Friends, and your workouts with search.</li>
-      <li>Top icons: sun/moon light or dark, brush themes, person your account (picture, username, name, bio), gear settings.</li>
+      <li>Top icons: sun/moon (light or dark; hold it to cycle themes), brush (Themes), person (picture, username, name, bio), gear (Settings).</li>
+      <li>Counts of workouts, followers, following (tap a count for the list; Remove drops a follower). A highlight means someone follows you and you have not followed back.</li>
+      <li>Chart of Duration, Volume or Reps by day, week or month; Last month to Lifetime. Tap a bar for its value.</li>
+      <li>Dashboard: Exercises, Calendar, Stats, Friends. Below: all your workouts; the filter picks one routine; search (with 6 or more workouts) reads names, exercises and notes.</li>
+      <li><b>Calendar:</b> Month, 3 months, Year, Multi-year (tap the title). Tap a day with a workout to open it. The streak sits on top.</li>
     </ul>
 
     <div class="dsec">Stats</div>
     <ul class="gdl">
-      <li><b>Set count per muscle group:</b> last full week against your goals. &#8942; &rsaquo; <b>Weekly targets</b> sets sets and days for each muscle, plus workouts a week (Total). Home and the body map use these.</li>
-      <li><b>Muscle distribution:</b> a chart against the period before, and a body map.</li>
-      <li><b>Injuries:</b> add one with the muscles it affects; those exercises get a warning in a workout.</li>
-      <li><b>Muscle readiness:</b> which muscles have rested 72 h. <b>No recent records:</b> lifts stuck for 4+ weeks.</li>
-      <li><b>Weekly recap</b> (Sunday, shareable as an image) and <b>Monthly report</b>.</li>
-      <li>On an exercise's page, &#8942; &rsaquo; <b>Reset records</b> stops older sessions counting towards records, and the Friends leaderboard ranks heaviest lifts.</li>
+      <li><b>Set count per muscle group:</b> the last full week (a Sunday workout closes the week), sets and days per muscle against your goals; a goal is marked once reached. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). Home's week bar reads these.</li>
+      <li><b>Muscle distribution, Chart:</b> radar of this period against the one before (7 days to a year) with workouts, duration, volume, sets.</li>
+      <li><b>Muscle distribution, Body:</b> a body map coloured green to red by sets, week by week with the arrows; the strip shows which days you trained.</li>
+      <li><b>Injuries:</b> name it and mark the muscles; the map shows them in red and those exercises get a warning in a workout.</li>
+      <li><b>Muscle readiness:</b> a body map of what you trained in the last 72 hours; red is fresh work, green is recovering, gone is ready.</li>
+      <li><b>No recent records:</b> lifts you still do but have not set a record in for 4+ weeks; tap one to open it.</li>
+      <li><b>Weekly recap:</b> the week with duration, volume, sets, streak, muscles and records, against the week before. Arrows or swipe go back; the share button makes an image. Pushed on Sunday evening.</li>
+      <li><b>Monthly report:</b> last full month: a metric over 12 months, workout days, muscles, records. Pushed on the 1st.</li>
     </ul>
 
     <div class="dsec">Friends</div>
     <ul class="gdl">
-      <li>Find someone by username and follow them. When you follow each other you are friends: you see each other's workouts and live sessions. On a friend's profile, Compare sets you against them.</li>
+      <li>Find people by username and follow. When you follow each other you are <b>friends</b>: you see each other's workouts, routines, week chart, streak, and live workouts. Strangers see only name, bio and counts.</li>
+      <li><b>Compare</b> (on a friend's profile): the last 30 days side by side (muscle radar, workout count, time, volume) and the lifts you both have, by name. Open one for 1RM, heaviest and best set, plus a leaderboard. Lifts you share in a friend's workout open the same screen.</li>
     </ul>
 
     <div class="dsec">Settings</div>
     <ul class="gdl">
-      <li><b>Notifications:</b> push for likes, comments, followers, rest over, forgotten workout, recaps; each can be switched off.</li>
-      <li><b>Workout:</b> Music (playlist links stay on this phone only). Rest timer starts by itself when you tick a set; set normal and unilateral lengths.</li>
-      <li><b>Data:</b> export or import a JSON backup, backup reminder, Previous versions (one copy a day, 7 kept), import from Hevy (CSV).</li>
-      <li>Everything syncs to your account. A red dot on Profile means changes are waiting for a connection. Themes keep to this device.</li>
+      <li><b>Account:</b> your email, sync status, Sign out (this phone keeps no copy), Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm).</li>
+      <li><b>Notifications:</b> Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
+      <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
+      <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
+      <li><b>Data:</b> Export backup / Import backup (a JSON file; import replaces what is on the device); Last backup and Backup reminder (a card on Home after N days); Previous versions (one copy a day, 7 kept, restore saves the current state first); Import from Hevy (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
+      <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device.</li>
+      <li>The version number at the bottom of Settings opens this guide.</li>
     </ul>
     <div style="height:1.5rem"></div>
     </div>
@@ -3146,7 +3166,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4304';
+  var APP_VERSION = '3.4305';
 
   /* =========================================================
      STORE
