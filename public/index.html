@@ -1859,6 +1859,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
 
     <div class="field">
+      <label for="ex-step">Weight step</label>
+      <input type="text" id="ex-step" inputmode="decimal" maxlength="6" placeholder="1" autocomplete="off">
+      <p class="hint" style="padding-left:0;padding-right:0">What the minus and plus keys on the number pad
+        add or take off for this exercise, in kg. Empty means 1.</p>
+    </div>
+
+    <div class="field">
       <label for="ex-muscle">Target muscle</label>
       <select id="ex-muscle">
         <option>Chest</option><option>Upper back</option><option>Lats</option>
@@ -3043,7 +3050,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4295';
+  var APP_VERSION = '3.4296';
 
   /* =========================================================
      STORE
@@ -4601,6 +4608,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           muscle: src.muscle, head: src.head || '', cue: src.cue || '',
           unilateral: !!src.unilateral
         };
+        if (src.step) mineEx.step = src.step;
         store.exercises.push(mineEx);
       }
       map[it.exId] = mineEx.id;
@@ -4683,6 +4691,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             muscle: their.muscle, head: their.head || '', cue: their.cue || '',
             unilateral: !!their.unilateral
           };
+          if (their.step) mine.step = their.step;
           store.exercises.push(mine);
         }
         f.map[it.exId] = mine.id;
@@ -5430,6 +5439,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('ex-muscle').value = x ? x.muscle : 'Chest';
     $('ex-head').value = (x && x.head) || '';
     $('ex-cue').value = (x && x.cue) || '';
+    $('ex-step').value = (x && x.step) || '';
     syncHeadRow();
     document.querySelectorAll('#ex-type button').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.type === exType));
@@ -5641,6 +5651,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     ex.muscle = $('ex-muscle').value;
     ex.head = ex.muscle === 'Shoulders' ? $('ex-head').value : '';
     ex.cue = $('ex-cue').value.trim().slice(0, 120);
+    var stp = parseFloat($('ex-step').value.replace(',', '.'));
+    if (stp > 0 && stp <= 100) ex.step = Math.round(stp * 100) / 100; else delete ex.step;
     ex.unilateral = exType === 'unilateral';
 
     var editing = false;
@@ -6371,8 +6383,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
               : '')
           : (uni ? '<div class="ctl"><span class="ctl-lab">Starts with</span>' +
               '<span class="val">' + (left ? 'Left' : 'Right') + '</span></div>' : '')) +
-        // the cue is changed where it lives, on the exercise itself
-        (x.cue ? '<p class="rocue">' + esc(x.cue) + '</p>' : '') +
+        // a followed routine's movements are yours: cue and step are yours to set, on the exercise
+        (f
+          ? '<div class="ctl"><span class="ctl-lab">Weight step</span>' +
+              '<input class="repsinput" type="text" inputmode="decimal" maxlength="6" data-rvstep="' + i +
+              '" value="' + (x.step || '') + '" placeholder="1" autocomplete="off"></div>' +
+            '<input class="noteinput" type="text" maxlength="120" data-rvcue="' + i + '" value="' +
+              esc(x.cue || '') + '" placeholder="Cue" autocomplete="off">'
+          : (x.cue ? '<p class="rocue">' + esc(x.cue) + '</p>' : '')) +
         '</div>';
     }).join('');
 
@@ -6484,6 +6502,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (sty) { xStyle = sty.dataset.xstyle; save('xstyle', xStyle); drawRtView(); return; }
     var r2 = e.target.closest('#rv-range');
     if (r2) openPeriod(r2, 'routine');
+  });
+  // typing in place, so no redraw: it would take the keyboard away
+  $('rv-body').addEventListener('input', function (e) {
+    var r = routineById(rvId), c = e.target.closest('[data-rvcue]'), t = e.target.closest('[data-rvstep]');
+    var it = r && r.follow && (c || t) && r.items[Number(c ? c.dataset.rvcue : t.dataset.rvstep)];
+    var x = it && byId(it.exId);
+    if (!x) return;
+    if (c) x.cue = c.value.slice(0, 120);
+    else if (t) {
+      var n = parseFloat(t.value.replace(',', '.'));
+      if (n > 0 && n <= 100) x.step = Math.round(n * 100) / 100; else delete x.step;
+    } else return;
+    saveStore();
+    syncSessionExercise(x);
   });
   barTips($('rv-body'));
 
@@ -6642,6 +6674,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       muscle: x ? x.muscle : '',
       side: side,
       cue: (x && x.cue) || '',
+      step: (x && x.step) || 0,
       reps: reps || '',
       prev: lastSetsFor(exId),
       prevNote: lastNoteFor(exId),
@@ -6983,9 +7016,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function padGrid() {
     var w = padW;
     var rows = [[1, 2, 3], [4, 5, 6], [7, 8, 9], ['.', 0, 'bk']];
-    var side = ['-1', '+1', 'p1', 'p2'];
+    var cx = session && session.exercises[session.idx], stp = (cx && cx.step) || 1;
+    var side = ['-' + stp, '+' + stp, 'p1', 'p2'];
     var PLATE_BIG = PLATE_SVG.replace('width="15" height="15"', 'width="21" height="21"');
-    var sideLab = ['&minus;1', '+1', '<b>1</b>' + PLATE_BIG, '<b>2</b>' + PLATE_BIG];
+    var sideLab = ['&minus;' + stp, '+' + stp, '<b>1</b>' + PLATE_BIG, '<b>2</b>' + PLATE_BIG];
     var g = '';
     rows.forEach(function (row, r) {
       row.forEach(function (k) {
@@ -11565,7 +11599,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function syncSessionExercise(x) {
     if (!session) return;
     session.exercises.forEach(function (e) {
-      if (e.exId === x.id) { e.name = x.name; e.code = codeOf(x); e.cue = x.cue || ''; }
+      if (e.exId === x.id) { e.name = x.name; e.code = codeOf(x); e.cue = x.cue || ''; e.step = x.step || 0; }
     });
   }
 
