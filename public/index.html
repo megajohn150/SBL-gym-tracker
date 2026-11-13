@@ -222,6 +222,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--bg);border-top:var(--dash);border-bottom:var(--dash);
 }
 .exgroup:first-child{border-top:none;padding-top:11px}
+.exgroup.exgart{display:flex;align-items:center;gap:10px;padding-top:8px;padding-bottom:8px}
+.exgroup.exgart:first-child{padding-top:8px}
 .tag{
   flex:none;font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
   padding:3px 6px;border:var(--border);border-radius:calc(var(--radius) - 4px);color:var(--fg-3);
@@ -3328,7 +3330,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4376';
+  var APP_VERSION = '3.4377';
 
   /* =========================================================
      STORE
@@ -5788,8 +5790,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var groups = {};
     hits.forEach(function (x) { (groups[x.muscle] = groups[x.muscle] || []).push(x); });
 
-    var row = function (x) {
-      return '<button class="row" data-ex="' + x.id + '">' + muscleArt(x.muscle, 34) +
+    // under a muscle's own heading the picture is in the heading; in the recent list each row has its own
+    var row = function (x, art) {
+      return '<button class="row" data-ex="' + x.id + '">' + (art ? muscleArt(x.muscle, 34) : '') +
         '<span class="lab"><span class="nmrow"><span class="nm">' + esc(x.name) + '</span>' +
         (x.unilateral ? '<span class="tag uni">Uni</span>' : '') + '</span></span>' +
         '<span class="tag">' + esc(codeOf(x)) + '</span>' +
@@ -5804,7 +5807,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
       hits = hits.filter(function (x) { return at[x.id]; })
         .sort(function (a, b) { return at[a.id] < at[b.id] ? 1 : -1; });
-      list.innerHTML = hits.length ? hits.map(row).join('')
+      list.innerHTML = hits.length ? hits.map(function (x) { return row(x, true); }).join('')
         : '<div class="exgroup">' + (q ? 'No matches' : 'Nothing used yet') + '</div>';
       return;
     }
@@ -5812,7 +5815,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     list.innerHTML = !hits.length
       ? '<div class="exgroup">No matches</div>'
       : order.filter(function (m) { return groups[m]; }).map(function (m) {
-          return '<div class="exgroup">' + esc(m) + '</div>' + groups[m].map(row).join('');
+          return '<div class="exgroup exgart">' + muscleArt(m, 30) + esc(m) + '</div>' + groups[m].map(function (x) { return row(x, false); }).join('');
         }).join('');
   }
 
