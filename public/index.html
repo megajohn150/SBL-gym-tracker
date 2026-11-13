@@ -351,6 +351,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 }
 .sbar .clock{font-weight:700;font-size:.95rem;letter-spacing:.04em}
 .sesscnt{font-weight:700;font-size:.8rem;color:var(--fg-3)}
+.sesscnt.full{color:inherit}
 .iconbtn{width:30px;height:30px;display:grid;place-items:center;color:var(--fg-2);font-size:1.05rem;border-radius:4px;flex:none}
 .iconbtn:hover{color:var(--fg)}
 
@@ -3182,7 +3183,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4320';
+  var APP_VERSION = '3.4321';
 
   /* =========================================================
      STORE
@@ -6915,6 +6916,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     $('sess-cnt').hidden = !all;
     $('sess-cnt').textContent = cnt + '/' + all;
+    $('sess-cnt').classList.toggle('full', all > 0 && cnt === all);
     if (!ex) {                      // an empty workout is only the closing card, which has "+ Add exercise"
       ['sess-exhead', 'sess-setshead', 'sess-sets', 'sess-addwrap', 'sess-cue', 'sess-injury', 'sess-lastnote'].forEach(function (id) { $(id).hidden = true; });
       $('sess-notebox').parentNode.hidden = true;
