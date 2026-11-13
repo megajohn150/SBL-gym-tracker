@@ -1042,6 +1042,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   flex:none;width:48px;display:grid;place-items:center;color:var(--fg-2);
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
+.exfbtn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--fg-3);border-radius:999px;font-size:.78rem;font-weight:700;color:var(--fg)}
+.exfbtn.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.exfbtn svg{flex:none}
 .grouph{display:flex;align-items:baseline;gap:10px}
 .grouph h2{flex:1}
 .ordlink{
@@ -1902,7 +1905,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="group" id="ex-list-wrap" hidden>
       <div class="grouph">
         <h2><span id="ex-count">0</span> saved</h2>
-        <button class="ordlink" id="ex-filter">Filter</button>
+        <button class="exfbtn" id="ex-filter"></button>
       </div>
       <div class="rows" id="ex-list"></div>
     </div>
@@ -3310,7 +3313,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4370';
+  var APP_VERSION = '3.4371';
 
   /* =========================================================
      STORE
@@ -5727,7 +5730,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('ex-list-wrap').hidden = !has;
     $('ex-footbar').hidden = !has;
     $('ex-filter').hidden = !!pickMuscle;                 // a swap is already one muscle
-    $('ex-filter').textContent = exFilter && !pickMuscle ? 'Filter: ' + exFilter : 'Filter';
+    $('ex-filter').classList.toggle('on', !!exFilter && !pickMuscle);
+    $('ex-filter').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z"/></svg>' +
+      (exFilter && !pickMuscle ? esc(exFilter) : 'Filter');
     $('pick-hint').hidden = !(pickFor && has);
     $('pick-hint').textContent = pickFor === 'swap'
       ? 'Pick what you are doing instead \u2014 same muscle, this workout only.'
