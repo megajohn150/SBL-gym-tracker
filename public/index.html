@@ -357,7 +357,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 }
 .eyepop.from > span{margin:-19px 0 0 -23px}
 .lvsay{flex:none;display:flex;gap:8px;padding:10px var(--pad);border-top:var(--border);background:var(--bg)}
-.lvsay input{flex:1;min-width:0;padding:10px 14px;border:var(--border);border-radius:999px;background:var(--surface);color:var(--fg);font-size:16px;font-family:inherit}
+.lvsay .btn{flex:none;width:auto;padding:0 22px;border-radius:999px}
+.lvsay input{flex:1 1 0;min-width:0;height:44px;padding:10px 14px;border:var(--border);border-radius:999px;background:var(--surface);color:var(--fg);font-size:16px;font-family:inherit}
 .saytxt{display:block;font-size:.95rem;font-weight:700;white-space:nowrap;line-height:1.2}
 .eyepop.say{display:flex;justify-content:flex-end}
 .eyepop.say.from > span{margin:-19px 0 0 0}
@@ -3230,7 +3231,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4343';
+  var APP_VERSION = '3.4344';
 
   /* =========================================================
      STORE
