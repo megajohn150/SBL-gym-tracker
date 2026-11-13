@@ -350,6 +350,20 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .sbar .clock{font-weight:700;font-size:.95rem;letter-spacing:.04em}
+.eyepop{
+  position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:60;
+  display:flex;align-items:flex-end;gap:6px;pointer-events:none;
+  animation:eyefloat 3s ease-out forwards;
+}
+.eyebub{
+  background:var(--surface);border:var(--border);border-radius:16px 16px 4px 16px;
+  padding:6px 10px;font-size:1.3rem;line-height:1;margin-bottom:6px;
+}
+@keyframes eyefloat{
+  0%{opacity:0;transform:translateY(24px) scale(.6)}
+  10%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-170px) scale(1)}
+}
 .sesscnt{font-weight:700;font-size:.8rem;color:var(--fg-3)}
 .sesscnt.full{color:inherit}
 .iconbtn{width:30px;height:30px;display:grid;place-items:center;color:var(--fg-2);font-size:1.05rem;border-radius:4px;flex:none}
@@ -3191,7 +3205,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4323';
+  var APP_VERSION = '3.4324';
 
   /* =========================================================
      STORE
@@ -3728,6 +3742,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawLiveView();
   });
 
+  // the watcher's picture with a speech bubble of eyes rises from the bottom right corner and fades out
+  function eyePop(nick) {
+    var p = {};
+    Object.keys(social.people).forEach(function (id) { if (social.people[id].username === nick) p = social.people[id]; });
+    var el = document.createElement('div');
+    el.className = 'eyepop';
+    el.innerHTML = '<span class="eyebub">&#128064;</span>' + avatarTag(46, '', p);
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
+  }
+
   // the eyes: the server checks the friendship and that a workout is running, then pings its owner
   var eyeAt = 0;
   $('lv-eye').addEventListener('click', function () {
@@ -3866,7 +3891,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       liveCh.ch = sb.channel('u:' + who, { config: { private: true } })
         .on('broadcast', { event: 'ping' }, function (m) {
           // a friend watching your workout: shown, not queued, there is nothing to reload
-          if (m && m.payload && m.payload.k === 'eye') { toast('\uD83D\uDC40 ' + (m.payload.n || ''), 3000); return; }
+          if (m && m.payload && m.payload.k === 'eye') { eyePop(m.payload.n); return; }
           liveHit((m && m.payload && m.payload.k) || 'react');
         })
         .subscribe(function (st) {
