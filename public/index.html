@@ -517,6 +517,7 @@ button.cell.blank{color:var(--fg-3);font-weight:400}
 }
 .sfoot .prev{text-align:left;font-weight:700}
 .sfoot .next{text-align:right;font-weight:700}
+.sfoot .next.nxend{justify-self:end;padding:9px 20px;border-radius:999px;background:var(--accent);color:var(--accent-ink);text-transform:uppercase;letter-spacing:.06em}
 .sfoot button[disabled],.sfoot .prev.dim{opacity:.3;cursor:default}
 .mids{justify-self:center;display:flex;gap:10px}
 .sfoot .mid{
@@ -3234,7 +3235,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4356';
+  var APP_VERSION = '3.4357';
 
   /* =========================================================
      STORE
@@ -7412,6 +7413,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (f) {
       p.innerHTML = f === 'weight' ? '&larr; Prev' : '&larr; Weight';
       n.innerHTML = f === 'weight' ? 'Reps &rarr;' : 'RIR &rarr;';
+      n.classList.remove('nxend');
       p.disabled = n.disabled = false;
       p.classList.toggle('dim', f === 'weight');
       return;
@@ -7420,6 +7422,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     // on the last live exercise the arrow leads to the closing card
     var more = session.exercises.slice(session.idx + 1).some(function (x) { return !x.skipped; });
     n.innerHTML = more || done ? 'Next &rarr;' : 'End &rarr;';
+    n.classList.toggle('nxend', !(more || done));
     p.classList.remove('dim');
     p.disabled = session.idx === 0;
     n.disabled = done === undefined ? session.idx >= session.exercises.length : done;
