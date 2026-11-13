@@ -88,6 +88,7 @@
     auth: { getSession: function () { return Promise.resolve({ data: { session: { user: { id: 'me', email: 't@test.local' } } } }); },
       onAuthStateChange: function () {}, signOut: function () { return Promise.resolve(); } },
     from: function (t) { return new Q(t); },
+    rpc: function (n, a) { (window.RPC = window.RPC || []).push([n, a]); return Promise.resolve({ data: null, error: null }); },
     realtime: { setAuth: function () { return Promise.resolve(); } },
     channel: function () {
       var ch = { on: function (a, b, fn) { handler = fn; return ch; }, subscribe: function (cb) { setTimeout(function () { cb('SUBSCRIBED'); }); return ch; } };
