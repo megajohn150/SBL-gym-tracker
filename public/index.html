@@ -355,6 +355,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   display:flex;align-items:flex-end;gap:6px;pointer-events:none;
   animation:eyefloat 5s linear forwards,eyefade 5s linear forwards;
 }
+.eyepop.from > span{margin:-19px 0 0 -23px}
 .eyebub svg{display:block;width:24px;height:24px;color:var(--fg)}
 .eyebub{
   background:var(--surface);border:var(--border);border-radius:16px 16px 4px 16px;font-style:normal;
@@ -3219,7 +3220,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4333';
+  var APP_VERSION = '3.4334';
 
   /* =========================================================
      STORE
@@ -3756,14 +3757,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawLiveView();
   });
 
-  // a like from someone watching: their picture with a thumb in a bubble rises from the bottom right corner and fades out
+  // A like from someone watching: a bare bubble with a thumb that sets off from that person's face under the
+  // eyes and rises, swaying, and fades out. With no eyes up it starts from the bottom right corner.
   function likePop(nick) {
     if (current() !== 's-session') return;          // only seen by someone who is mid-workout
-    var p = {};
-    Object.keys(social.people).forEach(function (id) { if (social.people[id].username === nick) p = social.people[id]; });
     var el = document.createElement('div');
     el.className = 'eyepop';
-    el.innerHTML = '<span><span><i class="eyebub">' + THUMB_ON + '</i>' + avatarTag(46, '', p) + '</span></span>';
+    el.innerHTML = '<span><span><i class="eyebub">' + THUMB_ON + '</i></span></span>';
+    var from = watchEl && [].filter.call(watchEl.querySelectorAll('.eyew'), function (a) { return a.dataset.n === nick; })[0];
+    if (from) {
+      var r = from.getBoundingClientRect();
+      el.style.cssText = 'left:' + (r.left + r.width / 2) + 'px;top:' + (r.top + r.height / 2) + 'px;right:auto;bottom:auto';
+      el.classList.add('from');
+    }
     document.body.appendChild(el);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 5000);
   }
@@ -3787,7 +3793,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       watchEl.innerHTML = '<span><b>&#128064;</b><i>' + Object.keys(watchers).sort().map(function (n) {
         var p = {};
         Object.keys(social.people).forEach(function (id) { if (social.people[id].username === n) p = social.people[id]; });
-        return avatarTag(38, '', p);
+        return '<span class="eyew" data-n="' + esc(n) + '">' + avatarTag(38, '', p) + '</span>';
       }).join('') + '</i></span>';
       document.body.appendChild(watchEl);
     }
