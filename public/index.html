@@ -367,6 +367,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   to{transform:translate3d(-150px,-130px,0) scale(1)}
 }
 .eyewatch{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:60;pointer-events:none;font-size:2rem;line-height:1}
+.eyewatch > span b{display:block;text-align:right;font-weight:400;margin-bottom:4px}
+.eyewatch > span i{display:flex;gap:4px;justify-content:flex-end;font-style:normal}
 .eyewatch > span{display:block;animation:eyesit 2.4s ease-in-out infinite alternate;will-change:transform}
 @keyframes eyesit{from{transform:translate3d(-6px,2px,0)}to{transform:translate3d(6px,-3px,0)}}
 @keyframes eyefade{0%{opacity:0}8%{opacity:1}55%{opacity:1}100%{opacity:0}}
@@ -3217,7 +3219,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4331';
+  var APP_VERSION = '3.4332';
 
   /* =========================================================
      STORE
@@ -3775,14 +3777,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var now = Date.now(), any = false;
     Object.keys(watchers).forEach(function (n) { if (watchers[n] < now) delete watchers[n]; else any = true; });
     var show = any && !!session && current() === 's-session';
+    var names = Object.keys(watchers).sort().join('|');
+    if (watchEl && (!show || watchEl.dataset.who !== names)) { watchEl.parentNode.removeChild(watchEl); watchEl = null; }
     if (show && !watchEl) {
       watchEl = document.createElement('div');
       watchEl.className = 'eyewatch';
-      watchEl.innerHTML = '<span>&#128064;</span>';
+      watchEl.dataset.who = names;
+      // the eyes with the faces of whoever is looking under them
+      watchEl.innerHTML = '<span><b>&#128064;</b><i>' + Object.keys(watchers).sort().map(function (n) {
+        var p = {};
+        Object.keys(social.people).forEach(function (id) { if (social.people[id].username === n) p = social.people[id]; });
+        return avatarTag(38, '', p);
+      }).join('') + '</i></span>';
       document.body.appendChild(watchEl);
-    } else if (!show && watchEl) {
-      watchEl.parentNode.removeChild(watchEl);
-      watchEl = null;
     }
     if (any && !watchT) watchT = setInterval(watchSync, 2000);
     else if (!any && watchT) { clearInterval(watchT); watchT = null; }
