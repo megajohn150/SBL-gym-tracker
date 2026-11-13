@@ -2528,7 +2528,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         </button>
         <span class="row"><span class="lab">Last backup</span><span class="val" id="set-bklast">never</span></span>
         <button class="row" id="set-snaps">
-          <span class="lab">Previous versions</span>
+          <span class="lab">Previous versions <span class="lrinfo" id="sn-info" role="button" tabindex="0" aria-label="What are previous versions?">?</span></span>
           <span class="val" id="set-snaps-val"></span>
           <span class="chev">&rsaquo;</span>
         </button>
@@ -3186,6 +3186,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet center" id="sn-sheet" hidden>
+  <div class="sheet-bg" data-sn-close></div>
+  <div class="sheet-card">
+    <h3>Previous versions</h3>
+    <p class="confirm-text">Once a day, when you open the app, a copy of everything on this phone is saved,
+      and the last seven are kept. If something gets lost or overwritten, open the list and restore a copy;
+      the current state is saved first, so a restore can be undone. The copies disappear when you remove
+      the app's icon from the home screen, so an exported backup is still the safe one.</p>
+    <button class="btn btn-primary" id="sn-ok">Got it</button>
+  </div>
+</div>
+
 <div class="sheet" id="snap-sheet" hidden>
   <div class="sheet-bg" data-snap-close></div>
   <div class="sheet-card">
@@ -3258,7 +3270,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4363';
+  var APP_VERSION = '3.4364';
 
   /* =========================================================
      STORE
@@ -8344,6 +8356,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function openLrInfo(e) { e.stopPropagation(); $('lr-sheet').hidden = false; }
   function closeLrInfo() { $('lr-sheet').hidden = true; }
   $('lr-info').addEventListener('click', openLrInfo);
+  $('sn-info').addEventListener('click', function (e) { e.stopPropagation(); $('sn-sheet').hidden = false; });
+  function closeSnInfo() { $('sn-sheet').hidden = true; }
+  $('sn-ok').addEventListener('click', closeSnInfo);
+  document.querySelector('[data-sn-close]').addEventListener('click', closeSnInfo);
   $('lr-ok').addEventListener('click', closeLrInfo);
   document.querySelector('[data-lr-close]').addEventListener('click', closeLrInfo);
   $('set-lreact').addEventListener('click', function () {
