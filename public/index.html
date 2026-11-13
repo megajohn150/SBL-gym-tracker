@@ -1217,6 +1217,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,14px) scale(.94);
   transition:opacity .22s ease,transform .32s cubic-bezier(.2,.9,.3,1.25),visibility 0s .32s;
 }
+.toast{touch-action:none}
 .toast.on{
   opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%);
   transition:opacity .22s ease,transform .32s cubic-bezier(.2,.9,.3,1.25),visibility 0s;
@@ -3297,7 +3298,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4368';
+  var APP_VERSION = '3.4369';
 
   /* =========================================================
      STORE
@@ -3673,7 +3674,45 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     toastT = setTimeout(function () { el.classList.remove('on'); undoFn = null; }, 8000);
   }
 
+  // drag a toast down to be rid of it; short of that it springs back
+  var tDrag = null, tMoved = false;
+  $('toast').addEventListener('pointerdown', function (e) {
+    tDrag = { y: e.clientY, dy: 0 };
+    tMoved = false;
+    tDrag.id = e.pointerId;
+  });
+  $('toast').addEventListener('pointermove', function (e) {
+    if (!tDrag) return;
+    tDrag.dy = Math.max(0, e.clientY - tDrag.y);          // only downwards
+    // capture only once it is a drag, or the click would no longer land on Undo
+    if (tDrag.dy > 6 && !tMoved) { tMoved = true; this.setPointerCapture(tDrag.id); }
+    this.style.transition = 'none';
+    this.style.transform = 'translate(-50%,' + tDrag.dy + 'px)';
+    this.style.opacity = String(Math.max(0.2, 1 - tDrag.dy / 120));
+  });
+  function tEnd() {
+    var el = $('toast');
+    if (!tDrag) return;
+    var gone = tDrag.dy > 28;
+    tDrag = null;
+    el.style.transition = '';
+    if (gone) {
+      clearTimeout(toastT);
+      undoFn = null;
+      el.style.transform = 'translate(-50%,90px)';
+      el.style.opacity = '0';
+      el.classList.remove('on');
+      setTimeout(function () { el.style.transform = ''; el.style.opacity = ''; }, 400);
+    } else {
+      el.style.transform = '';
+      el.style.opacity = '';
+    }
+  }
+  $('toast').addEventListener('pointerup', tEnd);
+  $('toast').addEventListener('pointercancel', tEnd);
+
   $('toast').addEventListener('click', function (e) {
+    if (tMoved) { tMoved = false; return; }                // a drag is not a tap on Undo
     if (!e.target.closest('#undo-go') || !undoFn) return;
     var fn = undoFn;
     undoFn = null;
