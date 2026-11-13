@@ -3328,7 +3328,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4374';
+  var APP_VERSION = '3.4375';
 
   /* =========================================================
      STORE
@@ -5286,6 +5286,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     document.getElementById('gate').hidden = !!me && !recovering;
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
     if (!me) { social.fol = false; liveOff(); syncState('off'); return; }
+    // Another account than the one this device last held (a confirmation link opened while
+    // somebody else was signed in): the log here is theirs, and pulling on top of it would
+    // push it into this account. Drop it and start over clean.
+    var prevUid = load('uid');
+    if (prevUid && prevUid !== me.id) {
+      ['data', 'session', 'feed-' + prevUid].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
+      save('uid', me.id);
+      location.reload();
+      return;
+    }
     save('uid', me.id);
     if (!liveCh || liveCh.id !== me.id) { liveOff(); liveOn(); }
     // somebody else's friend list must not decide what this account follows
