@@ -1123,6 +1123,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 /* this week at a glance, and the filter over the feed under it */
 .wkbar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:.2rem var(--pad) 0}
 .wkbar > div{border:var(--border);border-radius:var(--radius);background:var(--surface);padding:6px 10px}
+#live-bars:not(:empty) + .wkbar{margin-top:.6rem}
 .wkbar b{display:block;font-family:var(--display);font-size:1.15rem;font-weight:700;white-space:nowrap}
 .wkbar b small{font-size:.7rem;font-weight:600;color:var(--fg-3)}
 .wkbar b.hit{color:var(--green)}
@@ -3183,7 +3184,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4321';
+  var APP_VERSION = '3.4322';
 
   /* =========================================================
      STORE
