@@ -355,6 +355,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   display:flex;align-items:flex-end;gap:6px;pointer-events:none;
   animation:eyefloat 3s linear forwards,eyefade 3s linear forwards;
 }
+.eyebub svg{display:block;width:24px;height:24px;color:var(--fg)}
 .eyebub{
   background:var(--surface);border:var(--border);border-radius:16px 16px 4px 16px;font-style:normal;
   padding:6px 10px;font-size:1.3rem;line-height:1;margin-bottom:6px;
@@ -365,6 +366,9 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   from{transform:translate3d(0,24px,0) scale(.7)}
   to{transform:translate3d(-150px,-130px,0) scale(1)}
 }
+.eyewatch{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:60;pointer-events:none;font-size:2rem;line-height:1}
+.eyewatch > span{display:block;animation:eyesit 2.4s ease-in-out infinite alternate;will-change:transform}
+@keyframes eyesit{from{transform:translate3d(-6px,2px,0)}to{transform:translate3d(6px,-3px,0)}}
 @keyframes eyefade{0%{opacity:0}8%{opacity:1}55%{opacity:1}100%{opacity:0}}
 @keyframes eyesway{from{transform:translate3d(-34px,0,0)}to{transform:translate3d(34px,0,0)}}
 @keyframes eyesway2{from{transform:translate3d(10px,0,0)}to{transform:translate3d(-10px,0,0)}}
@@ -2287,7 +2291,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="sfoot">
       <span></span>
       <span class="mids">
-        <button class="mid" id="lv-eye" aria-label="Let them know you are watching"><span style="font-size:20px;line-height:1">&#128064;</span></button>
+        <button class="mid" id="lv-eye" aria-label="Like their workout"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg></button>
       </span>
       <span></span>
     </div>
@@ -3213,7 +3217,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4330';
+  var APP_VERSION = '3.4331';
 
   /* =========================================================
      STORE
@@ -3750,24 +3754,64 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawLiveView();
   });
 
-  // the watcher's picture with a speech bubble of eyes rises from the bottom right corner and fades out
-  function eyePop(nick) {
+  // a like from someone watching: their picture with a thumb in a bubble rises from the bottom right corner and fades out
+  function likePop(nick) {
     if (current() !== 's-session') return;          // only seen by someone who is mid-workout
     var p = {};
     Object.keys(social.people).forEach(function (id) { if (social.people[id].username === nick) p = social.people[id]; });
     var el = document.createElement('div');
     el.className = 'eyepop';
-    el.innerHTML = '<span><span><i class="eyebub">&#128064;</i>' + avatarTag(46, '', p) + '</span></span>';
+    el.innerHTML = '<span><span><i class="eyebub">' + THUMB_ON + '</i>' + avatarTag(46, '', p) + '</span></span>';
     document.body.appendChild(el);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
   }
 
-  // the eyes: the server checks the friendship and that a workout is running, then pings its owner
+  // Eyes sit in the bottom right corner for as long as a friend has your workout open. The watcher
+  // repeats "look" every 15 s, so a phone that died without saying "leave" runs out after 40 s.
+  var watchers = {}, watchT = null, watchEl = null;
+  function watchOn(nick) { watchers[nick || '?'] = Date.now() + 40000; watchSync(); }
+  function watchOff(nick) { delete watchers[nick || '?']; watchSync(); }
+  function watchSync() {
+    var now = Date.now(), any = false;
+    Object.keys(watchers).forEach(function (n) { if (watchers[n] < now) delete watchers[n]; else any = true; });
+    var show = any && !!session && current() === 's-session';
+    if (show && !watchEl) {
+      watchEl = document.createElement('div');
+      watchEl.className = 'eyewatch';
+      watchEl.innerHTML = '<span>&#128064;</span>';
+      document.body.appendChild(watchEl);
+    } else if (!show && watchEl) {
+      watchEl.parentNode.removeChild(watchEl);
+      watchEl = null;
+    }
+    if (any && !watchT) watchT = setInterval(watchSync, 2000);
+    else if (!any && watchT) { clearInterval(watchT); watchT = null; }
+  }
+
+  // The watcher's side: the server checks the friendship and that a workout is running, then pings its owner.
+  function peek(id, kind) {
+    if (!sb || !id) return;
+    Promise.resolve(sb.rpc('live_peek', { target: id, kind: kind })).catch(function () {});
+  }
+  var peekId = null, peekT = null;
+  function peekSync() {
+    var on = current() === 's-livew' && liveView && !document.hidden;
+    if (on && !peekT) {
+      peekId = liveView.id;
+      peek(peekId, 'look');
+      peekT = setInterval(function () { peek(peekId, 'look'); }, 15000);
+    } else if (!on && peekT) {
+      clearInterval(peekT);
+      peekT = null;
+      peek(peekId, 'leave');
+    }
+  }
+  document.addEventListener('visibilitychange', peekSync);
   var eyeAt = 0;
   $('lv-eye').addEventListener('click', function () {
-    if (!sb || !liveView || Date.now() - eyeAt < 3000) return;
+    if (!liveView || Date.now() - eyeAt < 3000) return;
     eyeAt = Date.now();
-    Promise.resolve(sb.rpc('live_peek', { target: liveView.id })).catch(function () {});
+    peek(liveView.id, 'like');
   });
 
   $('live-bars').addEventListener('click', function (e) {
@@ -3900,7 +3944,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       liveCh.ch = sb.channel('u:' + who, { config: { private: true } })
         .on('broadcast', { event: 'ping' }, function (m) {
           // a friend watching your workout: shown, not queued, there is nothing to reload
-          if (m && m.payload && m.payload.k === 'eye') { eyePop(m.payload.n); return; }
+          var pk = m && m.payload && m.payload.k;
+          if (pk === 'like') { likePop(m.payload.n); return; }
+          if (pk === 'look') { watchOn(m.payload.n); return; }
+          if (pk === 'leave') { watchOff(m.payload.n); return; }
           liveHit((m && m.payload && m.payload.k) || 'react');
         })
         .subscribe(function (st) {
@@ -5204,6 +5251,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function render(id) {
     var screen = document.getElementById(id);
     if (!screen) return;                       // never blank the app over a bad id
+    peekSync();
+    watchSync();
 
     // going back should land you where you were, not at the top of the list
     var leaving = document.querySelector('.screen.on');
