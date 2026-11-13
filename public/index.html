@@ -1943,6 +1943,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <input type="text" id="ex-name" placeholder="Bench Press (Barbell)" autocomplete="off" autocapitalize="words" spellcheck="false">
     </div>
 
+    <p class="hint" id="ex-sim" hidden style="padding-top:0"></p>
+
     <p class="formerr" id="ex-error" hidden>An exercise with that name already exists.</p>
 
     <div class="field">
@@ -3330,7 +3332,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4379';
+  var APP_VERSION = '3.4380';
 
   /* =========================================================
      STORE
@@ -5904,7 +5906,40 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!$('ex-name').value.trim()) return false;
     return $('ex-muscle').value !== 'Shoulders' || !!$('ex-head').value;
   }
+  // Names that read alike once case, accents and punctuation are gone, one inside the
+  // other, or a letter or two apart: the duplicates a new exercise should not become.
+  function simKey(n) {
+    return String(n).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+  }
+  function lev(a, b) {
+    var prev = [], i, j, cur;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i];
+      for (j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function similarNames(name, skipId) {
+    var k = simKey(name);
+    if (k.length < 3) return [];
+    return store.exercises.filter(function (x) {
+      if (x.id === skipId) return false;
+      var o = simKey(x.name);
+      if (!o) return false;
+      if (o === k) return true;
+      if (Math.min(o.length, k.length) >= 4 && (o.indexOf(k) > -1 || k.indexOf(o) > -1)) return true;
+      return Math.min(o.length, k.length) >= 5 && lev(o, k) <= (k.length >= 9 ? 2 : 1);
+    }).slice(0, 3).map(function (x) { return x.name; });
+  }
+
   function syncExForm() {
+    var sim = exEditId ? [] : similarNames($('ex-name').value, null);
+    $('ex-sim').hidden = !sim.length;
+    $('ex-sim').textContent = sim.length ? 'You already have: ' + sim.join(', ') + '. Make sure this is not the same exercise.' : '';
     var ok = exValid();
     $('ex-save').disabled = !ok;
     $('ex-save-2').disabled = !ok;
