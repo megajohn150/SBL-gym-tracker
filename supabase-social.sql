@@ -396,7 +396,7 @@ end $$;
 revoke execute on function public.live_friends(uuid, text, uuid)
   from public, anon, authenticated;
 
--- Znajomy, który ogląda twój trening: like, "patrzę" (co 15 s) i "wyszedłem".
+-- Znajomy, który ogląda twój trening: like, bicek, "patrzę" (co 15 s) i "wyszedłem".
 -- Funkcja sprawdza przyjaźń i to, że trening trwa, a potem pinguje właściciela nickiem.
 drop function if exists public.live_peek(uuid);
 create or replace function public.live_peek(target uuid, kind text)
@@ -404,7 +404,7 @@ returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare nick text;
 begin
-  if kind not in ('like', 'look', 'leave') then return; end if;
+  if kind not in ('like', 'flex', 'look', 'leave') then return; end if;
   if target is null or target = auth.uid() or not public.friends_with(target) then return; end if;
   if not exists (select 1 from public.live_session where user_id = target) then return; end if;
   select username into nick from public.profiles where user_id = auth.uid();
