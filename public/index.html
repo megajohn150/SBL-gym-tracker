@@ -3180,7 +3180,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4312';
+  var APP_VERSION = '3.4313';
 
   /* =========================================================
      STORE
@@ -7289,7 +7289,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // holding backspace rubs the whole number out; the tap that ends the hold must not also delete a digit
   var bkT = null, bkHeld = false;
+  // Keys act on touch-down: iOS drops the synthesized click of a tap that lands while the
+  // previous finger is still lifting, which swallowed digits typed fast.
   $('pad-grid').addEventListener('pointerdown', function (e) {
+    var key = e.target.closest('[data-k]');
+    if (key && key.dataset.k !== 'bk' && !key.classList.contains('off')) padHit(key.dataset.k);
     if (!e.target.closest('[data-k="bk"]')) return;
     bkHeld = false;
     clearTimeout(bkT);
@@ -7307,7 +7311,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('pad-grid').addEventListener('click', function (e) {
     var b = e.target.closest('[data-k]');
     if (b && b.dataset.k === 'bk' && bkHeld) { bkHeld = false; return; }
-    if (b && !b.classList.contains('off')) padHit(b.dataset.k);
+    if (b && b.dataset.k === 'bk' && !b.classList.contains('off')) padHit('bk');   // the rest ran on pointerdown
   });
   // no backdrop any more, so anything else you touch puts the pad away
   document.addEventListener('click', function (e) {
