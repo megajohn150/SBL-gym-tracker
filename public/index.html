@@ -2473,11 +2473,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <span class="row"><span class="lab">Signed in</span><span class="val" id="set-email">&mdash;</span></span>
         <span class="row"><span class="lab">Sync</span><span class="val" id="set-sync">&mdash;</span></span>
         <button class="row" id="set-signout"><span class="lab">Sign out</span><span class="chev">&rsaquo;</span></button>
-        <button class="row danger" id="set-reset">
-          <span class="lab">Erase everything</span>
-          <span class="val">Fresh start</span>
-          <span class="chev">&rsaquo;</span>
-        </button>
         <button class="row danger" id="set-delacc">
           <span class="lab">Delete account</span>
           <span class="val">For good</span>
@@ -2522,23 +2517,23 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         </button>
         <button class="row" id="set-import">
           <span class="lab">Import backup</span>
-          <span class="val">JSON</span>
+          <span class="val">JSON or Hevy</span>
           <span class="chev">&rsaquo;</span>
         </button>
-        <span class="row"><span class="lab">Last backup</span><span class="val" id="set-bklast">never</span></span>
         <button class="row" id="set-bkrem">
           <span class="lab">Backup reminder</span>
           <span class="val" id="set-bkrem-val">30 days</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <span class="row"><span class="lab">Last backup</span><span class="val" id="set-bklast">never</span></span>
         <button class="row" id="set-snaps">
           <span class="lab">Previous versions</span>
           <span class="val" id="set-snaps-val"></span>
           <span class="chev">&rsaquo;</span>
         </button>
-        <button class="row" id="set-hevy">
-          <span class="lab">Import from Hevy</span>
-          <span class="val">CSV</span>
+        <button class="row danger" id="set-reset">
+          <span class="lab">Erase everything</span>
+          <span class="val">Fresh start</span>
           <span class="chev">&rsaquo;</span>
         </button>
       </div>
@@ -2645,7 +2640,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Notifications:</b> Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
-      <li><b>Data:</b> Export backup / Import backup (a JSON file; import replaces what is on the device); Last backup and Backup reminder (a card on Home after N days); Previous versions (one copy a day, 7 kept, restore saves the current state first); Import from Hevy (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
+      <li><b>Data:</b> Export backup / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device.</li>
       <li>The version number at the bottom of Settings opens this guide.</li>
     </ul>
@@ -3169,6 +3164,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet center" id="imp-sheet" hidden>
+  <div class="sheet-bg" data-imp-close></div>
+  <div class="sheet-card">
+    <h3>Import</h3>
+    <button class="btn btn-primary" id="imp-json">Backup (JSON)</button>
+    <button class="btn btn-primary" id="imp-hevy" style="margin-top:8px">Hevy export (CSV)</button>
+    <button class="btn btn-ghost" id="imp-cancel" style="margin-top:8px">Cancel</button>
+  </div>
+</div>
+
 <div class="sheet" id="snap-sheet" hidden>
   <div class="sheet-bg" data-snap-close></div>
   <div class="sheet-card">
@@ -3241,7 +3246,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4361';
+  var APP_VERSION = '3.4362';
 
   /* =========================================================
      STORE
@@ -8538,7 +8543,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
   }
 
-  $('set-hevy').addEventListener('click', function () { $('set-csv').click(); });
   $('set-csv').addEventListener('change', function () {
     var f = this.files && this.files[0];
     if (!f) return;
@@ -8548,7 +8552,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     this.value = '';
   });
 
-  $('set-import').addEventListener('click', function () { $('set-file').click(); });
+  // one row, two kinds of file: the choice has to be made inside the tap that opens the picker
+  function closeImp() { $('imp-sheet').hidden = true; }
+  $('set-import').addEventListener('click', function () { $('imp-sheet').hidden = false; });
+  $('imp-cancel').addEventListener('click', closeImp);
+  document.querySelector('[data-imp-close]').addEventListener('click', closeImp);
+  $('imp-json').addEventListener('click', function () { closeImp(); $('set-file').click(); });
+  $('imp-hevy').addEventListener('click', function () { closeImp(); $('set-csv').click(); });
   $('set-file').addEventListener('change', function () {
     var f = this.files && this.files[0];
     if (!f) return;
