@@ -356,6 +356,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   animation:eyefloat 3s linear forwards,eyefade 3s linear forwards;
 }
 .eyepop.from > span{margin:-19px 0 0 -23px}
+.lvsay{flex:none;display:flex;gap:8px;padding:10px var(--pad);border-top:var(--border);background:var(--bg)}
+.lvsay input{flex:1;min-width:0;padding:10px 14px;border:var(--border);border-radius:999px;background:var(--surface);color:var(--fg);font-size:16px;font-family:inherit}
+.saytxt{display:block;font-size:.95rem;font-weight:700;white-space:nowrap;line-height:1.2}
+.eyepop.say{display:flex;justify-content:flex-end}
+.eyepop.say.from > span{margin:-19px 0 0 0}
 .eyebub svg{display:block;width:24px;height:24px;color:var(--fg)}
 .eyebub{
   background:var(--surface);border:var(--border);border-radius:16px 16px 4px 16px;font-style:normal;
@@ -2290,11 +2295,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span class="iconbtn" aria-hidden="true">&#8942;</span>
     </div>
     <div class="sscroll" id="lv-body"></div>
+    <div class="lvsay" id="lv-say" hidden>
+      <input id="lv-say-in" maxlength="20" placeholder="Say something (20 characters)" autocomplete="off" enterkeyhint="send">
+      <button class="btn btn-primary" id="lv-say-go">Send</button>
+    </div>
     <div class="sfoot">
       <span></span>
       <span class="mids">
         <button class="mid" id="lv-eye" aria-label="Like their workout"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10.5v9H4.5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z"/><path d="M7 10.5l4.2-7.2a2 2 0 0 1 3.6 1.5l-.9 4.2h4.6a2 2 0 0 1 1.95 2.45l-1.3 6a2 2 0 0 1-1.95 1.55H7z"/></svg></button>
         <button class="mid" id="lv-flex" aria-label="Flex" style="font-size:20px;line-height:1">&#128170;</button>
+        <button class="mid" id="lv-talk" aria-label="Say something"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.6c0 4.2-3.8 7.6-8.5 7.6a9.6 9.6 0 0 1-2.6-.35L4 21l1.4-3.7A7.3 7.3 0 0 1 3.5 11.6C3.5 7.4 7.3 4 12 4s8.5 3.4 8.5 7.6z"/></svg></button>
       </span>
       <span></span>
     </div>
@@ -3220,7 +3230,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4341';
+  var APP_VERSION = '3.4342';
 
   /* =========================================================
      STORE
@@ -3759,7 +3769,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // A like from someone watching: a bare bubble with a thumb that sets off from that person's face under the
   // eyes and rises, swaying, and fades out. With no eyes up it starts from the bottom right corner.
-  function likePop(nick, icon) {
+  function likePop(nick, icon, text) {
     if (current() !== 's-session') return;          // only seen by someone who is mid-workout
     var el = document.createElement('div');
     el.className = 'eyepop';
@@ -3770,6 +3780,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       // the bubble's old spot: beside the face on its left, level with it
       el.style.cssText = 'left:' + (r.left + r.width / 2 - 52) + 'px;top:' + (r.top + r.height / 2 - 2) + 'px;right:auto;bottom:auto';
       el.classList.add('from');
+      if (text) el.classList.add('say');         // a wide bubble ends at the face instead of starting on it
     }
     document.body.appendChild(el);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
@@ -3805,13 +3816,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   // The watcher's side: the server checks the friendship and that a workout is running, then pings its owner.
-  function peek(id, kind) {
+  function peek(id, kind, msg) {
     if (!sb || !id) return;
-    Promise.resolve(sb.rpc('live_peek', { target: id, kind: kind })).catch(function () {});
+    Promise.resolve(sb.rpc('live_peek', { target: id, kind: kind, msg: msg || '' })).catch(function () {});
   }
   var peekId = null, peekT = null;
   function peekSync() {
     var on = current() === 's-livew' && liveView && !document.hidden;
+    if (current() !== 's-livew') $('lv-say').hidden = true;
     if (on && !peekT) {
       peekId = liveView.id;
       peek(peekId, 'look');
@@ -3824,6 +3836,23 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   document.addEventListener('visibilitychange', peekSync);
   var eyeAt = 0;
+  // the third button opens a one-line message of at most 20 characters
+  $('lv-talk').addEventListener('click', function () {
+    var bar = $('lv-say');
+    bar.hidden = !bar.hidden;
+    if (!bar.hidden) $('lv-say-in').focus();
+  });
+  function sendSay() {
+    var inp = $('lv-say-in'), t = inp.value.trim().slice(0, 20);
+    if (!t || !liveView || Date.now() - eyeAt < 3000) return;
+    eyeAt = Date.now();
+    peek(liveView.id, 'say', t);
+    inp.value = '';
+    inp.blur();
+    $('lv-say').hidden = true;
+  }
+  $('lv-say-go').addEventListener('click', sendSay);
+  $('lv-say-in').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendSay(); });
   ['lv-eye', 'lv-flex'].forEach(function (id) {
     $(id).addEventListener('click', function () {
       if (!liveView || Date.now() - eyeAt < 3000) return;
@@ -3965,6 +3994,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           var pk = m && m.payload && m.payload.k;
           if (pk === 'like') { likePop(m.payload.n); return; }
           if (pk === 'flex') { likePop(m.payload.n, '&#128170;'); return; }
+          if (pk === 'say') {
+            likePop(m.payload.n, '<span class="saytxt">' + esc(String(m.payload.t || '').slice(0, 20)) + '</span>', true);
+            return;
+          }
           if (pk === 'look') { watchOn(m.payload.n); return; }
           if (pk === 'leave') { watchOff(m.payload.n); return; }
           liveHit((m && m.payload && m.payload.k) || 'react');

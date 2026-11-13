@@ -399,20 +399,21 @@ revoke execute on function public.live_friends(uuid, text, uuid)
 -- Znajomy, który ogląda twój trening: like, bicek, "patrzę" (co 15 s) i "wyszedłem".
 -- Funkcja sprawdza przyjaźń i to, że trening trwa, a potem pinguje właściciela nickiem.
 drop function if exists public.live_peek(uuid);
-create or replace function public.live_peek(target uuid, kind text)
+drop function if exists public.live_peek(uuid, text);
+create or replace function public.live_peek(target uuid, kind text, msg text default '')
 returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare nick text;
 begin
-  if kind not in ('like', 'flex', 'look', 'leave') then return; end if;
+  if kind not in ('like', 'flex', 'say', 'look', 'leave') then return; end if;
   if target is null or target = auth.uid() or not public.friends_with(target) then return; end if;
   if not exists (select 1 from public.live_session where user_id = target) then return; end if;
   select username into nick from public.profiles where user_id = auth.uid();
-  perform realtime.send(jsonb_build_object('k', kind, 'n', coalesce(nick, '')), 'ping',
-                        'u:' || target::text, true);
+  perform realtime.send(jsonb_build_object('k', kind, 'n', coalesce(nick, ''), 't', left(coalesce(msg, ''), 20)),
+                        'ping', 'u:' || target::text, true);
 end $$;
-revoke execute on function public.live_peek(uuid, text) from public, anon;
-grant execute on function public.live_peek(uuid, text) to authenticated;
+revoke execute on function public.live_peek(uuid, text, text) from public, anon;
+grant execute on function public.live_peek(uuid, text, text) to authenticated;
 
 -- Powiadomienie idzie do właściciela treningu, bo to jego sprawa. Ale lajk
 -- albo komentarz widzi każdy, kto ma ten trening przed oczami — czyli autor
