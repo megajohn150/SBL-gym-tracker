@@ -2478,6 +2478,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           <span class="val">Fresh start</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <button class="row danger" id="set-delacc">
+          <span class="lab">Delete account</span>
+          <span class="val">For good</span>
+          <span class="chev">&rsaquo;</span>
+        </button>
       </div>
       </div></div>
     </div>
@@ -2636,7 +2641,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     <div class="dsec">Settings</div>
     <ul class="gdl">
-      <li><b>Account:</b> your email, sync status, Sign out (this phone keeps no copy), Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm).</li>
+      <li><b>Account:</b> your email, sync status, Sign out (this phone keeps no copy), Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm), Delete account (removes the account itself, so the email and nick are free again).</li>
       <li><b>Notifications:</b> Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
@@ -3048,8 +3053,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 <div class="sheet center" id="erase-sheet" hidden>
   <div class="sheet-bg" data-erase-close></div>
   <div class="sheet-card">
-    <h3>Erase everything</h3>
-    <p class="confirm-text">Every exercise, routine and workout on this device and in the cloud
+    <h3 id="erase-h">Erase everything</h3>
+    <p class="confirm-text" id="erase-p">Every exercise, routine and workout on this device and in the cloud
       is deleted. There is no undo.</p>
     <div class="field" style="padding:.3rem 0 .9rem">
       <label for="erase-in">Type <b id="erase-word">your email</b> to confirm</label>
@@ -3236,7 +3241,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4360';
+  var APP_VERSION = '3.4361';
 
   /* =========================================================
      STORE
@@ -5262,16 +5267,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     document.getElementById('set-signout').addEventListener('click', function () {
       askConfirm('Sign out?', 'Your training stays in the cloud. This device keeps no copy.',
         'Sign out', function () {
-          sb.auth.signOut().then(function () {
-            localStorage.removeItem('tracker-uid');
-            localStorage.removeItem('tracker-music');
-            localStorage.removeItem('tracker-data');
-            localStorage.removeItem('tracker-session');
-            // "this device keeps no copy": friends' cached sessions and the saved versions go too
-            if (me) localStorage.removeItem('tracker-feed-' + me.id);
-            try { indexedDB.deleteDatabase('tracker-snaps'); } catch (e) {}
-            location.reload();
-          });
+          leaveDevice(function () { return sb.auth.signOut(); });
         });
     });
 
@@ -8102,6 +8098,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       'Every exercise, routine and workout goes, on this device and in the cloud. ' +
       'Export a backup first if there is any doubt.',
       'Continue', function () {
+        delMode = false;
+        $('erase-h').textContent = 'Erase everything';
+        $('erase-p').textContent = 'Every exercise, routine and workout on this device and in the cloud is deleted. There is no undo.';
+        $('erase-go').textContent = 'Erase everything';
         $('erase-word').textContent = eraseWord();
         $('erase-in').value = '';
         $('erase-go').disabled = true;
@@ -8119,7 +8119,42 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     closeErase();
     askConfirm('Last chance',
       'This cannot be undone and there is no backup unless you made one yourself.',
-      'Erase it all', resetEverything);
+      delMode ? 'Delete it all' : 'Erase it all', delMode ? deleteAccount : resetEverything);
+  });
+
+  // the account itself: one server call removes the auth user and every row cascades,
+  // so the email and the nick are free again; then this device forgets it too
+  var delMode = false;
+  function deleteAccount() {
+    sb.rpc('delete_my_account').then(function (r) {
+      if (r.error) { toast('Could not delete the account'); return; }
+      leaveDevice(function () { return sb.auth.signOut(); });
+    });
+  }
+  function leaveDevice(out) {
+    var id = me && me.id;
+    Promise.resolve(out()).catch(function () {}).then(function () {
+      ['uid', 'music', 'data', 'session'].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
+      // "this device keeps no copy": friends' cached sessions and the saved versions go too
+      if (id) localStorage.removeItem('tracker-feed-' + id);
+      try { indexedDB.deleteDatabase('tracker-snaps'); } catch (e) {}
+      location.reload();
+    });
+  }
+  $('set-delacc').addEventListener('click', function () {
+    askConfirm('Delete your account?',
+      'Your account, training, posts, comments and friends are removed from the cloud for good. ' +
+      'Your email and nick become free. Export a backup first if there is any doubt.',
+      'Continue', function () {
+        delMode = true;
+        $('erase-h').textContent = 'Delete account';
+        $('erase-p').textContent = 'Your account and everything in it is deleted from this device and the cloud. There is no undo.';
+        $('erase-go').textContent = 'Delete account';
+        $('erase-word').textContent = eraseWord();
+        $('erase-in').value = '';
+        $('erase-go').disabled = true;
+        $('erase-sheet').hidden = false;
+      });
   });
   /* =========================================================
      Push notifications. The browser hands out a subscription, the
