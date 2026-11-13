@@ -1214,7 +1214,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   padding:calc(env(safe-area-inset-top) + 24px) var(--pad) calc(env(safe-area-inset-bottom) + 24px);
   background:var(--bg);overflow:auto;transition:opacity .7s ease;animation:brfin .45s ease both;
 }
-.brf.out{opacity:0;pointer-events:none}
+/* the way out: the parts lift away and blur one after another, then the veil clears */
+.brf.out{opacity:0;pointer-events:none;transition:opacity .7s ease .2s}
+.brf.out>*{animation:brfout .55s cubic-bezier(.4,0,.8,.5) both}
+.brf.out>:nth-child(2){animation-delay:.06s}.brf.out>:nth-child(3){animation-delay:.12s}
+.brf.out>:nth-child(4){animation-delay:.18s}.brf.out>:nth-child(5){animation-delay:.24s}
+@keyframes brfout{to{opacity:0;transform:translateY(-16px) scale(.97);filter:blur(6px)}}
 @keyframes brfin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .brf>*{animation:brfin .5s ease both}
 .brf>:nth-child(2){animation-delay:.08s}.brf>:nth-child(3){animation-delay:.16s}
@@ -3324,7 +3329,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4369';
+  var APP_VERSION = '3.4370';
 
   /* =========================================================
      STORE
@@ -7151,7 +7156,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function closeBrief() {
     clearTimeout(brfT);
     $('brf').classList.add('out');
-    brfT2 = setTimeout(function () { $('brf').hidden = true; }, 700);
+    brfT2 = setTimeout(function () { $('brf').hidden = true; }, 950);
   }
   $('brf').addEventListener('click', closeBrief);
 
