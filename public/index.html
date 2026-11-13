@@ -517,7 +517,7 @@ button.cell.blank{color:var(--fg-3);font-weight:400}
 }
 .sfoot .prev{text-align:left;font-weight:700}
 .sfoot .next{text-align:right;font-weight:700}
-.sfoot .next.nxend{position:relative;z-index:0;color:var(--accent-ink)}
+.sfoot .next.nxend{justify-self:end;position:relative;z-index:0;color:var(--accent-ink)}
 .sfoot .next.nxend::before{content:'';position:absolute;inset:-2px -12px;border-radius:999px;background:var(--accent);z-index:-1}
 .sfoot button[disabled],.sfoot .prev.dim{opacity:.3;cursor:default}
 .mids{justify-self:center;display:flex;gap:10px}
@@ -3236,7 +3236,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4359';
+  var APP_VERSION = '3.4360';
 
   /* =========================================================
      STORE
