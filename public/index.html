@@ -3235,7 +3235,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4348';
+  var APP_VERSION = '3.4349';
 
   /* =========================================================
      STORE
@@ -3795,12 +3795,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (text) el.classList.add('say');         // a wide bubble ends at the face instead of starting on it
     }
     document.body.appendChild(el);
+    if (!from) aboveFoot(el);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
   }
 
   // Eyes sit in the bottom right corner for as long as a friend has your workout open. The watcher
   // repeats "look" every 15 s, so a phone that died without saying "leave" runs out after 40 s.
   var watchers = {}, watchT = null, watchEl = null;
+  // sit 8 px above the footer's top line, wherever the footer really is (the fixed 68 px guess is wrong
+  // whenever the app does not end at the bottom of the window)
+  function aboveFoot(el) {
+    var f = document.querySelector('.screen.on .sfoot');
+    if (f) el.style.bottom = (window.innerHeight - f.getBoundingClientRect().top + 8) + 'px';
+  }
   function watchOn(nick) { watchers[nick || '?'] = Date.now() + 40000; watchSync(); }
   function watchOff(nick) { delete watchers[nick || '?']; watchSync(); }
   function watchSync() {
@@ -3826,6 +3833,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<span class="eyew" data-n="' + esc(n) + '" style="display:block">' + avatarTag(38, '', p) + '</span></span>';
       }).join('');
       document.body.appendChild(watchEl);
+      aboveFoot(watchEl);
     }
     if (any && !watchT) watchT = setInterval(watchSync, 2000);
     else if (!any && watchT) { clearInterval(watchT); watchT = null; }
