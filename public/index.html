@@ -351,7 +351,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 }
 .sbar .clock{font-weight:700;font-size:.95rem;letter-spacing:.04em}
 .eyepop{
-  position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:60;
+  position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 68px);z-index:60;
   display:flex;align-items:flex-end;gap:6px;pointer-events:none;
   animation:eyefloat 3s linear forwards,eyefade 3s linear forwards;
 }
@@ -367,7 +367,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   from{transform:translate3d(0,0,0) scale(.7)}
   to{transform:translate3d(-90px,-130px,0) scale(1)}
 }
-.eyewatch{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 90px);z-index:60;pointer-events:none;font-size:2rem;line-height:1;display:flex;gap:8px;align-items:flex-end}
+.eyewatch{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 68px);z-index:60;pointer-events:none;font-size:2rem;line-height:1;display:flex;gap:8px;align-items:flex-end}
 .eyewatch > span{display:block;animation:eyesit 2.4s ease-in-out infinite alternate;will-change:transform}
 .eyewatch > span b{display:block;text-align:center;font-weight:400;margin-bottom:4px}
 @keyframes eyesit{from{transform:translate3d(-6px,2px,0)}to{transform:translate3d(6px,-3px,0)}}
@@ -3219,7 +3219,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4338';
+  var APP_VERSION = '3.4339';
 
   /* =========================================================
      STORE
