@@ -1216,12 +1216,25 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 }
 .brf.out{opacity:0;pointer-events:none}
 @keyframes brfin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.brf h2{font-family:var(--display);font-size:1.5rem;font-weight:var(--namew);margin:0}
-.brf .brfrow{display:flex;justify-content:space-between;gap:12px;padding:.7rem 0;border-bottom:var(--dash);font-size:.9rem}
-.brf .brfrow span{color:var(--fg-3)}
-.brf .brfrow b{text-align:right}
-.brf .bodymap{margin:0}
-.brf .brfhint{font-size:.72rem;color:var(--fg-3);text-align:center}
+.brf>*{animation:brfin .5s ease both}
+.brf>:nth-child(2){animation-delay:.08s}.brf>:nth-child(3){animation-delay:.16s}
+.brf>:nth-child(4){animation-delay:.24s}.brf>:nth-child(5){animation-delay:.32s}
+.brf .brfeye{font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);margin:0 0 .35rem}
+.brf h2{font-family:var(--display);font-size:1.9rem;line-height:1.1;font-weight:var(--namew);margin:0}
+.brf .brfsub{margin:.4rem 0 0;font-size:.82rem;color:var(--fg-3)}
+.brftiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.brft{padding:.8rem .5rem;text-align:center;background:var(--surface);border:var(--border);border-radius:var(--radius)}
+.brft b{display:block;font-family:var(--display);font-size:1.45rem;line-height:1.1}
+.brft i{display:block;margin-top:4px;font-style:normal;font-size:.64rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-3)}
+.brfinj{padding:.7rem .9rem;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);font-size:.85rem;line-height:1.4}
+.brfinj b{color:var(--red)}
+.brfinj.ok{border-color:var(--line);background:none;color:var(--fg-3)}
+.brfcard{padding:.8rem 0 .9rem;background:var(--surface);border:var(--border);border-radius:var(--radius)}
+.brf .bodymap{margin:0 auto;max-width:300px}
+.brfchips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:.2rem .9rem 0}
+.brfchips span{padding:4px 10px;border:var(--border);border-radius:999px;font-size:.74rem;font-weight:600}
+.brfchips em{font-style:normal;color:var(--fg-3);margin-left:4px}
+.brf .brfhint{margin:0;font-size:.72rem;color:var(--fg-3);text-align:center}
 .toast{
   position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);
   z-index:30;padding:10px 16px;font-size:.8rem;font-weight:700;border-radius:999px;
@@ -3311,7 +3324,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4368';
+  var APP_VERSION = '3.4369';
 
   /* =========================================================
      STORE
@@ -7116,11 +7129,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var hurt = (store.injuries || []).filter(function (n) {
       return n.muscles.some(function (m) { return r.by[m] > 0; });
     }).map(function (n) { return esc(n.name); });
-    el.innerHTML = '<h2>Starting ' + esc(routine.name) + '&hellip;</h2>' +
-      '<div><div class="brfrow"><span>Estimated time</span><b>' + (mins ? mins + (mins === 1 ? ' min' : ' mins') : 'no runs to go by yet') + '</b></div>' +
-      '<div class="brfrow"><span>Exercises and sets planned</span><b>' + session.exercises.length + ' exercises &middot; ' + sets + ' sets</b></div>' +
-      '<div class="brfrow"><span>Injuries included</span><b>' + (hurt.length ? hurt.join(', ') : 'none') + '</b></div></div>' +
-      bodyMap(r, max) + '<p class="brfhint">Tap to skip</p>';
+    var top = Object.keys(r.by).filter(function (m) { return r.by[m] > 0; })
+      .sort(function (x, y) { return r.by[y] - r.by[x]; });
+    el.innerHTML = '<div><p class="brfeye">Starting</p><h2>' + esc(routine.name) + '</h2>' +
+        (runs.length ? '<p class="brfsub">Last done ' + esc(relDate(runs[0].date)) + '</p>' : '<p class="brfsub">First time through</p>') + '</div>' +
+      '<div class="brftiles">' +
+        '<div class="brft"><b>' + (mins ? '~' + mins : '&ndash;') + '</b><i>Minutes</i></div>' +
+        '<div class="brft"><b>' + session.exercises.length + '</b><i>Exercises</i></div>' +
+        '<div class="brft"><b>' + sets + '</b><i>Sets</i></div></div>' +
+      (hurt.length ? '<div class="brfinj"><b>Injuries in play:</b> ' + hurt.join(', ') + '. Go easy.</div>'
+        : '<div class="brfinj ok">No injuries in the way</div>') +
+      '<div class="brfcard">' + bodyMap(r, max) +
+        '<div class="brfchips">' + top.map(function (m) {
+          return '<span>' + esc(m) + '<em>' + r.by[m] + '</em></span>'; }).join('') + '</div></div>' +
+      '<p class="brfhint">Tap to skip</p>';
     clearTimeout(brfT); clearTimeout(brfT2);
     el.classList.remove('out');
     el.hidden = false;
