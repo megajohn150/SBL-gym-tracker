@@ -2262,6 +2262,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span class="iconbtn" aria-hidden="true">&#8942;</span>
     </div>
     <div class="sscroll" id="lv-body"></div>
+    <div class="sfoot">
+      <span></span>
+      <span class="mids">
+        <button class="mid" id="lv-eye" aria-label="Let them know you are watching"><span style="font-size:20px;line-height:1">&#128064;</span></button>
+      </span>
+      <span></span>
+    </div>
   </section>
 
   <!-- ===================== NOTIFICATIONS ===================== -->
@@ -3184,7 +3191,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4322';
+  var APP_VERSION = '3.4323';
 
   /* =========================================================
      STORE
@@ -3721,6 +3728,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawLiveView();
   });
 
+  // the eyes: the server checks the friendship and that a workout is running, then pings its owner
+  var eyeAt = 0;
+  $('lv-eye').addEventListener('click', function () {
+    if (!sb || !liveView || Date.now() - eyeAt < 3000) return;
+    eyeAt = Date.now();
+    Promise.resolve(sb.rpc('live_peek', { target: liveView.id })).catch(function () {});
+  });
+
   $('live-bars').addEventListener('click', function (e) {
     var b = e.target.closest('[data-live]');
     if (!b) return;
@@ -3850,6 +3865,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (!liveCh || liveCh.id !== who || !me || me.id !== who) return;
       liveCh.ch = sb.channel('u:' + who, { config: { private: true } })
         .on('broadcast', { event: 'ping' }, function (m) {
+          // a friend watching your workout: shown, not queued, there is nothing to reload
+          if (m && m.payload && m.payload.k === 'eye') { toast('\uD83D\uDC40 ' + (m.payload.n || ''), 3000); return; }
           liveHit((m && m.payload && m.payload.k) || 'react');
         })
         .subscribe(function (st) {

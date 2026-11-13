@@ -396,6 +396,22 @@ end $$;
 revoke execute on function public.live_friends(uuid, text, uuid)
   from public, anon, authenticated;
 
+-- Oczy: znajomy oglądający twój trening daje znać. Funkcja sprawdza przyjaźń
+-- i to, że trening naprawdę trwa, a potem pinguje właściciela jego nickiem.
+create or replace function public.live_peek(target uuid)
+returns void
+language plpgsql security definer set search_path = public, extensions as $$
+declare nick text;
+begin
+  if target is null or target = auth.uid() or not public.friends_with(target) then return; end if;
+  if not exists (select 1 from public.live_session where user_id = target) then return; end if;
+  select username into nick from public.profiles where user_id = auth.uid();
+  perform realtime.send(jsonb_build_object('k', 'eye', 'n', coalesce(nick, '')), 'ping',
+                        'u:' || target::text, true);
+end $$;
+revoke execute on function public.live_peek(uuid) from public, anon;
+grant execute on function public.live_peek(uuid) to authenticated;
+
 -- Powiadomienie idzie do właściciela treningu, bo to jego sprawa. Ale lajk
 -- albo komentarz widzi każdy, kto ma ten trening przed oczami — czyli autor
 -- i wszyscy jego znajomi. Bez tego własny lajk pod własnym treningiem nie
