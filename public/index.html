@@ -2505,7 +2505,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button class="fold-h" aria-expanded="false"><span class="lab">Account</span><span class="chev">&rsaquo;</span></button>
       <div class="fold-b"><div class="fold-in">
       <div class="rows">
-        <span class="row"><span class="lab">Signed in</span><span class="val" id="set-email">&mdash;</span></span>
+        <button class="row" id="set-mail"><span class="lab">Mail</span><span class="val" id="set-email">&mdash;</span><span class="chev">&rsaquo;</span></button>
+        <button class="row" id="set-pass"><span class="lab">Change password</span><span class="chev">&rsaquo;</span></button>
         <span class="row"><span class="lab">Sync</span><span class="val" id="set-sync">&mdash;</span></span>
         <button class="row" id="set-signout"><span class="lab">Sign out</span><span class="chev">&rsaquo;</span></button>
         <button class="row danger" id="set-delacc">
@@ -2671,7 +2672,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     <div class="dsec">Settings</div>
     <ul class="gdl">
-      <li><b>Account:</b> your email, sync status, Sign out (this phone keeps no copy), Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm), Delete account (removes the account itself, so the email and nick are free again).</li>
+      <li><b>Account:</b> Mail and Change password (a new address takes over once its link is opened), sync status, Sign out (this phone keeps no copy), Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm), Delete account (removes the account itself, so the email and nick are free again).</li>
       <li><b>Notifications:</b> Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
@@ -3080,6 +3081,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet center" id="acc-sheet" hidden>
+  <div class="sheet-bg" data-acc-close></div>
+  <div class="sheet-card">
+    <h3 id="acc-h"></h3>
+    <div class="field" style="padding:.3rem 0 .6rem"><label for="acc-a" id="acc-al"></label>
+      <input type="text" id="acc-a" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+    <div class="field" id="acc-brow" style="padding:0 0 .6rem"><label for="acc-b">Repeat it</label>
+      <input type="password" id="acc-b" autocomplete="new-password"></div>
+    <p class="hint" id="acc-msg" style="padding:0 0 .8rem;min-height:1.2em"></p>
+    <button class="btn btn-primary" id="acc-go">Save</button>
+    <button class="btn btn-ghost" id="acc-cancel" style="margin-top:8px">Cancel</button>
+  </div>
+</div>
+
 <div class="sheet center" id="exf-sheet" hidden>
   <div class="sheet-bg" data-exf-close></div>
   <div class="sheet-card">
@@ -3313,7 +3328,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4372';
+  var APP_VERSION = '3.4373';
 
   /* =========================================================
      STORE
@@ -8245,6 +8260,49 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
       f.classList.toggle('open', !was);
       h.setAttribute('aria-expanded', String(!was));
+    });
+  });
+
+  // Mail and password go through Supabase Auth. A new address only takes over once its
+  // confirmation link is opened, so the old one keeps working until then.
+  var accMode = '';
+  function openAcc(mode) {
+    accMode = mode;
+    var mail = mode === 'mail';
+    $('acc-h').textContent = mail ? 'Change mail' : 'Change password';
+    $('acc-al').textContent = mail ? 'New email' : 'New password';
+    $('acc-a').type = mail ? 'text' : 'password';
+    $('acc-a').setAttribute('autocomplete', mail ? 'email' : 'new-password');
+    $('acc-a').value = ''; $('acc-b').value = '';
+    $('acc-brow').hidden = mail;
+    $('acc-msg').textContent = '';
+    $('acc-go').disabled = false;
+    $('acc-sheet').hidden = false;
+  }
+  function closeAcc() { $('acc-sheet').hidden = true; }
+  $('set-mail').addEventListener('click', function () { openAcc('mail'); });
+  $('set-pass').addEventListener('click', function () { openAcc('pass'); });
+  $('acc-cancel').addEventListener('click', closeAcc);
+  document.querySelector('[data-acc-close]').addEventListener('click', closeAcc);
+  $('acc-go').addEventListener('click', function () {
+    var a = $('acc-a').value.trim(), msg = $('acc-msg');
+    msg.textContent = '';
+    if (accMode === 'mail') {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a)) { msg.textContent = 'That does not look like an email.'; return; }
+      if (me && a.toLowerCase() === String(me.email).toLowerCase()) { msg.textContent = 'That is already your email.'; return; }
+    } else {
+      if (a.length < 6) { msg.textContent = 'At least six characters.'; return; }
+      if (a !== $('acc-b').value) { msg.textContent = 'The two do not match.'; return; }
+    }
+    $('acc-go').disabled = true;
+    msg.textContent = 'Saving\u2026';
+    var call = accMode === 'mail' ? sb.auth.updateUser({ email: a }) : sb.auth.updateUser({ password: a });
+    call.then(function (r) {
+      $('acc-go').disabled = false;
+      if (r.error) { msg.textContent = r.error.message; return; }
+      closeAcc();
+      toast(accMode === 'mail' ? 'Confirm it from the link we mailed you' : 'Password changed', accMode === 'mail' ? 4000 : 0);
+      if (accMode === 'mail' && r.data && r.data.user) setUser(r.data.user);
     });
   });
 
