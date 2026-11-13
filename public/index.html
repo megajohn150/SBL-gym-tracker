@@ -898,7 +898,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   padding:10px var(--pad) calc(env(safe-area-inset-bottom) + 10px);
   animation:padup .18s ease both;
 }
-@keyframes padup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+/* fade, not slide: a key that is still moving when you tap it misses, and the miss closes the pad */
+@keyframes padup{from{opacity:0}to{opacity:1}}
 /* with the pad under it the footer needs no room for the home bar */
 #s-session.padon .sfoot{padding-bottom:12px}
 .pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -3179,7 +3180,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4310';
+  var APP_VERSION = '3.4311';
 
   /* =========================================================
      STORE
