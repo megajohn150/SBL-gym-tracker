@@ -15,7 +15,8 @@ const session = {
            { label: '02', weight: '', reps: '', rir: '' }]
   }]
 };
-const payload = new Function('session', code + '; return livePayload();')(session);
+const payload = new Function('session', 'store', code + '; return livePayload();')(session, { profile: {} });
+const off = new Function('session', 'store', code + '; return livePayload();')(session, { profile: { noReact: true } });
 const text = JSON.stringify(payload);
 
 t.is('the session note does not leave', text.includes('tajna'), false);
@@ -26,4 +27,5 @@ t.is('what the screen draws goes', [payload.name, payload.idx, payload.pausedAt,
 t.is('a set keeps its weight, its tick and its plates',
   payload.exercises[0].sets.map((s) => [s.weight, s.done, s.plate]), [['115.3', true, 2], ['', false, 0]]);
 t.is('a hole in last time stays a hole', payload.exercises[0].prev.length, 2);
+t.is('reactions are on by default, and the flag says when they are off', [payload.react, off.react], [true, false]);
 t.done();

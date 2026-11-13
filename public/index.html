@@ -2497,6 +2497,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           <span class="lab">Rest timer</span>
           <span class="chev">&rsaquo;</span>
         </button>
+        <button class="row" id="set-lreact">
+          <span class="lab">Live reactions</span>
+          <span class="val" id="set-lreact-val">On</span>
+        </button>
       </div>
       </div></div>
     </div>
@@ -3231,7 +3235,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4346';
+  var APP_VERSION = '3.4347';
 
   /* =========================================================
      STORE
@@ -3631,6 +3635,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function livePayload() {
     return {
       name: session.name, startedAt: session.startedAt, pausedAt: session.pausedAt || 0, idx: session.idx,
+      react: !store.profile.noReact,          // friends see their reaction buttons greyed out when this is false
       exercises: session.exercises.map(function (e) {
         return {
           name: e.name, code: e.code, muscle: e.muscle, unilateral: !!e.unilateral,
@@ -3708,6 +3713,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       return;
     }
     var p = social.people[id] || {}, last = d.exercises.length;
+    var rx = d.react !== false;
+    ['lv-eye', 'lv-flex', 'lv-talk'].forEach(function (b) { $(b).disabled = !rx; });
+    if (!rx) $('lv-say').hidden = true;
     var own = Math.max(0, Math.min(Number(d.idx) || 0, last - 1));
     // you may look at any exercise, until they move on: then you move with them
     if (liveView.own !== own) liveView.sel = null;
@@ -3995,6 +4003,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         .on('broadcast', { event: 'ping' }, function (m) {
           // a friend watching your workout: shown, not queued, there is nothing to reload
           var pk = m && m.payload && m.payload.k;
+          if (store.profile.noReact && pk !== 'leave') return;       // reactions are switched off
           if (pk === 'like') { likePop(m.payload.n); return; }
           if (pk === 'flex') { likePop(m.payload.n, FLEX_ON); return; }
           if (pk === 'say') {
@@ -5356,7 +5365,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drawWeekRecap();
     }
     if (id === 's-stat-stall') drawStatStall();
-    if (id === 's-settings') { drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
+    if (id === 's-settings') { drawLReact(); drawPushRow(); drawLiveRow(); drawBackupRows(); drawSnapRow(); }
     if (id === 's-notifset') { drawPushRow(); drawLiveRow(); }
     if (id === 's-music') drawMusic();
     if (id === 's-resttimer') drawRestCfg();
@@ -8252,6 +8261,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drawPushRow();
     });
   }
+
+  function drawLReact() {
+    $('set-lreact-val').textContent = store.profile.noReact ? 'Off' : 'On';
+  }
+  $('set-lreact').addEventListener('click', function () {
+    store.profile.noReact = !store.profile.noReact;
+    if (store.profile.noReact) { watchers = {}; watchSync(); }      // the eyes go with the reactions
+    saveStore();
+    queueLive();                                                    // friends see the buttons grey out at once
+    drawLReact();
+  });
 
   $('set-push').addEventListener('click', function () {
     if (!pushReady() || window.Notification.permission === 'denied') return;
