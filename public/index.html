@@ -454,6 +454,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   background:var(--surface);font-size:.9rem;color:var(--fg-2);line-height:1.45;text-align:left;
 }
 /* the note from the last time this exercise was done — quieter than the cue */
+.sesstip{justify-content:space-between;align-items:center}
+.sesstip button{flex:none;font-size:1.2rem;line-height:1;color:var(--fg-3);padding:0 4px}
 .injbtn{position:absolute;right:var(--pad);display:grid;place-items:center;border:1px solid var(--red);border-radius:var(--radius);background:rgba(180,71,61,.1);color:var(--red)}
 .injrow{margin:6px var(--pad) 0;padding:13px;border:var(--border);border-radius:var(--radius);background:var(--surface);line-height:1.45}
 .injrow .nm{font-weight:700}
@@ -2054,6 +2056,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
     </div>
 
+    <div class="cue sesstip" id="sess-tip" hidden>
+      <span id="sess-tip-t"></span>
+      <button id="sess-tip-x" aria-label="Got it">&times;</button>
+    </div>
+
     <div class="sets-h" id="sess-setshead">
       <span></span><span>Weight</span><span>Reps</span><span>RIR</span>
     </div>
@@ -3283,7 +3290,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4365';
+  var APP_VERSION = '3.4366';
 
   /* =========================================================
      STORE
@@ -7221,6 +7228,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     $('sess-exhead').classList.toggle('skiphead', sk);
 
+    // two one-time tips: the first workout ever, and the first exercise that has a last time
+    tipNow = '';
+    if (!done) {
+      if (!store.workouts.length && !load('tip-sets')) tipNow = 'sets';
+      else if (ex.prev && ex.prev.some(function (q) { return q.weight || q.reps; }) && !load('tip-fill')) tipNow = 'fill';
+    }
+    $('sess-tip').hidden = !tipNow;
+    $('sess-tip-t').textContent = tipNow === 'sets'
+      ? 'Swipe a set left to delete it. Once a set is filled, tap its number to tick it as done.'
+      : 'Tap a set\u2019s number to fill it with what you did last time. Tap it again to tick the set as done.';
+
     livePrs(ex);
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
@@ -7583,6 +7601,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     closePad();
   });
 
+  var tipNow = '';
+  function tipDone() { if (tipNow) { save('tip-' + tipNow, 1); tipNow = ''; $('sess-tip').hidden = true; } }
+  $('sess-tip-x').addEventListener('click', tipDone);
   $('sess-sets').addEventListener('click', function (e) {
     var cell = e.target.closest('input[data-f]');
     if (cell) { openPad(cell); return; }
@@ -7594,6 +7615,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (setFull(ex2.sets[j])) {
         ex2.sets[j].done = !ex2.sets[j].done;
         if (ex2.sets[j].done && navigator.vibrate) navigator.vibrate(15);
+        if (ex2.sets[j].done && tipNow === 'sets') tipDone();
         saveSession();
         drawSession();                   // fills in the set's prs
         if (ex2.sets[j].done) recToast(ex2.sets[j], ex2.name);
@@ -7606,6 +7628,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       }
       var p = fillFrom(ex2, j);
       if (p) {
+        if (tipNow === 'fill') tipDone();
         if (!ex2.sets[j].weight) {
           ex2.sets[j].weight = p.weight;
           if (p.plate) ex2.sets[j].plate = p.plate;   // the plates came with that weight
