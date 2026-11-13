@@ -1900,7 +1900,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
 
     <div class="group" id="ex-list-wrap" hidden>
-      <h2><span id="ex-count">0</span> saved</h2>
+      <div class="grouph">
+        <h2><span id="ex-count">0</span> saved</h2>
+        <button class="ordlink" id="ex-filter">Filter</button>
+      </div>
       <div class="rows" id="ex-list"></div>
     </div>
 
@@ -3074,6 +3077,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet center" id="exf-sheet" hidden>
+  <div class="sheet-bg" data-exf-close></div>
+  <div class="sheet-card">
+    <h3>Show only</h3>
+    <div id="exf-list" style="display:grid;gap:8px;max-height:55vh;overflow:auto"></div>
+    <button class="btn btn-ghost" id="exf-cancel" style="margin-top:10px">Cancel</button>
+  </div>
+</div>
+
 <div class="sheet center" id="erase-sheet" hidden>
   <div class="sheet-bg" data-erase-close></div>
   <div class="sheet-card">
@@ -3298,7 +3310,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4369';
+  var APP_VERSION = '3.4370';
 
   /* =========================================================
      STORE
@@ -5693,7 +5705,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (p) {
       var target = p.dataset.push;
       if (target === 'routine-form') newRoutine();
-      if (target === 'exercises') pickFor = p.dataset.pick || null;
+      if (target === 'exercises') { pickFor = p.dataset.pick || null; exFilter = null; }
       push(target);
       return;
     }
@@ -5706,6 +5718,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
      ========================================================= */
   var pickFor = null;     // non-null when the list is being used as a picker
   var pickMuscle = null;  // when set, the picker shows that muscle only
+  var exFilter = null;    // a muscle the list is narrowed to, from the Filter button
   var pickMode = 'recent'; // the picker lists the latest-used exercises first, or groups them by muscle
 
   function drawExercises() {
@@ -5713,7 +5726,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('ex-empty').hidden = has;
     $('ex-list-wrap').hidden = !has;
     $('ex-footbar').hidden = !has;
-    $('ex-count').textContent = store.exercises.length;
+    $('ex-filter').hidden = !!pickMuscle;                 // a swap is already one muscle
+    $('ex-filter').textContent = exFilter && !pickMuscle ? 'Filter: ' + exFilter : 'Filter';
     $('pick-hint').hidden = !(pickFor && has);
     $('pick-hint').textContent = pickFor === 'swap'
       ? 'Pick what you are doing instead \u2014 same muscle, this workout only.'
@@ -5732,8 +5746,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var q = $('ex-search').value.trim().toLowerCase();
     var hits = store.exercises.filter(function (x) {
       if (pickMuscle && x.muscle !== pickMuscle) return false;
+      if (exFilter && !pickMuscle && x.muscle !== exFilter) return false;
       return !q || (x.name + ' ' + x.muscle).toLowerCase().indexOf(q) > -1;
     });
+
+    $('ex-count').textContent = exFilter && !pickMuscle ? hits.length + ' of ' + store.exercises.length : store.exercises.length;
 
     // one block per muscle, in the order the picker lists them; empty ones never appear
     var order = Array.prototype.map.call(document.querySelectorAll('#ex-muscle option'),
@@ -5768,6 +5785,28 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           return '<div class="exgroup">' + esc(m) + '</div>' + groups[m].map(row).join('');
         }).join('');
   }
+
+  $('ex-filter').addEventListener('click', function () {
+    var n = {};
+    store.exercises.forEach(function (x) { n[x.muscle] = (n[x.muscle] || 0) + 1; });
+    var order = Array.prototype.map.call(document.querySelectorAll('#ex-muscle option'), function (o) { return o.value; });
+    $('exf-list').innerHTML = '<button class="btn ' + (exFilter ? 'btn-ghost' : 'btn-primary') + '" data-exf="">All muscles</button>' +
+      order.filter(function (m) { return n[m]; }).map(function (m) {
+        return '<button class="btn ' + (exFilter === m ? 'btn-primary' : 'btn-ghost') + '" data-exf="' + esc(m) + '">' +
+          esc(m) + ' &middot; ' + n[m] + '</button>';
+      }).join('');
+    $('exf-sheet').hidden = false;
+  });
+  function closeExf() { $('exf-sheet').hidden = true; }
+  $('exf-cancel').addEventListener('click', closeExf);
+  document.querySelector('[data-exf-close]').addEventListener('click', closeExf);
+  $('exf-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-exf]');
+    if (!b) return;
+    exFilter = b.dataset.exf || null;
+    closeExf();
+    drawExercises();
+  });
 
   $('ex-mode').addEventListener('click', function (e) {
     var b = e.target.closest('[data-pm]');
@@ -11918,7 +11957,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       }
       if (e.target.closest('[data-addex]')) {
         harvestDetail();
-        pickFor = 'detail';
+        pickFor = 'detail'; exFilter = null;
         push('exercises');
         return;
       }
@@ -11997,7 +12036,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // the closing card offers the same thing as the menu: one more exercise before you end
   function addFromSession() {
     if (!session) return;
-    pickFor = 'session';
+    pickFor = 'session'; exFilter = null;
     push('exercises');
   }
   $('menu-add').addEventListener('click', function () { closeMenu(); addFromSession(); });
