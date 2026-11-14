@@ -383,7 +383,7 @@ How to work with it:
   through only the run that is 20:00 in `Europe/Warsaw`, which keeps the hour fixed across the
   summer-time change; it pushes to everyone with a subscription who has a post this week.
 - Before a destructive statement (drop, delete, rewrite of `tracker`, `posts`, `profiles`),
-  say what it touches and ask. The database holds the user's real training log, 274 posts
+  say what it touches and ask. The database holds the user's real training log, about 190 posts (4 active accounts, 5 accounts in all)
   and friends' data, and there is no branch or backup set up here. Additive changes
   (a function, a cron job, a nullable column) can be applied directly.
 - `push_send` carries a `<PUSH_SECRET>` placeholder in the repo. Never write the real secret
