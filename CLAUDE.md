@@ -119,7 +119,7 @@ that shape; keep new tests in that style.
 Suites: `follow`, `routines`, `pull` (the three races), `compare` (`myRecords` and the
 leaderboard ranking), `live` (the payload a friend gets of your running workout — notes must
 not be in it), `feed` (the feed cache: first look downloads all, second nothing, an edit comes
-down alone, a delete disappears, a failed look keeps the feed).
+down alone, a delete disappears, a failed look keeps the feed), `stamps` (the date of every STAMPth workout, and the PR count behind the month report's PRs bars).
 
 ## Verifying in a browser
 
