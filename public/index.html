@@ -1088,6 +1088,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .stmprow{display:flex;align-items:center;gap:18px;padding:10px 4px}
 .stmprow span.stmpdate{font-size:.85rem;color:var(--fg-2);font-weight:600}
 #stamps-list{max-height:55vh;overflow-y:auto}
+#xhs-list{max-height:65vh;overflow-y:auto;margin:0 calc(var(--pad) * -1)}
 .phead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .daynight{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .daynight svg{overflow:visible}
@@ -3001,6 +3002,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <div class="pop-bg" data-expop-close></div>
   <div class="pop-wrap" style="top:calc(env(safe-area-inset-top) + 56px)">
     <div class="pop-menu">
+      <button id="xp-hist">View history</button>
       <button id="xp-edit">Edit exercise</button>
       <button id="xp-meta">Edit exercise metadata</button>
       <button id="xp-swap">Swap exercise</button>
@@ -3221,6 +3223,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 </div>
 
 
+<div class="sheet" id="xhs-sheet" hidden>
+  <div class="sheet-bg" data-xhs-close></div>
+  <div class="sheet-card">
+    <h3 id="xhs-title">History</h3>
+    <div id="xhs-list"></div>
+  </div>
+</div>
+
 <div class="sheet" id="stamps-sheet" hidden>
   <div class="sheet-bg" data-stamps-close></div>
   <div class="sheet-card">
@@ -3357,7 +3367,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4400';
+  var APP_VERSION = '3.4401';
 
   /* =========================================================
      STORE
@@ -6055,12 +6065,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     push('exhistory');
   }
 
-  function drawHistory() {
-    var x = byId(histId);
-    if (!x) return;
-    $('xh-title').textContent = x.name;
-
-    var key = x.id, best = bestsFor(key), cut = cutoffFor(key), rows = [];
+  // every session an exercise was in, newest first, flagged by whether it still counts
+  function histRows(key) {
+    var cut = cutoffFor(key), rows = [];
     store.workouts.forEach(function (w) {
       w.exercises.forEach(function (e) {
         if (e.skipped || exKey(e) !== key) return;
@@ -6069,6 +6076,37 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         rows.push({ w: w, e: e, top: top, live: afterCut(w, cut) });
       });
     });
+    return rows;
+  }
+
+  // the exercise's own page opens each session; the peek from a workout in progress only looks
+  function histHtml(rows, go) {
+    return rows.length
+      ? rows.map(function (r, i) {
+          var line = (!r.live && (i === 0 || rows[i - 1].live))
+            ? '<div class="dcut">Reset</div>' : '';
+          return line + '<div class="dex' + (r.live ? '' : ' before') + '">' +
+            (go ? '<button class="xwgo" data-wopen="' + esc(r.w.id) + '">' : '<div class="xwgo">') +
+            '<span class="nm">' + relDate(r.w.date) + '</span>' +
+            '<span class="meta">' + esc(r.w.name) + (go ? '<i>\u203a</i>' : '') + '</span>' +
+            (go ? '</button>' : '</div>') +
+            r.e.sets.filter(logged).map(function (st) {
+              return '<div class="drow"><span class="no">' + esc(st.label) + medal(st, r.e.name) + '</span>' +
+                '<span class="c">' + esc(st.weight) + '</span>' +
+                '<span class="c">' + esc(st.reps) + '</span>' +
+                '<span class="c' + (st.rir === '' ? ' dim' : '') + '">' +
+                (st.rir === '' ? '&ndash;' : esc(st.rir)) + '</span></div>';
+            }).join('') + '</div>';
+        }).join('')
+      : '<div class="note">Not done yet.</div>';
+  }
+
+  function drawHistory() {
+    var x = byId(histId);
+    if (!x) return;
+    $('xh-title').textContent = x.name;
+
+    var key = x.id, best = bestsFor(key), rows = histRows(key);
     var live = rows.filter(function (r) { return r.live; });
 
     var recs = '<div class="dsec" style="border-top:none;margin-top:0">Records</div>' +
@@ -6102,23 +6140,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     if (!live.length) chart = '';          // nothing to plot yet
 
-    var hist = '<div class="dsec">History</div>' + (rows.length
-      ? rows.map(function (r, i) {
-          var line = (!r.live && (i === 0 || rows[i - 1].live))
-            ? '<div class="dcut">Reset</div>' : '';
-          return line + '<div class="dex' + (r.live ? '' : ' before') + '">' +
-            '<button class="xwgo" data-wopen="' + esc(r.w.id) + '">' +
-            '<span class="nm">' + relDate(r.w.date) + '</span>' +
-            '<span class="meta">' + esc(r.w.name) + '<i>\u203a</i></span></button>' +
-            r.e.sets.filter(logged).map(function (st) {
-              return '<div class="drow"><span class="no">' + esc(st.label) + medal(st, r.e.name) + '</span>' +
-                '<span class="c">' + esc(st.weight) + '</span>' +
-                '<span class="c">' + esc(st.reps) + '</span>' +
-                '<span class="c' + (st.rir === '' ? ' dim' : '') + '">' +
-                (st.rir === '' ? '&ndash;' : esc(st.rir)) + '</span></div>';
-            }).join('') + '</div>';
-        }).join('')
-      : '<div class="note">Not done yet.</div>');
+    var hist = '<div class="dsec">History</div>' + histHtml(rows, true);
 
     $('xh-body').innerHTML = recs + chart + lbBtn + hist + '<div style="height:1.5rem"></div>';
   }
@@ -12317,6 +12339,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       b.setAttribute('aria-pressed', String(b.dataset.mside === mset.side));
     });
   }
+
+  $('xp-hist').addEventListener('click', function () {
+    closeExPop();
+    var ex = session && session.exercises[session.idx];
+    if (!ex) return;
+    $('xhs-title').textContent = ex.name;
+    $('xhs-list').innerHTML = histHtml(histRows(exKey(ex)), false);
+    $('xhs-sheet').hidden = false;
+  });
+  document.querySelector('[data-xhs-close]').addEventListener('click', function () { $('xhs-sheet').hidden = true; });
 
   $('xp-meta').addEventListener('click', function () {
     closeExPop();
