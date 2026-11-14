@@ -1451,6 +1451,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .mbars > div{flex:1;display:flex;align-items:flex-end;height:100%}
 .mbars i{display:block;width:100%;background:var(--fg-3);opacity:.4;border-radius:2px 2px 0 0}
 .mbars .on i{background:var(--accent);opacity:1}
+.mbars .pbar.on i{background:var(--fg-3);opacity:.75}
 .mbarlab{display:flex;gap:4px;padding:6px var(--pad) 0;font-size:.6rem;font-weight:700;color:var(--fg-3)}
 .mbarlab span{flex:1;text-align:center}
 .seg.four{grid-template-columns:repeat(4,1fr)}
@@ -3356,7 +3357,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4395';
+  var APP_VERSION = '3.4396';
 
   /* =========================================================
      STORE
@@ -10276,6 +10277,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   barTips($('p-bars'));
   barTips($('user-body'));
   barTips($('xh-body'));
+  barTips($('stmonth-body'));
 
   document.addEventListener('pointerdown', function (e) {
     if (tipBar && !e.target.closest('.pbar') && !e.target.closest('#p-tip')) hideTip();
@@ -11268,6 +11270,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
 
   function drawStatMonth() {
+    hideTip();
     // a report is written once the month is over, so this is the last full one
     var n = new Date();
     var from = new Date(n.getFullYear(), n.getMonth() - 1, 1);
@@ -11293,12 +11296,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       var ms = statsFor(f, t);
       ms.prs = prTotal(f, t);
       var v = metricVal(ms, stMetric);
-      bars.push({ m: f.getMonth(), v: v, on: i === 0 });
+      bars.push({ m: f.getMonth(), y: f.getFullYear(), v: v, on: i === 0 });
       max = Math.max(max, v);
     }
     var chart = '<div class="mbars">' + bars.map(function (b) {
-      return '<div class="' + (b.on ? 'on' : '') + '"><i style="height:' +
-        (max ? Math.max(1, b.v / max * 100) : 1) + '%"></i></div>';
+      var h = '<i style="height:' + (max ? Math.max(1, b.v / max * 100) : 1) + '%"></i>';
+      // the month the report is about stays as it was; the earlier ones can be tapped for their number
+      return b.on ? '<div class="on">' + h + '</div>'
+        : '<button class="pbar" data-tip="' + esc(metricFmt(stMetric, b.v) + '  \u00b7  ' + MONTHS[b.m] + ' ' + b.y) + '">' + h + '</button>';
     }).join('') + '</div><div class="mbarlab">' + bars.map(function (b) {
       return '<span>' + MONTHS[b.m].charAt(0) + '</span>';
     }).join('') + '</div>';
