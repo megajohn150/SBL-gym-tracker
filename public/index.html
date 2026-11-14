@@ -3333,7 +3333,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4381';
+  var APP_VERSION = '3.4382';
 
   /* =========================================================
      STORE
@@ -5507,7 +5507,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-profile') drawProfile();
     if (id === 's-notes') drawNotes();
     if (id === 's-calendar') drawCalendar();
-    if (id === 's-stat-sets') drawStatSets();
+    if (id === 's-stat-sets') {
+      if (!leaving || leaving.id !== 's-targets') ssOff = 0;   // targets is a detour, not leaving
+      drawStatSets();
+    }
     if (id === 's-targets') drawTargets();
     if (id === 's-stat-chart') drawStatChart();
     if (id === 's-stat-body') drawStatBody();
@@ -10431,17 +10434,32 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   /* --- set count: the last week that is already behind you --- */
+  var ssOff = 0;     // how many closed weeks back the set count is looking
   function drawStatSets() {
     // a workout logged on this week's Sunday closes the week, no need to wait for Monday
     var end = monday(new Date()), sun = addDays(end, 6);
     var closed = store.workouts.some(function (w) { var d = new Date(w.date); return d >= sun && d < addDays(sun, 1); });
     if (closed) end = addDays(end, 7);
+    // the oldest week worth going back to is the one with your first workout in it
+    var first = Infinity;
+    store.workouts.forEach(function (w) { first = Math.min(first, new Date(w.date).getTime()); });
+    var max = first === Infinity ? 0 : Math.max(0, Math.round((addDays(end, -7) - monday(new Date(first))) / 6048e5));
+    ssOff = Math.min(ssOff, max);
+    end = addDays(end, -7 * ssOff);
     var start = addDays(end, -7);
     var r = statsFor(start, end);
     $('stsets-body').innerHTML =
-      '<div class="stperiod">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</div>' +
+      '<div class="stweek"><button data-ssnav="1" aria-label="Earlier week"' + (ssOff >= max ? ' disabled' : '') +
+        '>&lsaquo;</button><span class="lab">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) +
+        '</span><button data-ssnav="-1" aria-label="Later week"' + (ssOff ? '' : ' disabled') + '>&rsaquo;</button></div>' +
       muscleTable(r, 'Sets', true, true, 'split');
   }
+  $('stsets-body').addEventListener('click', function (e) {
+    var nav = e.target.closest('[data-ssnav]');
+    if (!nav || nav.disabled) return;
+    ssOff = Math.max(0, ssOff + Number(nav.dataset.ssnav));
+    drawStatSets();
+  });
 
   $('sts-menu').addEventListener('click', function () { $('sts-pop').hidden = false; });
   document.querySelector('[data-sts-close]').addEventListener('click', function () {
