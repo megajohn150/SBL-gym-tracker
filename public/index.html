@@ -3006,8 +3006,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button id="xp-edit">Edit exercise</button>
       <button id="xp-meta">Edit exercise metadata</button>
       <button id="xp-swap">Swap exercise</button>
-      <button id="xp-up">Move up</button>
-      <button id="xp-down">Move down</button>
       <button id="xp-skip">Skip exercise</button>
       <button id="xp-drop" class="danger">Remove from workout</button>
     </div>
@@ -3019,6 +3017,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <div class="pop-wrap">
     <div class="pop-menu">
       <button id="menu-add">Add exercise</button>
+      <button id="menu-reorder">Reorder exercises</button>
       <button id="menu-pause">Pause workout</button>
       <button id="menu-discard" class="danger">Discard workout</button>
     </div>
@@ -3367,7 +3366,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4401';
+  var APP_VERSION = '3.4402';
 
   /* =========================================================
      STORE
@@ -7325,16 +7324,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var at = Math.min(session.idx + 1, session.exercises.length);
     session.exercises.splice(at, 0, sessionItem(exId, 1, (x && x.unilateral) ? 'R' : null, ''));
     session.idx = at;
-  }
-
-  function moveSessionEx(dir) {
-    var i = session.idx, j = i + dir;
-    if (j < 0 || j >= session.exercises.length) return;
-    var moved = session.exercises[i];
-    session.exercises[i] = session.exercises[j];
-    session.exercises[j] = moved;
-    session.idx = j;
-    drawSession();
   }
 
   function dropSessionEx() {
@@ -12261,6 +12250,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('sess-menu').addEventListener('click', function () {
     if (!session) return;
     $('menu-pause').textContent = session.pausedAt ? 'Resume workout' : 'Pause workout';
+    $('menu-reorder').hidden = session.exercises.length < 2;
     $('menu-sheet').hidden = false;
   });
   function closeMenu() { $('menu-sheet').hidden = true; }
@@ -12292,11 +12282,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawSessionOrder();
     drawSession();
   });
-  $('sess-reorder').addEventListener('click', function () {
+  function openSessionOrder() {
     if (!session || session.exercises.length < 2) return;
     drawSessionOrder();
     $('sord-sheet').hidden = false;
-  });
+  }
+  $('sess-reorder').addEventListener('click', openSessionOrder);
+  $('menu-reorder').addEventListener('click', function () { closeMenu(); openSessionOrder(); });
   function closeSessionOrder() { $('sord-sheet').hidden = true; }
   $('sord-done').addEventListener('click', closeSessionOrder);
   document.querySelector('[data-sord-close]').addEventListener('click', closeSessionOrder);
@@ -12307,13 +12299,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   $('sess-exmenu').addEventListener('click', function () {
     if (!session) return;
-    var last = session.exercises.length - 1;
     // the sets and the rep range belong to whoever wrote the routine, and this
     // sheet writes them back into it
     var fr = session.routineId ? routineById(session.routineId) : null;
     $('xp-meta').hidden = !!(fr && fr.follow);
-    $('xp-up').hidden = session.idx === 0;
-    $('xp-down').hidden = session.idx >= last;
     $('xp-drop').hidden = session.exercises.length < 2;
     $('xp-skip').textContent = session.exercises[session.idx].skipped ? 'Unskip exercise' : 'Skip exercise';
     $('ex-pop').hidden = false;
@@ -12439,8 +12428,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var ex = session.exercises[session.idx];
     if (ex && ex.exId && byId(ex.exId)) openExercise(ex.exId);
   });
-  $('xp-up').addEventListener('click', function () { closeExPop(); moveSessionEx(-1); });
-  $('xp-down').addEventListener('click', function () { closeExPop(); moveSessionEx(1); });
   $('xp-drop').addEventListener('click', function () { closeExPop(); dropSessionEx(); });
   // a skipped exercise stays in the line-up, greyed out, and is left out of the numbers when the workout ends
   $('xp-skip').addEventListener('click', function () {
