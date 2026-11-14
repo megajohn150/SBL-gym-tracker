@@ -3370,7 +3370,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4403';
+  var APP_VERSION = '3.4404';
 
   /* =========================================================
      STORE
@@ -6570,7 +6570,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // The row is positioned from its own live layout box each frame, so it
   // tracks the finger exactly and never drifts after a swap.
-  var drag = { el: null, grab: 0, list: null, done: null };
+  var drag = { el: null, grab: 0, y: 0, list: null, done: null };
 
   function placeDrag(clientY) {
     drag.el.style.transform = '';
@@ -6589,13 +6589,28 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drag.list = list;
       drag.done = onDrop;
       drag.grab = e.clientY - row.getBoundingClientRect().top;
+      drag.y = e.clientY;
       row.classList.add('drag');
+      requestAnimationFrame(dragScroll);
     });
   }
 
-  document.addEventListener('pointermove', function (e) {
+  // near the top or bottom edge of the list it scrolls on its own, faster the closer the finger
+  function dragScroll() {
     if (!drag.el) return;
-    var box = placeDrag(e.clientY);
+    var b = drag.list.getBoundingClientRect(), EDGE = 48, dy = 0;
+    if (drag.y < b.top + EDGE) dy = -Math.ceil((b.top + EDGE - drag.y) / 6);
+    else if (drag.y > b.bottom - EDGE) dy = Math.ceil((drag.y - (b.bottom - EDGE)) / 6);
+    if (dy) { drag.list.scrollTop += dy; dragMove(drag.y); }
+    requestAnimationFrame(dragScroll);
+  }
+
+  document.addEventListener('pointermove', function (e) {
+    if (drag.el) dragMove(drag.y = e.clientY);
+  });
+
+  function dragMove(y) {
+    var box = placeDrag(y);
     var mid = box.top + box.height / 2;
 
     var rows = Array.prototype.slice.call(drag.list.children);
@@ -6606,7 +6621,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       r = before.getBoundingClientRect();
       if (mid < r.top + r.height / 2) {
         drag.list.insertBefore(drag.el, before);
-        placeDrag(e.clientY);
+        placeDrag(y);
         return;
       }
     }
@@ -6614,10 +6629,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       r = after.getBoundingClientRect();
       if (mid > r.top + r.height / 2) {
         drag.list.insertBefore(after, drag.el);
-        placeDrag(e.clientY);
+        placeDrag(y);
       }
     }
-  });
+  }
 
   document.addEventListener('pointerup', function () {
     if (!drag.el) return;
