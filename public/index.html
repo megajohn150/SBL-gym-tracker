@@ -3333,7 +3333,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4384';
+  var APP_VERSION = '3.4385';
 
   /* =========================================================
      STORE
@@ -10414,6 +10414,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '</span></div>';
     }
 
+    var wd = (store.targets.Total || {}).days;       // workouts a week, from Weekly targets
     // every set you meant to do this week, in one number
     var all = 0;
     if (goal) {
@@ -10424,7 +10425,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       (days ? '<span class="n2">Days</span>' : '') +
       '<span class="n2">' + head + '</span></div>' +
       '<div class="strow tot"><span class="nm">Total</span>' +
-      (days ? '<span class="n n2"><b>' + (r.workouts || 0) + '</b><i></i></span>' : '') +
+      (days ? '<span class="n n2' + (goal ? hit(r.workouts, wd) : '') + '"><b>' + (r.workouts || 0) + '</b>' + (goal ? tgt(wd) : '<i></i>') + '</span>' : '') +
       '<span class="n n2' + hit(r.total, all) + '"><b>' + r.total + '</b>' + tgt(all) +
       '</span></div>' +
       rows.map(function (x) {
