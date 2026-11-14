@@ -3333,7 +3333,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4383';
+  var APP_VERSION = '3.4384';
 
   /* =========================================================
      STORE
@@ -5508,7 +5508,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-notes') drawNotes();
     if (id === 's-calendar') drawCalendar();
     if (id === 's-stat-sets') {
-      if (!leaving || leaving.id !== 's-targets') ssOff = 0;   // targets is a detour, not leaving
+      if (!leaving || (leaving.id !== 's-targets' && leaving.id !== 's-detail')) ssOff = 0;   // targets and a workout are detours, not leaving
       drawStatSets();
     }
     if (id === 's-targets') drawTargets();
