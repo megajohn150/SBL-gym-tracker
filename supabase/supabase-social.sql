@@ -101,6 +101,29 @@ create policy "library write" on public.library for insert to authenticated with
 create policy "library edit"  on public.library for update to authenticated using (auth.uid() = user_id)
                                                             with check (auth.uid() = user_id);
 
+-- ------------------------------------------------------------------
+-- 4b. Dziennik: jeden wiersz na osobę, cały sklep aplikacji plus trwająca
+--     sesja. Tylko właściciel. Nie ma polityki delete: "Erase everything"
+--     wysyła pusty sklep, a konto kasuje kaskada z auth.users.
+--     (Tak wygląda żywa tabela; trigger live_on_tracker niżej na niej stoi.)
+-- ------------------------------------------------------------------
+create table if not exists public.tracker (
+  user_id    uuid primary key references auth.users on delete cascade,
+  data       jsonb not null default '{}'::jsonb,
+  session    jsonb,
+  rev        bigint not null default 0,
+  updated_at timestamptz not null default now()
+);
+alter table public.tracker enable row level security;
+
+drop policy if exists "read own"   on public.tracker;
+drop policy if exists "insert own" on public.tracker;
+drop policy if exists "update own" on public.tracker;
+create policy "read own"   on public.tracker for select using (auth.uid() = user_id);
+create policy "insert own" on public.tracker for insert with check (auth.uid() = user_id);
+create policy "update own" on public.tracker for update using (auth.uid() = user_id)
+                                                        with check (auth.uid() = user_id);
+
 -- Nazwa musi zaczynać się i kończyć literą lub cyfrą, 3-20 znaków — żeby nie
 -- dało się zająć nicka typu "..." albo "__". Aplikacja pilnuje tego samego.
 do $$ begin
@@ -547,7 +570,7 @@ create trigger live_on_sess after insert or update or delete on public.live_sess
   for each row execute function public.live_sess();
 
 -- ------------------------------------------------------------------
--- 11. Niedzielny recap. W niedzielę o 20:00 czasu polskiego idzie push
+-- 12. Niedzielny recap. W niedzielę o 20:00 czasu polskiego idzie push
 --     do każdego, kto ma włączone powiadomienia i trenował w tym
 --     tygodniu (pon-nd). pg_cron liczy w UTC, a godzina polska zmienia
 --     się z czasem letnim, więc zadanie budzi się o 18:00 i 19:00 UTC,
@@ -573,7 +596,7 @@ revoke execute on function public.weekly_recap_push() from public, anon, authent
 select cron.schedule('weekly-recap', '0 18,19 * * 0', $$select public.weekly_recap_push()$$);
 
 -- ------------------------------------------------------------------
--- 12. Raport miesięczny. Pierwszego dnia miesiąca o 10:00 czasu
+-- 13. Raport miesięczny. Pierwszego dnia miesiąca o 10:00 czasu
 --     polskiego idzie push do każdego, kto ma włączone powiadomienia
 --     i trenował w poprzednim miesiącu. Tak samo jak recap: cron budzi
 --     się o 08:00 i 09:00 UTC, a funkcja puszcza tę godzinę, która jest

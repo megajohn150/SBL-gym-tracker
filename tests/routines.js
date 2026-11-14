@@ -4,6 +4,8 @@
    node tests/routines.js */
 const { slice, suite } = require('./lib');
 const block = slice('  function isFollowed(r)', '  /* --- the sign-in gate --- */');
+const { cleanSets, cleanStep } = new Function(slice('  function cleanSets(v)', '  function fixCues()') +
+  '; return { cleanSets: cleanSets, cleanStep: cleanStep };')();
 const t = suite('routines');
 
 let store, toasts, libRows;

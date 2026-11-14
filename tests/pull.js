@@ -60,6 +60,23 @@ answer = () => new Promise((res) => {
   }, 0);
 });
 
+/* 0. dwa urządzenia spotkały się na blokadzie: nic z żadnej strony nie ginie */
+const mine = { exercises: [{ id: 'a', name: 'mine' }], routines: [{ id: 'r', name: 'local edit' }],
+  workouts: [{ id: 'w1', date: '2026-01-02' }], gone: [], targets: { Chest: { sets: 5 } }, injuries: [], profile: { n: 1 } };
+const theirs = { exercises: [{ id: 'a', name: 'old' }, { id: 'b', name: 'only there' }],
+  routines: [{ id: 'r', name: 'remote' }, { id: 's', name: 'only there' }],
+  workouts: [{ id: 'w2', date: '2026-01-03' }], gone: [], targets: { Legs: { sets: 9 } }, injuries: [] };
+const u = unionStores(mine, theirs);
+t.is('treningi z obu stron zostają', u.workouts.map((w) => w.id), ['w2', 'w1']);
+t.is('przy zderzeniu wygrywa ta kopia', u.routines.map((r) => r.name), ['local edit', 'only there']);
+t.is('ćwiczenia z obu stron zostają', u.exercises.map((e) => e.name), ['mine', 'only there']);
+t.is('cele z obu stron zostają', Object.keys(u.targets).sort(), ['Chest', 'Legs']);
+/* pusta lista w chmurze: świeży wiersz nie kasuje, jawne wyczyszczenie tak */
+const keep = mergeStores({ exercises: [{ id: 'a' }], routines: [{ id: 'r' }], workouts: [] }, { exercises: [], routines: [], workouts: [] });
+t.is('pusty wiersz w chmurze nie kasuje', keep.routines.length, 1);
+const wipe = mergeStores({ exercises: [{ id: 'a' }], routines: [{ id: 'r' }], workouts: [] }, { exercises: [], routines: [], workouts: [], wiped: 5 });
+t.is('wyczyszczone na innym urządzeniu znika i tu', [wipe.routines.length, wipe.exercises.length], [0, 0]);
+
 cloudPull().then(() => {
   t.is('zmiana przeżywa pobranie', store.routines[0].items[0].sets, 99);
   t.is('i czeka na wysyłkę', cloud.dirty, true);

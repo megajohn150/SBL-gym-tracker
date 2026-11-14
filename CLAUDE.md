@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A gym tracker PWA, installed to the iOS home screen, hosted on Cloudflare Pages
+SBL Tracker, a gym tracker PWA, installed to the iOS home screen, hosted on Cloudflare Pages
 (`gym-tracker-9hr.pages.dev`) with Supabase behind it. One user plus a handful of friends.
 
 **The entire app is `public/index.html`** — ~11900 lines holding the markup, the CSS and one
@@ -12,6 +12,8 @@ IIFE of ES5-style vanilla JavaScript (`var`, `function`, no arrows or `let`/`con
 step, no bundler, no `package.json`, no framework. The only runtime dependency is supabase-js
 from a CDN, pinned in both the page and `public/sw.js` (bump both together). Fonts are
 self-hosted in `public/fonts/`; the app talks to no other third party.
+
+The app's name is shown as "SBL Tracker" (page title, manifest, home-screen title, sign-in gate, share images, push titles). Only the display name changed: the `tracker-` storage keys, the `tracker-v…` cache name, the `tracker` table, the `tracker-go` message and the `tracker-snaps` database keep the old word on purpose, renaming them would orphan every device's data.
 
 All UI text is English. The user writes and reads Polish — talk to them in Polish, keep the
 code and its comments in English.
@@ -94,7 +96,7 @@ Only the parts that are not self-evident:
 | `public/index.html` | the whole app |
 | `public/sw.js` | service worker: offline shell, web push, notification clicks |
 | `public/fonts/` | self-hosted Inter, JetBrains Mono, Newsreader, Fraunces (latin + latin-ext, so Polish letters work); `fonts.css` is linked from the page |
-| `supabase/supabase-social.sql` | **source of truth** for the server: tables, RLS, triggers, cron jobs |
+|  `supabase/supabase-social.sql` | **source of truth** for the server: tables, RLS, triggers, cron jobs |
 | `supabase/supabase-realtime-3.sql` | generated from the above; the old paste-by-hand block |
 | `supabase/functions/notify/` | Edge Function that turns a trigger into a web push |
 | `tests/` | node, no dependencies — see below; `fake-supabase.js` + `fake-page.js` are a browser harness, not tests |
@@ -119,7 +121,7 @@ that shape; keep new tests in that style.
 Suites: `follow`, `routines`, `pull` (the three races), `compare` (`myRecords` and the
 leaderboard ranking), `live` (the payload a friend gets of your running workout — notes must
 not be in it), `feed` (the feed cache: first look downloads all, second nothing, an edit comes
-down alone, a delete disappears, a failed look keeps the feed), `stamps` (the date of every STAMPth workout, and the PR count behind the month report's PRs bars).
+down alone, a delete disappears, a failed look keeps the feed), `stamps` (the date of every STAMPth workout, and the PR count behind the month report's PRs bars), `hostile` (what a friend's own JSON may do: set counts, weight steps, undrawable posts), `conflict` (the `rev` lock refusing a write: both devices' logs must survive).
 
 ## Verifying in a browser
 
@@ -209,7 +211,7 @@ optimistic lock on `rev`. `cloudPush` is debounced 1.5 s; `cloudPull` merges wit
 `mergeStores`, which takes the remote `routines` and `exercises` **wholesale** when they are
 non-empty. That makes any pull landing on top of an unpushed local write a data loss, so
 `cloudPull` skips the merge when the store changed while the answer was travelling. Keep that
-guard in mind before adding new pull triggers. A red dot after the Profile tab (`syncDot`)
+guard in mind before adding new pull triggers. When the lock refuses a write (another device got there first) `cloudMeet` joins the two copies with `unionStores` (workouts by id, exercises/routines/injuries by id with this device winning a clash) and only then force-pushes; `cloudPull` cannot do this, it skips the merge whenever local changes are unsent. An empty `routines`/`exercises` in the cloud normally means a fresh row and local stands in, unless `store.wiped` is set: "Erase everything" and deleting the last routine or exercise set it, so the other devices drop their copies too. A red dot after the Profile tab (`syncDot`)
 shows when the last sync said "Offline".
 
 **Previous versions and backup.** Once a day, at boot, `snapTake` stores the whole store in
@@ -369,12 +371,12 @@ any RLS change). So the dashboard paste is no longer the only route.
 
 How to work with it:
 
-- `supabase/supabase-social.sql` stays the **source of truth**. Change it first, then apply the same SQL
+-  `supabase/supabase-social.sql` stays the **source of truth**. Change it first, then apply the same SQL
   with `apply_migration` and commit both together. `supabase/supabase-realtime-3.sql` is the old
   paste-by-hand block, generated from it; regenerate it only if the user still wants a paste.
 - `list_migrations` holds only the migrations made through the connector
   (`weekly_recap_push`, `weekly_recap_push_at_20_warsaw`); everything older was pasted by hand,
-  so do not replay `supabase/supabase-social.sql` onto it — read the live state with `list_tables` /
+  so do not replay  `supabase/supabase-social.sql` onto it — read the live state with `list_tables` /
   `execute_sql` and write a small incremental migration.
 - pg_cron jobs: `drain-push` (every 10 s, sends parked `rest`/`stale` pushes) and
   `weekly-recap` (`0 18,19 * * 0`, UTC). pg_cron runs in UTC, so `weekly_recap_push` itself lets
@@ -391,11 +393,20 @@ How to work with it:
 - A missing table or policy still fails silently in the client, so after a SQL change check
   the database (`list_tables`, `get_advisors`) before the code.
 
+## Friends' data is hostile input
+
+A friend's `posts.data` and `library.data` are JSON their own client wrote, and RLS only checks
+who wrote it. Never put a field from them into markup or a loop raw. `esc()` text, `prN(w)` for
+`records`, `cleanSets` (1–12) for set counts, `cleanStep` for weight steps, `postOk` for a whole
+post (a post that cannot be drawn is left out of the feed, one bad post must not stop Home).
+`applyFollow`/`copyRoutine` clean on the way in and `fixCues` (run by every `saveStore`) cleans
+what is already stored. `data-w="…"` takes `esc(w.id)`: post ids are text chosen by the poster.
+
 ## Service worker
 
 `public/sw.js` is network-first for the page itself — but only up to 3 seconds: past that it
 serves the cached copy and lets the slow fetch finish in the background to refresh it — and
-cache-first for everything else. **Bump `V` (currently `tracker-v11`) whenever the `CORE` list
+cache-first for everything else. **Bump `V` (currently `tracker-v17`) whenever the `CORE` list
 changes**, including the pinned supabase-js URL and the font files — otherwise the old cache is
 kept and the asset never updates. A new worker takes over with `skipWaiting` + `clients.claim`,
 and the page reloads itself on `controllerchange`. A changed `sw.js` alone is picked up without

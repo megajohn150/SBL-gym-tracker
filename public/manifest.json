@@ -1,6 +1,6 @@
 {
-  "name": "Tracker",
-  "short_name": "Tracker",
+  "name": "SBL Tracker",
+  "short_name": "SBL Tracker",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

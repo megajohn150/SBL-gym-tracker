@@ -2,13 +2,13 @@
 <html lang="en" data-theme="light" data-skin="cocoa">
 <head>
 <meta charset="utf-8">
-<title>Tracker</title>
+<title>SBL Tracker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="A gym training tracker.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Tracker">
+<meta name="apple-mobile-web-app-title" content="SBL Tracker">
 <meta name="theme-color" content="#f4ead5" id="theme-color">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="logo/icon-180.png">
@@ -962,8 +962,6 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 }
 .pad-grid button.ghost{font-family:var(--font);font-size:1rem;color:var(--fg-2)}
 .pad-grid button.off{opacity:.25}
-.pad-grid .signs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.pad-grid .signs button{font-family:var(--display);font-size:1.3rem;padding:15px 0;width:100%}
 .pad-grid button b{font-style:normal;font-weight:700;font-size:.84rem}
 .pad-grid button svg{display:block}
 .cell[readonly]{cursor:pointer;-webkit-user-select:none;user-select:none}
@@ -1374,7 +1372,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   background:var(--surface);border:var(--border);border-radius:var(--radius);
 }
 .strange::after{content:"\25BE";margin-left:7px;font-size:.7em;color:var(--fg-3)}
-.stperiod{padding:1rem var(--pad) .2rem;font-size:.8rem;font-weight:700;color:var(--fg-3)}
 .sthead,.strow{display:flex;align-items:center;gap:10px;padding:11px var(--pad);border-bottom:var(--dash)}
 .sthead{
   font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:700;
@@ -1441,7 +1438,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 /* ---- what the session came to ---- */
 .sumhead{padding:1.4rem var(--pad) .2rem}
 .sumhead .eyebrow{display:block;margin-bottom:.3rem}
-.sumline{padding:.2rem var(--pad) 1rem;font-size:.82rem;color:var(--fg-3)}
 
 /* ---- month report ---- */
 .mtitle{
@@ -2913,7 +2909,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 <div class="gate" id="gate">
   <div class="gate-card">
     <span class="gate-logo"><img src="logo/icon-192.png" alt=""></span>
-    <h1 class="gate-title">Tracker</h1>
+    <h1 class="gate-title">SBL Tracker</h1>
     <p class="gate-sub" id="gate-sub">Every set, on every device.</p>
 
     <div class="seg two" id="au-mode">
@@ -3370,7 +3366,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4404';
+  var APP_VERSION = '3.4405';
 
   /* =========================================================
      STORE
@@ -3392,6 +3388,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (Array.isArray(raw.gone)) store.gone = raw.gone;
       if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
       if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
+      if (raw.wiped) store.wiped = raw.wiped;
       // workouts saved before exercises were linked by id
       store.workouts.forEach(function (w) {
         w.exercises.forEach(function (e) {
@@ -3427,10 +3424,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // The cue used to sit on the routine item, so one exercise could carry a
   // different one in every routine. It belongs to the exercise now: the last
   // routine's wording wins the move, and the items stop carrying it.
+  // A friend's library is JSON they wrote themselves, and a followed routine copies it into
+  // yours: the set count is drawn as markup and loops to build the sets, the weight step is
+  // drawn into an attribute. Both are forced to what the app itself could have written.
+  function cleanSets(v) { return Math.min(12, Math.max(1, Math.floor(Number(v)) || 1)); }
+  function cleanStep(v) { return typeof v === 'number' && v > 0 && v <= 100 ? v : 0; }
+
   function fixCues() {
     var n = 0;
     store.routines.forEach(function (r) {
       (r.items || []).forEach(function (it) {
+        var s = cleanSets(it.sets);
+        if (it.sets !== s) { it.sets = s; n++; }
         if (!('note' in it)) return;
         var x = byId(it.exId);
         if (x && it.note) x.cue = it.note;
@@ -3440,6 +3445,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     store.exercises.forEach(function (x) {
       if (typeof x.cue !== 'string') { x.cue = ''; n++; }
+      if ('step' in x && !cleanStep(x.step)) { delete x.step; n++; }
     });
     return n;
   }
@@ -3529,13 +3535,37 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       .sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
     return {
       profile: remote.profile || local.profile,
-      exercises: (remote.exercises && remote.exercises.length) ? remote.exercises : local.exercises,
-      routines: (remote.routines && remote.routines.length) ? remote.routines : local.routines,
+      // An empty list in the cloud is usually a fresh row, so ours stands in for it, unless
+      // somebody emptied it on purpose (`wiped`): then the other devices' copies must go too.
+      exercises: (remote.exercises && remote.exercises.length) || remote.wiped ? remote.exercises || [] : local.exercises,
+      routines: (remote.routines && remote.routines.length) || remote.wiped ? remote.routines || [] : local.routines,
       workouts: workouts,
       targets: remote.targets || local.targets || {},
       injuries: remote.injuries || local.injuries || [],
-      gone: Object.keys(gone)
+      gone: Object.keys(gone),
+      wiped: Math.max(remote.wiped || 0, local.wiped || 0) || undefined
     };
+  }
+
+  // Two writers met on the lock. Nothing of either is dropped: workouts join by id, and
+  // exercises, routines and injuries join by id with this device's copy winning a clash.
+  function unionStores(local, remote) {
+    var m = mergeStores(local, remote);
+    function join(a, b) {
+      var out = (a || []).slice(), seen = {};
+      out.forEach(function (x) { seen[x.id] = 1; });
+      (b || []).forEach(function (x) { if (!seen[x.id]) out.push(x); });
+      return out;
+    }
+    m.exercises = join(local.exercises, remote.exercises);
+    m.routines = join(local.routines, remote.routines);
+    m.injuries = join(local.injuries, remote.injuries);
+    m.targets = {};
+    [remote.targets, local.targets].forEach(function (t) {
+      Object.keys(t || {}).forEach(function (k) { m.targets[k] = t[k]; });
+    });
+    m.profile = local.profile || remote.profile;
+    return m;
   }
 
   function redrawAll() {
@@ -3621,12 +3651,29 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     return q.select('rev').maybeSingle().then(function (r) {
       if (r.error) { cloud.dirty = true; syncState('err'); return; }
-      if (!r.data) return cloudPull().then(function () { return cloudPush(true); });  // someone wrote first
+      if (!r.data) return cloudMeet().then(function (ok) {                // someone wrote first
+        if (ok) { redrawAll(); return cloudPush(true); }
+      });
       cloud.rev = next;
       cloud.dirty = false;
       cloud.dataSig = dataSig;
       cloud.sessSig = sessSig;
       syncState('ok');
+    });
+  }
+
+  // The lock refused our write because another device got there first. cloudPull would skip
+  // the merge here (our changes are unsent, so it always does) and the forced push after it
+  // would then overwrite their log. This joins the two copies instead, at the moment the
+  // answer lands, so nothing written here in the meantime is swapped out from under it.
+  function cloudMeet() {
+    return sb.from('tracker').select('data,rev').eq('user_id', me.id).maybeSingle().then(function (r) {
+      if (r.error || !r.data) { cloud.dirty = true; syncState('err'); return false; }
+      store = unionStores(store, r.data.data || {});
+      cloud.rev = r.data.rev || 0;
+      cloud.pulled = true;
+      save('data', JSON.stringify(store));
+      return true;
     });
   }
 
@@ -4379,7 +4426,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             var w = row.data || {};
             w.id = row.id; w.by = row.user_id; w.date = row.date;
             return w;
-          });
+          }).filter(postOk);
           social.feed = social.feed.concat(rows);
           social.more = rows.length === FEED_PAGE;
           drawHome();
@@ -4414,7 +4461,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         var next = {}, rows = [];
         list.forEach(function (r) {
           var c = cache[key(r.user_id, r.id)];
-          if (!c) return;                  // gone between the two looks
+          if (!c || !postOk(c.w)) return;  // gone between the two looks, or not drawable
           c.w.date = r.date;
           next[key(r.user_id, r.id)] = c;
           rows.push(c.w);
@@ -4690,7 +4737,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         if (!userView || userView.id !== id || r.error) return;
         var rows = (r.data || []).map(function (row) {
           var w = row.data || {}; w.id = row.id; w.by = id; w.date = row.date; return w;
-        });
+        }).filter(postOk);
         userView.posts = more ? userView.posts.concat(rows) : rows;
         userView.more = rows.length === FR_PAGE;
         if (more) drawUser();
@@ -4778,7 +4825,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var rts = routines.length
       ? '<div class="rtscroll">' + routines.map(function (rt, i) {
           var n = (rt.items || []).length;
-          var sets = (rt.items || []).reduce(function (a, it) { return a + (it.sets || 0); }, 0);
+          var sets = (rt.items || []).reduce(function (a, it) { return a + cleanSets(it.sets); }, 0);
           return '<button class="frcard" data-openrt="' + i + '"><b>' +
             esc(rt.name || 'Routine') + '</b><span>' + n + ' exercise' + (n === 1 ? '' : 's') +
             ' \u00b7 ' + sets + ' set' + (sets === 1 ? '' : 's') + '</span>' +
@@ -4861,7 +4908,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       c.fr = r[0];
       if (c.fr[c.id]) c.p = c.fr[c.id];
       c.theirs = statsFor(from, now, (r[1].data || []).filter(function (row) {
-        return row.data && row.data.exercises;
+        return postOk(row.data);
       }).map(function (row) { var w = row.data; w.date = row.date; return w; }));
       lbFr = c.fr;
       drawCompare();
@@ -5083,7 +5130,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<span class="lab"><span class="nm">' + esc(x.name) + '</span>' +
           '<span class="meta">' + esc(x.muscle || '') + (uni ? ' &middot; unilateral' : '') +
           '</span></span></div>' +
-        '<div class="ctl"><span class="ctl-lab">Sets</span><span class="val">' + it.sets + '</span></div>' +
+        '<div class="ctl"><span class="ctl-lab">Sets</span><span class="val">' + cleanSets(it.sets) + '</span></div>' +
         (it.reps ? '<div class="ctl"><span class="ctl-lab">Rep range</span>' +
           '<span class="val">' + esc(it.reps) + '</span></div>' : '') +
         (uni ? '<div class="ctl"><span class="ctl-lab">Starts with</span>' +
@@ -5143,7 +5190,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           muscle: src.muscle, head: src.head || '', cue: src.cue || '',
           unilateral: !!src.unilateral
         };
-        if (src.step) mineEx.step = src.step;
+        if (cleanStep(src.step)) mineEx.step = src.step;
         store.exercises.push(mineEx);
       }
       map[it.exId] = mineEx.id;
@@ -5226,7 +5273,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             muscle: their.muscle, head: their.head || '', cue: their.cue || '',
             unilateral: !!their.unilateral
           };
-          if (their.step) mine.step = their.step;
+          if (cleanStep(their.step)) mine.step = their.step;
           store.exercises.push(mine);
         }
         f.map[it.exId] = mine.id;
@@ -5246,7 +5293,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       // what is in the routine is theirs; how you log it is yours, so the
       // side you start on survives every change they make
       items.push({
-        exId: mine.id, sets: it.sets, reps: it.reps || '',
+        exId: mine.id, sets: cleanSets(it.sets), reps: it.reps || '',
         side: mine.unilateral ? (f.side[mine.id] || it.side || 'R') : null
       });
     });
@@ -6319,6 +6366,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         store.routines.forEach(function (r) {
           r.items = r.items.filter(function (it) { return it.exId !== exEditId; });
         });
+        if (!store.exercises.length) store.wiped = Date.now();
         saveStore();
         resetExForm();
         popTo('exercises');
@@ -6764,6 +6812,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       'Delete', function () {
         var dead = routineById(draft.id);
         store.routines = store.routines.filter(function (r) { return r.id !== draft.id; });
+        if (!store.routines.length) store.wiped = Date.now();     // the last one must go from every device
         saveStore();
         newRoutine();
         popTo('workout');
@@ -7018,7 +7067,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         (f
           ? '<div class="ctl"><span class="ctl-lab">Weight step</span>' +
               '<input class="repsinput" type="text" inputmode="decimal" maxlength="6" data-rvstep="' + i +
-              '" value="' + (x.step || '') + '" placeholder="1" autocomplete="off"></div>' +
+              '" value="' + esc(String(x.step || '')) + '" placeholder="1" autocomplete="off"></div>' +
             '<input class="noteinput" type="text" maxlength="120" data-rvcue="' + i + '" value="' +
               esc(x.cue || '') + '" placeholder="Cue" autocomplete="off">'
           : (x.cue ? '<p class="rocue">' + esc(x.cue) + '</p>' : '')) +
@@ -7446,7 +7495,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     var hurt = (store.injuries || []).filter(function (n) { return n.muscles.indexOf(ex.muscle) >= 0; });
     $('sess-injury').hidden = done || !hurt.length;
-    $('sess-injury').dataset.prs = esc('Injury (' + esc(hurt.map(function (n) { return n.name; }).join(', ')) +
+    $('sess-injury').dataset.prs = esc('Injury (' + hurt.map(function (n) { return n.name; }).join(', ') +
       '): go easy, keep it light and stop if it hurts.');
     $('sess-cue').hidden = done || !ex.cue;
     $('sess-cue').innerHTML = PIN + '<span>' + esc(ex.cue) + '</span>';
@@ -8021,12 +8070,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return Object.keys(rounds).length;
   }
 
-  function exVolume(e) {
-    return e.sets.reduce(function (v, st) {
-      return logged(st) ? v + num(st.weight) * num(st.reps) : v;
-    }, 0);
-  }
-
   function workoutTotals(w) {
     var sets = 0, volume = 0, reps = 0, exercises = 0;
     w.exercises.forEach(function (e) {
@@ -8279,7 +8322,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var pad = IMG_PAD, t = workoutTotals(w);
     var named = w.exercises.filter(function (e) { return countSets(e); }), rows = named.slice(0, 7);
     shareCanvas('workout-' + w.date.slice(0, 10) + '.png', 1080, 1350, function (g, c, txt, face, disp, W) {
-      txt('TRACKER', pad, 130, 30, 700, c('--fg-3'));
+      txt('SBL TRACKER', pad, 130, 30, 700, c('--fg-3'));
       txt(w.name, pad, 250, 96, 800, c('--fg'), 'left', disp);
       txt(fullDate(w.date), pad, 310, 32, 400, c('--fg-2'));
       imgCells(g, c, txt, disp, W, 380, [[fmtDuration(w.seconds), 'TIME'], [fmtKg(t.volume), 'VOLUME'], [String(t.sets), 'SETS']]);
@@ -8351,6 +8394,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         store.exercises = raw.exercises;
         store.routines = (raw.routines || []).map(migrate);
         store.workouts = raw.workouts;
+        // a file brings back workouts that may have been deleted since; the list of deleted
+        // ids is not in the file, and would strip them again on the next pull
+        var back = {};
+        raw.workouts.forEach(function (w) { back[w.id] = 1; });
+        store.gone = store.gone.filter(function (id) { return !back[id]; });
         if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
         if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
         if (raw.profile) {
@@ -8371,6 +8419,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   function resetEverything() {
+    // the other devices must drop these too, not hand them back on their next push
+    store.workouts.forEach(function (w) { if (store.gone.indexOf(w.id) < 0) store.gone.push(w.id); });
+    store.wiped = Date.now();
     store.exercises = [];
     store.routines = [];
     store.workouts = [];
@@ -8524,11 +8575,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var out = new Uint8Array(raw.length);
     for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
     return out;
-  }
-  function b64(buf) {
-    var bytes = new Uint8Array(buf), s2 = '';
-    for (var i = 0; i < bytes.length; i++) s2 += String.fromCharCode(bytes[i]);
-    return btoa(s2).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   function pushSub() {
@@ -8833,7 +8879,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       }
       var rpe = at.rpe != null ? num(r[at.rpe]) : 0;
       var rir = rpe > 0 ? String(Math.max(0, Math.min(4, 10 - rpe))) : (type === 'failure' ? 'F' : '');
-      if (rir === '0.5') rir = '0.5';
       e.sets.push({ weight: String(num(r[at.weight_kg]) || ''), reps: String(reps), rir: rir });
     });
     return { workouts: out, warmups: skippedWarm };
@@ -9204,6 +9249,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       : store.workouts.length + social.feed.length;
   }
 
+  // `records` is derived for your own log, but a friend's post carries whatever their app wrote
+  function prN(w) { return Math.max(0, Math.floor(Number(w.records)) || 0); }
+
+  // A friend's post is whatever JSON their client sent. One that cannot be drawn would stop
+  // Home from drawing at all, so it is left out of the feed instead.
+  function postOk(w) {
+    return !!w && Array.isArray(w.exercises) && w.exercises.every(function (e) {
+      return e && Array.isArray(e.sets) && e.sets.every(function (s) {
+        return s && typeof s.label === 'string';
+      });
+    });
+  }
+
   function workoutCard(w, ordinal, who) {
     {
       var t = workoutTotals(w);
@@ -9211,7 +9269,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       var shown = did.slice(0, 3);
       var rest = did.length - shown.length;
       var d = new Date(w.date);
-      return '<article class="wcard' + (who ? ' pal' : '') + '" data-w="' + w.id + '"' +
+      return '<article class="wcard' + (who ? ' pal' : '') + '" data-w="' + esc(w.id) + '"' +
           (who ? ' data-u="' + esc(w.by) + '"' : '') + '>' +
         '<div class="wtop">' +
           (who ? '<button class="whogo" data-openu="' + esc(w.by) + '">' : '<span class="whogo">') +
@@ -9226,7 +9284,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             '<span class="wname">' + esc(w.name) + '</span>' +
           '</span>' +
         '</div>' +
-        '<span class="wpr">' + (w.records ? w.records + (w.records === 1 ? ' PR' : " PR's") : "0 PR's :(") + '</span>' +
+        '<span class="wpr">' + (prN(w) ? prN(w) + (prN(w) === 1 ? ' PR' : " PR's") : "0 PR's :(") + '</span>' +
         '<div class="wstats3">' +
           '<div><b>' + fmtDuration(w.seconds) + '</b><i>Time</i></div>' +
           '<div><b>' + fmtVolume(t.volume) + '</b><i>Volume</i></div>' +
@@ -9508,7 +9566,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         if (!r.data) return null;
         var w = r.data.data || {};
         w.id = r.data.id; w.by = r.data.user_id; w.date = r.data.date;
-        return w;
+        return postOk(w) ? w : null;
       });
   }
 
@@ -11270,7 +11328,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       return cur.by[b] - cur.by[a] || a.localeCompare(b);
     }).slice(0, 5);
     shareCanvas('week-' + from.toISOString().slice(0, 10) + '.png', 1080, 1350, function (g, c, txt, face, disp, W) {
-      txt('TRACKER', pad, 130, 30, 700, c('--fg-3'));
+      txt('SBL TRACKER', pad, 130, 30, 700, c('--fg-3'));
       txt('Weekly recap', pad, 250, 96, 800, c('--fg'), 'left', disp);
       txt(recapTitle(from), pad, 310, 32, 400, c('--fg-2'));
       txt(cur.workouts + (goalDays ? ' / ' + goalDays : '') + (cur.workouts === 1 && !goalDays ? ' workout' : ' workouts'),
@@ -11676,8 +11734,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   function picClass(a) { return 'avatar pic' + AV_SHEETS[a.sheet || 'main'].cls; }
 
-  function hasPic() { return !!picEntry(store.profile.pic); }
-
   // one avatar as markup, picture or initials
   function avatarTag(size, cls, who) {
     who = who || store.profile;
@@ -11851,7 +11907,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         ? '<input class="dname" id="d-name" value="' + esc(w.name) + '" autocomplete="off">' +
           whenFields('d', pendingDate || w.date, w.seconds)
         : '<h2 class="wtitle"><span class="nm">' + esc(w.name) + '</span>' +
-          (w.records ? '<span class="prbadge">' + w.records + (w.records === 1 ? ' PR' : " PR's") + '</span>' : '') +
+          (prN(w) ? '<span class="prbadge">' + prN(w) + (prN(w) === 1 ? ' PR' : " PR's") + '</span>' : '') +
           '<span class="wtime">' + fmtDuration(w.seconds) + '</span></h2>') +
       statsRow(w, t) + (detailEdit ? '' : actsBox(w, false)) + '</div>' +
       (detailEdit

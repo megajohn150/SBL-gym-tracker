@@ -34,17 +34,18 @@ const LINE: Record<string, string> = {
 const SELF: Record<string, { title: string; body: string }> = {
   rest: { title: 'Rest over', body: 'Back to it \u2014 next set.' },
   stale: {
-    title: 'Tracker',
+    title: 'SBL Tracker',
     body: 'Finished your workout? You still have a session in progress.'
   },
   // sent by the database on Sundays, to whoever trained that week
-  recap: { title: 'Tracker', body: 'Your week is wrapped. Tap to see how it went.' },
+  recap: { title: 'SBL Tracker', body: 'Your week is wrapped. Tap to see how it went.' },
   // sent by the database on the 1st, to whoever trained last month
-  report: { title: 'Tracker', body: 'Your monthly report is ready. Tap to see how the month went.' }
+  report: { title: 'SBL Tracker', body: 'Your monthly report is ready. Tap to see how the month went.' }
 };
 
 Deno.serve(async (req) => {
-  if (req.headers.get('x-push-secret') !== SECRET) {
+  // an unset secret must refuse everything, not match an empty header
+  if (!SECRET || req.headers.get('x-push-secret') !== SECRET) {
     return new Response('no', { status: 401 });
   }
 
@@ -73,7 +74,7 @@ Deno.serve(async (req) => {
       ? { go: 'u', id: actor }
       : { go: kind === 'like' ? 'w' : 'c', pu: post_user, pi: post_id };
   const payload = JSON.stringify({
-    title: self ? self.title : 'Tracker', body, tag: kind, ...go
+    title: self ? self.title : 'SBL Tracker', body, tag: kind, ...go
   });
 
   // a subscription the browser has thrown away answers 404 or 410, and is

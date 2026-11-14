@@ -1,9 +1,9 @@
-/* Tracker service worker.
+/* SBL Tracker service worker.
    The page and its assets are kept in a cache so the app opens in a
    basement with no signal. The Supabase API is never cached — stale
    training data would be worse than none. */
 
-var V = 'tracker-v16';
+var V = 'tracker-v17';
 
 var CORE = [
   './',
@@ -74,6 +74,8 @@ self.addEventListener('fetch', function (e) {
       return caches.match('./index.html').then(function (hit) { return hit || caches.match('./'); });
     };
     var fresh = fetch(req).then(function (r) {
+      // a 5xx must not replace the last good copy; falling through serves that copy
+      if (!r.ok) throw new Error('bad page');
       var copy = r.clone();
       caches.open(V).then(function (c) { c.put('./index.html', copy); });
       return r;
@@ -111,7 +113,7 @@ self.addEventListener('fetch', function (e) {
 self.addEventListener('push', function (e) {
   var d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = {}; }
-  var title = d.title || 'Tracker';
+  var title = d.title || 'SBL Tracker';
   var go = d.go ? { go: d.go, pu: d.pu, pi: d.pi, id: d.id } : null;
   e.waitUntil(self.registration.showNotification(title, {
     body: d.body || '',
