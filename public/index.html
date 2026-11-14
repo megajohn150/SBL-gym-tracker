@@ -3333,7 +3333,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4382';
+  var APP_VERSION = '3.4383';
 
   /* =========================================================
      STORE
@@ -10452,9 +10452,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '<div class="stweek"><button data-ssnav="1" aria-label="Earlier week"' + (ssOff >= max ? ' disabled' : '') +
         '>&lsaquo;</button><span class="lab">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) +
         '</span><button data-ssnav="-1" aria-label="Later week"' + (ssOff ? '' : ' disabled') + '>&rsaquo;</button></div>' +
+      '<div class="stdays">' + weekDays(start) + '</div>' +
       muscleTable(r, 'Sets', true, true, 'split');
   }
   $('stsets-body').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-w]');
+    if (c) { openWorkout(c.dataset.w); return; }
     var nav = e.target.closest('[data-ssnav]');
     if (!nav || nav.disabled) return;
     ssOff = Math.max(0, ssOff + Number(nav.dataset.ssnav));
@@ -10804,15 +10807,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   /* --- the body map, one week at a time --- */
   var stWeek = 0;                                   // 0 is the week you are in
 
-  function drawStatBody() {
-    var start = addDays(monday(new Date()), stWeek * 7), end = addDays(start, 7);
-    var r = statsFor(start, end), max = 0;
-    Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
-
-    var byDay = {};
+  // the Monday-to-Sunday strip, a trained day opens its workout; Body and Set count share it
+  function weekDays(start) {
+    var byDay = {}, days = '';
     store.workouts.forEach(function (w) { byDay[dayKey(new Date(w.date))] = w; });
-
-    var days = '';
     for (var i = 0; i < 7; i++) {
       var d = addDays(start, i), on = byDay[dayKey(d)];
       days += '<div class="' + (on ? 'on' : '') + '"' +
@@ -10820,6 +10818,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         'MTWTFSS'.charAt(i) + '</span><span class="n">' + d.getDate() + '</span>' +
         '<span class="w">' + (on ? esc(on.name) : '&nbsp;') + '</span></div>';
     }
+    return days;
+  }
+
+  function drawStatBody() {
+    var start = addDays(monday(new Date()), stWeek * 7), end = addDays(start, 7);
+    var r = statsFor(start, end), max = 0;
+    Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
 
     $('stbody-body').innerHTML =
       '<div class="stweek">' +
@@ -10827,7 +10832,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         '<span class="lab">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) + '</span>' +
         '<button data-wk="1"' + (stWeek >= 0 ? ' disabled' : '') + '>&rsaquo;</button>' +
       '</div>' +
-      '<div class="stdays">' + days + '</div>' +
+      '<div class="stdays">' + weekDays(start) + '</div>' +
       bodyMap(r, max) +
       muscleTable(r, 'Sets', true, true, 'map');
   }
