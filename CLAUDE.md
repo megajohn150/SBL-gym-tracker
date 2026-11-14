@@ -365,7 +365,7 @@ Claude as an MCP server. Its tools are deferred: load them with `ToolSearch` (qu
 
 What that buys: `apply_migration` (DDL, tracked), `execute_sql` (queries and data fixes; a
 multi-statement call returns only the last result), `list_tables` / `list_extensions`,
-`deploy_edge_function` / `get_edge_function` (the `notify` function, **v4**, `verify_jwt` off,
+`deploy_edge_function` / `get_edge_function` (the `notify` function, **v7**, `verify_jwt` off,
 deploy with that flag and the whole `index.ts`), `query_logs`, `get_advisors` (run it after
 any RLS change). So the dashboard paste is no longer the only route.
 
