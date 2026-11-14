@@ -1455,6 +1455,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .mbarlab span{flex:1;text-align:center}
 .seg.four{grid-template-columns:repeat(4,1fr)}
 .seg.four button{font-size:.72rem;padding:9px 4px}
+.seg.five{grid-template-columns:repeat(5,1fr)}
+.seg.five button{font-size:.66rem;padding:9px 2px}
 .mstreak{padding:0 var(--pad) .6rem;font-size:.9rem;font-weight:700;text-align:center}
 .mcal .calcell{min-height:34px;padding:3px 0;border-bottom:none}
 .mcal .calday{width:26px;height:26px;font-size:.75rem}
@@ -3354,7 +3356,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4394';
+  var APP_VERSION = '3.4395';
 
   /* =========================================================
      STORE
@@ -11027,7 +11029,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var stMetric = 'sets', stMoreMuscles = false, stMorePRs = false;
   var METRICS = [
     { id: 'workouts', name: 'Workouts' }, { id: 'seconds', name: 'Duration' },
-    { id: 'volume', name: 'Volume' }, { id: 'sets', name: 'Sets' }
+    { id: 'volume', name: 'Volume' }, { id: 'sets', name: 'Sets' }, { id: 'prs', name: 'PRs' }
   ];
 
   function metricVal(st, m) { return st[m]; }
@@ -11062,6 +11064,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   // one list of records, used by the month report and by the session summary
+  // PRs in a span, counted the way the report's own line counts them: one per exercise and kind
+  function prTotal(from, to) {
+    var prs = monthPRs(from, to), n = 0;
+    Object.keys(prs).forEach(function (k) { n += Object.keys(prs[k]).length; });
+    return n;
+  }
+
   function prBlock(prs) {
     var names = Object.keys(prs), count = 0;
     names.forEach(function (k) { count += Object.keys(prs[k]).length; });
@@ -11265,6 +11274,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var to = new Date(from.getFullYear(), from.getMonth() + 1, 1);
     var pfrom = new Date(from.getFullYear(), from.getMonth() - 1, 1);
     var cur = statsFor(from, to), prev = statsFor(pfrom, from);
+    cur.prs = prTotal(from, to); prev.prs = prTotal(pfrom, from);
     var title = MONTHS[from.getMonth()] + ' ' + from.getFullYear();
     var ptitle = MONTHS[pfrom.getMonth()] + ' ' + pfrom.getFullYear();
 
@@ -11280,7 +11290,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     for (i = 11; i >= 0; i--) {
       var f = new Date(from.getFullYear(), from.getMonth() - i, 1);
       var t = new Date(f.getFullYear(), f.getMonth() + 1, 1);
-      var v = metricVal(statsFor(f, t), stMetric);
+      var ms = statsFor(f, t);
+      ms.prs = prTotal(f, t);
+      var v = metricVal(ms, stMetric);
       bars.push({ m: f.getMonth(), v: v, on: i === 0 });
       max = Math.max(max, v);
     }
@@ -11353,7 +11365,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         gap(metricVal(cur, stMetric), metricVal(prev, stMetric),
           stMetric === 'seconds' ? fmtDuration : stMetric === 'volume' ? fmtKg : null) + '</div>' +
       chart +
-      '<div class="seg four" style="padding:.9rem var(--pad) 0">' + METRICS.map(function (m) {
+      '<div class="seg five" style="padding:.9rem var(--pad) 0">' + METRICS.map(function (m) {
         return '<button data-metric2="' + m.id + '" aria-pressed="' + (m.id === stMetric) + '">' +
           m.name + '</button>';
       }).join('') + '</div>' +
