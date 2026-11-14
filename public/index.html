@@ -3354,7 +3354,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4393';
+  var APP_VERSION = '3.4394';
 
   /* =========================================================
      STORE
@@ -3671,10 +3671,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function cleanName(v) {
     return String(v || '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
   }
-  // the day of every hundredth session, oldest first: when each stamp was earned
+  // the day of every fiftieth session, oldest first: when each stamp was earned
+  var STAMP = 50;     // sessions between stamps; stamps50 is its key on the profile row, rename both together
   function stampDates(list) {
     var by = list.slice().sort(function (a, b) { return new Date(a.date) - new Date(b.date); }), out = [];
-    for (var i = 99; i < by.length; i += 100) out.push(by[i].date);
+    for (var i = STAMP - 1; i < by.length; i += STAMP) out.push(by[i].date);
     return out;
   }
 
@@ -3684,8 +3685,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function openStamps(n, dates) {
     var out = '';
-    for (var k = Math.floor(n / 100) * 100; k >= 100; k -= 100) {
-      var d = dates[k / 100 - 1];     // a friend on an older app has no dates to give
+    for (var k = Math.floor(n / STAMP) * STAMP; k >= STAMP; k -= STAMP) {
+      var d = dates[k / STAMP - 1];     // a friend on an older app has no dates to give
       out += '<div class="stmprow">' + stampTag(k, true).replace(' data-stamps="' + k + '"', '') +
         '<span class="stmpdate">' + (d ? dmy(new Date(d)) : '') + '</span></div>';
     }
@@ -3698,11 +3699,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var b = e.target.closest('button[data-stamps]');
     if (!b) return;
     var st = b.closest('#s-user') ? (userView && userView.p && userView.p.stats) || {} : myStats();
-    openStamps(st.workouts || 0, st.stamps || []);
+    openStamps(st.workouts || 0, st.stamps50 || []);
   });
 
   function myStats() {
-    return { workouts: store.workouts.length, streak: weekStreak(store.workouts), records: myRecords(), stamps: stampDates(store.workouts) };
+    return { workouts: store.workouts.length, streak: weekStreak(store.workouts), records: myRecords(), stamps50: stampDates(store.workouts) };
   }
 
   function nameKey(s) { return String(s).trim().toLowerCase(); }
@@ -4716,7 +4717,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     var stats = p.stats || {};
     var head = '<div class="ptop"><span class="pavwrap">' + avatarTag(66, '', p) +
-      (stats.workouts >= 100 ? stampTag(Math.floor(stats.workouts / 100) * 100) : '') + '</span>' +
+      (stats.workouts >= STAMP ? stampTag(Math.floor(stats.workouts / STAMP) * STAMP) : '') + '</span>' +
       '<span class="pid"><span class="pname">' + esc(p.name || p.username || '') + '</span>' +
       '<span class="pstats">' +
         '<span><b>' + (stats.workouts || 0) + '</b><i>Workouts</i></span>' +
@@ -10043,8 +10044,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       av.textContent = initials(pf.name || pf.handle || 'you');
     }
     $('p-workouts').textContent = store.workouts.length;
-    // a stamp for every hundred sessions logged
-    var hund = Math.floor(store.workouts.length / 100) * 100;
+    // a stamp for every fifty sessions logged
+    var hund = Math.floor(store.workouts.length / STAMP) * STAMP;
     $('p-stamp').hidden = !hund;
     $('p-stamp').innerHTML = '<b>' + hund + '</b>workouts';
 
