@@ -1057,9 +1057,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .ordrow{
   display:flex;align-items:center;gap:10px;margin-bottom:6px;padding:12px var(--cardpad);
   background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px);
-  font-size:.9rem;touch-action:none;user-select:none;
+  font-size:.9rem;touch-action:pan-y;user-select:none;
 }
-.ordrow .grip{color:var(--fg-3);font-size:.9rem;letter-spacing:-.1em}
+/* only the handle drags, so a long list can still be scrolled by its rows; the padding is
+   extra thumb room, taken back by the negative margin so the row keeps its height */
+.ordrow .grip{color:var(--fg-3);font-size:1.1rem;letter-spacing:-.1em;touch-action:none;cursor:grab;
+  padding:16px 14px;margin:-16px -4px -16px -14px}
+#ord-list,#rord-list,#sord-list{max-height:55vh;overflow-y:auto;overscroll-behavior:contain}
 .ordrow .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ordrow.drag{opacity:.75;pointer-events:none;position:relative;z-index:2}
 /* which session a reset starts from */
@@ -3366,7 +3370,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4402';
+  var APP_VERSION = '3.4403';
 
   /* =========================================================
      STORE
@@ -6575,12 +6579,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return drag.el.getBoundingClientRect();
   }
 
-  // any list of .ordrow can be dragged; onDrop gets the new order of indexes
+  // any list of .ordrow can be dragged, by its grip only; onDrop gets the new order of indexes
   function dragList(id, onDrop) {
     var list = $(id);
     list.addEventListener('pointerdown', function (e) {
       var row = e.target.closest('.ordrow');
-      if (!row) return;
+      if (!row || !e.target.closest('.grip')) return;
       drag.el = row;
       drag.list = list;
       drag.done = onDrop;
