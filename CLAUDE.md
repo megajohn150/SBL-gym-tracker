@@ -94,15 +94,13 @@ Only the parts that are not self-evident:
 | `public/index.html` | the whole app |
 | `public/sw.js` | service worker: offline shell, web push, notification clicks |
 | `public/fonts/` | self-hosted Inter, JetBrains Mono, Newsreader, Fraunces (latin + latin-ext, so Polish letters work); `fonts.css` is linked from the page |
-| `supabase-social.sql` | **source of truth** for the server: tables, RLS, triggers, cron jobs |
-| `supabase-realtime-3.sql` | generated from the above; the old paste-by-hand block |
+| `supabase/supabase-social.sql` | **source of truth** for the server: tables, RLS, triggers, cron jobs |
+| `supabase/supabase-realtime-3.sql` | generated from the above; the old paste-by-hand block |
 | `supabase/functions/notify/` | Edge Function that turns a trigger into a web push |
 | `tests/` | node, no dependencies — see below; `fake-supabase.js` + `fake-page.js` are a browser harness, not tests |
-| `others/` | older one-file variants of the app; nothing serves them |
-| `*.json` in the root | exported training data (backup / Hevy import), not code |
-| `SUPABASE.md`, `TEST-SOCIAL.md` | Polish design and test-plan docs, drifted from the code |
-| `CHANGES.md` | a one-off list of what one long session changed (3.4258–3.4272); not maintained |
-| `WORKING-WITH-CLAUDE.md` | the owner's own Polish note on spending less of the limit; not for you |
+| `markdown/SUPABASE.md`, `markdown/TEST-SOCIAL.md` | Polish design and test-plan docs, drifted from the code |
+| `markdown/CHANGES.md` | a one-off list of what one long session changed (3.4258–3.4272); not maintained |
+| `markdown/WORKING-WITH-CLAUDE.md` | the owner's own Polish note on spending less of the limit; not for you |
 
 ## How the tests work
 
@@ -371,12 +369,12 @@ any RLS change). So the dashboard paste is no longer the only route.
 
 How to work with it:
 
-- `supabase-social.sql` stays the **source of truth**. Change it first, then apply the same SQL
-  with `apply_migration` and commit both together. `supabase-realtime-3.sql` is the old
+- `supabase/supabase-social.sql` stays the **source of truth**. Change it first, then apply the same SQL
+  with `apply_migration` and commit both together. `supabase/supabase-realtime-3.sql` is the old
   paste-by-hand block, generated from it; regenerate it only if the user still wants a paste.
 - `list_migrations` holds only the migrations made through the connector
   (`weekly_recap_push`, `weekly_recap_push_at_20_warsaw`); everything older was pasted by hand,
-  so do not replay `supabase-social.sql` onto it — read the live state with `list_tables` /
+  so do not replay `supabase/supabase-social.sql` onto it — read the live state with `list_tables` /
   `execute_sql` and write a small incremental migration.
 - pg_cron jobs: `drain-push` (every 10 s, sends parked `rest`/`stale` pushes) and
   `weekly-recap` (`0 18,19 * * 0`, UTC). pg_cron runs in UTC, so `weekly_recap_push` itself lets
@@ -420,5 +418,5 @@ update `graphify-out/`; this file and a grep are the map.
   characters in comments; `\u` escapes belong only in JS string literals.
 - Spend the least usage that still fully does the job: short replies after a small change,
   checks proportional to the change, no browser for logic.
-- `SUPABASE.md` and `TEST-SOCIAL.md` describe intent well but have drifted from the code —
+- `markdown/SUPABASE.md` and `markdown/TEST-SOCIAL.md` describe intent well but have drifted from the code —
   the code wins.
