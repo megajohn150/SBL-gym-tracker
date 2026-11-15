@@ -3508,7 +3508,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4455';
+  var APP_VERSION = '3.4456';
 
   /* =========================================================
      STORE
@@ -5881,7 +5881,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (id === 's-stat-month') drawStatMonth();
     // a look at an older week lasts until you leave; coming back from one of its workouts is not leaving
     if (id === 's-stat-week') {
-      if (!leaving || leaving.id !== 's-detail') { wrOff = 0; wrMore = false; }
+      if (!leaving || leaving.id !== 's-detail') { wrOff = 0; wrMore = false; wrMorePRs = false; }
       drawWeekRecap();
     }
     if (id === 's-stat-stall') drawStatStall();
@@ -11826,9 +11826,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   // one list of records, used by the month report and by the session summary
-  function prBlock(prs) {
+  // cap (optional): show that many exercises and a "See more" button, which `open` expands; the workout summary shows all
+  function prBlock(prs, cap, open, moreAttr) {
     var names = Object.keys(prs), count = 0;
     names.forEach(function (k) { count += Object.keys(prs[k]).length; });
+    var shown = cap && !open ? names.slice(0, cap) : names;
     return {
       count: count,
       html: '<div class="prcup">' + '<svg width="30" height="30" viewBox="0 0 24 24"><path fill="currentColor" ' +
@@ -11837,7 +11839,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>' +
       '</div>' +
         '<div class="prcount">' + count + (count === 1 ? ' new PR' : ' new PRs') + '</div>' +
-        names.map(function (k) {
+        shown.map(function (k) {
           return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' +
             Object.keys(prs[k]).map(function (c) {
               var v = prs[k][c];
@@ -11848,7 +11850,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
               c + ' \u2013 ' +
                 (c === 'Volume' ? fmtKg(v) : (Math.round(v * 100) / 100) + ' kg') + '</span>';
             }).join('') + '</div>';
-        }).join('')
+        }).join('') +
+        (cap && names.length > cap
+          ? '<button class="mmore" ' + moreAttr + '>' + (open ? 'Show less' : 'See ' + (names.length - cap) + ' more') + '</button>' : '')
     };
   }
 
@@ -11890,7 +11894,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('wr-bar').hidden = true;
   });
 
-  var wrMore = false, wrOff = 0;     // wrOff: how many weeks back the recap is looking
+  var wrMore = false, wrMorePRs = false, wrOff = 0;     // wrOff: how many weeks back the recap is looking
 
   // the oldest week worth going back to is the one with your first workout in it
   function wrMax() {
@@ -11904,6 +11908,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (next === wrOff) return;
     wrOff = next;
     wrMore = false;
+    wrMorePRs = false;
     drawWeekRecap();
     $('s-stat-week').querySelector('.scroll').scrollTop = 0;
   }
@@ -11943,7 +11948,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       : '') || '<div class="note" style="padding:0 var(--pad) 1rem">Nothing logged this week.</div>';
 
     var goalDays = Number((store.targets.Total || {}).days) || 0;
-    var pr = prBlock(monthPRs(from, to)), streak = wrOff
+    var pr = prBlock(monthPRs(from, to), 3, wrMorePRs, 'data-wrmorepr'), streak = wrOff
       ? weekStreak(store.workouts.filter(function (w) { return new Date(w.date) < to; }), from)
       : weekStreak();
     var yr = from.getFullYear() !== new Date().getFullYear() ? ' ' + from.getFullYear() : '';
@@ -12020,6 +12025,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var d = e.target.closest('[data-rw]');
     if (d) { openWorkout(d.dataset.rw); return; }
     if (e.target.closest('[data-wrmore]')) { wrMore = !wrMore; drawWeekRecap(); }
+    if (e.target.closest('[data-wrmorepr]')) { wrMorePRs = !wrMorePRs; drawWeekRecap(); }
   });
 
   function drawStatMonth() {

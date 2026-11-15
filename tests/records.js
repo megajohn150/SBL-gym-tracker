@@ -83,4 +83,14 @@ t.is('volume is weight times reps', board[0].volume, 6 * 500);
 t.is('the split is in whole percent, biggest first', api.muscleSplit({ exercises: [
   { muscle: 'Chest', sets: [set(1, 1), set(1, 1), set(1, 1)] }, { muscle: 'Biceps', sets: [set(1, 1)] }] }),
   [{ muscle: 'Chest', pct: 75 }, { muscle: 'Biceps', pct: 25 }]);
+/* a report's records list: all of it in the workout summary, three exercises and a button in the recap */
+const prBlock = new Function('esc', 'fmtKg', slice('  function prBlock(prs', '  /* --- the weekly recap') + '; return prBlock;')(
+  (s) => String(s), api.fmtKg);
+const five = { A: { Weight: 100 }, B: { Weight: 90 }, C: { Weight: 80, Volume: 500 }, D: { Weight: 70 }, E: { Weight: 60 } };
+const rowsIn = (html) => (html.match(/class="prrow"/g) || []).length;
+const sum = prBlock(five), cap = prBlock(five, 3, false, 'data-x'), open = prBlock(five, 3, true, 'data-x');
+t.is('with no cap every exercise shows and there is no button', [rowsIn(sum.html), sum.html.includes('mmore')], [5, false]);
+t.is('capped, three show, the button offers the rest, and the count still covers all', [rowsIn(cap.html), cap.html.includes('See 2 more'), cap.count], [3, true, 6]);
+t.is('opened, all show and the button turns into Show less', [rowsIn(open.html), open.html.includes('Show less')], [5, true]);
+t.is('three or fewer need no button', prBlock({ A: { Weight: 1 } }, 3, false, 'data-x').html.includes('mmore'), false);
 t.done();
