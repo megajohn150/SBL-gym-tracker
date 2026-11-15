@@ -3054,6 +3054,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 <div class="pullring" id="pull-ring" hidden><i></i></div>
 
 <div class="toast" id="toast"></div>
+<div class="toast wide" id="sync-bar" style="white-space:normal;width:calc(100% - 2*var(--pad));max-width:420px;border-radius:var(--radius)">
+  <span>Offline: your changes are saved on this phone and will go up when the network is back.</span>
+  <button id="sync-retry">Retry</button>
+</div>
 
 <div class="gate" id="uname" hidden>
   <div class="gate-card">
@@ -3381,7 +3385,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4415';
+  var APP_VERSION = '3.4416';
 
   /* =========================================================
      STORE
@@ -3544,7 +3548,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var el = document.getElementById('set-sync');
     if (el) el.textContent = { busy: 'Saving\u2026', ok: 'Synced', err: 'Offline', off: '\u2014' }[s];
     syncDot(s === 'err');
+    if (s === 'ok') document.getElementById('sync-bar').classList.remove('on');
   }
+  // Tapping the Profile tab while its dot is lit explains the dot, and offers a retry. It is
+  // not raised by the error itself: a phone waking up fails once or twice and then recovers.
+  document.querySelector('.tabs [data-tab="profile"]').addEventListener('click', function () {
+    if (this.classList.contains('unsynced')) document.getElementById('sync-bar').classList.toggle('on');
+  });
+  document.getElementById('sync-retry').addEventListener('click', function () {
+    if (cloud.dirty) cloudPush(); else cloudPull();
+  });
 
   // Workouts are joined by id, so two devices writing on their own
   // can never delete each other's sessions.
