@@ -2291,7 +2291,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll">
       <div id="people-list"></div>
       <div class="note" id="people-note" style="padding:1.2rem var(--pad)"></div>
-      <div id="people-week" style="padding:0 var(--pad) 1.5rem"></div>
+    </div>
+    <div class="footbar" id="people-week" hidden>
+      <button class="btn btn-ghost" data-wkb>Friends leaderboard</button>
     </div>
   </section>
 
@@ -3375,7 +3377,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4413';
+  var APP_VERSION = '3.4414';
 
   /* =========================================================
      STORE
@@ -4626,10 +4628,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawPeopleWeek(ids);
   }
 
-  // Under your own friends list only: a button to the week board.
+  // Under your own friends list only: a footer button to the week board.
   function drawPeopleWeek(ids) {
-    $('people-week').innerHTML = peopleMode !== 'friends' || peopleList || !ids.length ? ''
-      : '<button class="dashbtn" data-wkb style="width:100%">Friends leaderboard</button>';
+    $('people-week').hidden = peopleMode !== 'friends' || !!peopleList || !ids.length;
   }
   $('people-week').addEventListener('click', function (e) {
     if (e.target.closest('[data-wkb]')) openWeekBoard();
