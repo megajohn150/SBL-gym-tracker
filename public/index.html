@@ -3414,7 +3414,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4424';
+  var APP_VERSION = '3.4425';
 
   /* =========================================================
      STORE
@@ -3424,7 +3424,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     profile: { handle: 'you', name: 'your name', bio: '', pic: null }
   };
 
-  function save(k, v) { try { localStorage.setItem('tracker-' + k, v); } catch (e) {} }
+  // A full phone refuses a write without a word. The log still reaches the cloud, but the copy
+  // kept here goes stale, so say so, at most once a minute (a set logged is a write too).
+  var fullAt = 0;
+  function storageFull() {
+    if (Date.now() - fullAt < 60000) return;
+    fullAt = Date.now();
+    toast('Phone storage is full: this change is not saved on the phone', 5000);
+  }
+  function save(k, v) { try { localStorage.setItem('tracker-' + k, v); } catch (e) { if (k === 'data') storageFull(); } }
   function load(k) { try { return localStorage.getItem('tracker-' + k); } catch (e) { return null; } }
 
   function loadStore() {
@@ -3522,7 +3530,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     try {
       if (session) localStorage.setItem('tracker-session', JSON.stringify(session));
       else localStorage.removeItem('tracker-session');
-    } catch (e) {}
+    } catch (e) { storageFull(); }
   }
   function saveSession() { saveLocalSession(); queuePush(); touchStale(); queueLive(); }
   // Pausing is gone. A session paused by an older version gets its clock back as if resumed now.
