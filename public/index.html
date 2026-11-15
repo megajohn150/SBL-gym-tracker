@@ -898,8 +898,10 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .drow{position:relative}
 .drow .no{display:flex;align-items:center;gap:7px}
 /* the set number is a button: it stretches over the whole row, and its preview reads like the session's placeholders */
-.drow .no[data-dprev]{align-self:stretch;margin:-.7rem 0;cursor:pointer}
-.dprevp{font-style:normal;color:var(--accent)}
+.drow .no[data-dprev]{align-self:stretch;margin:-.7rem 0;cursor:pointer;position:relative}
+.drow .no.hasprev .nol{text-decoration:underline;text-underline-offset:2px}
+/* the P hangs in the margin to the left, so the number itself never moves */
+.dprevp{position:absolute;right:100%;margin-right:5px;font-style:normal;color:var(--accent)}
 .drow.pv .c{color:var(--fg-3);font-weight:400}
 .medal{
   flex:none;width:21px;height:21px;display:grid;place-items:center;line-height:0;
@@ -3505,7 +3507,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4453';
+  var APP_VERSION = '3.4454';
 
   /* =========================================================
      STORE
@@ -12655,18 +12657,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             (detailEdit ? '<span></span>' : '') + '</div>' +
             rows.map(function (st, si) {
               if (!detailEdit) {
-                // tapping the set number swaps in what the exercise last had before this workout, as the session shows it
-                // (your own workouts only: a friend's history is not here to look at)
-                var key = ei + '-' + si, on = !detailRO && detailPv[key];
-                var no = '<span class="no"' + (detailRO ? '' : ' data-dprev="' + key + '"') + '>';
-                if (on) {
-                  var pr = (before[ei] || (before[ei] = lastSetsFor(exKey(e), new Date(w.date).getTime())))[si] || {};
-                  return '<div class="drow pv">' + no + '<i class="dprevp">P</i>' + esc(st.label) + '</span>' +
+                // tapping the set number swaps in what the exercise last had before this workout, as the session shows it;
+                // it is underlined only when there is such a number (a first time, or a set never done before, has none).
+                // Your own workouts only: a friend's history is not here to look at.
+                var key = ei + '-' + si;
+                var pr = detailRO ? null : (before[ei] || (before[ei] = lastSetsFor(exKey(e), new Date(w.date).getTime())))[si];
+                var has = !!(pr && (pr.weight || pr.reps || pr.rir));
+                var no = '<span class="no' + (has ? ' hasprev' : '') + '"' + (has ? ' data-dprev="' + key + '"' : '') + '>';
+                if (has && detailPv[key]) {
+                  return '<div class="drow pv">' + no + '<i class="dprevp">P</i><span class="nol">' + esc(st.label) + '</span></span>' +
                     '<span class="c">' + (pr.weight ? esc(pr.weight) : '&ndash;') + plateMark({ plate: pr.plate }, 'platec') + '</span>' +
                     '<span class="c">' + (pr.reps ? esc(pr.reps) : '&ndash;') + '</span>' +
                     '<span class="c">' + (pr.rir !== '' && pr.rir != null ? esc(pr.rir) : '&ndash;') + '</span></div>';
                 }
-                return '<div class="drow">' + no + esc(st.label) + medal(st, e.name) + '</span>' +
+                return '<div class="drow">' + no + '<span class="nol">' + esc(st.label) + '</span>' + medal(st, e.name) + '</span>' +
                   '<span class="c">' + (st.weight === '' ? '&ndash;' : esc(st.weight)) +
                   plateMark(st, 'platec') + '</span>' +
                   '<span class="c">' + esc(st.reps) + '</span>' +
