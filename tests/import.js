@@ -5,7 +5,7 @@ const t = suite('import');
 
 const code = slice('  function cleanWorkouts(', '  function importData(') + slice('  function postOk(', '  function workoutCard(');
 let n = 0;
-const api = new Function('uid', 'pad2', code + '; return { clean: cleanWorkouts, ok: postOk };')(
+const api = new Function('uid', 'pad2', code + '; return { clean: cleanWorkouts, ok: postOk, ex: cleanExercises };')(
   () => 'new' + ++n, (v) => (v < 10 ? '0' + v : String(v)));
 
 const W = (extra) => Object.assign({ id: 'a', name: 'Push', date: new Date(2026, 0, 5).toISOString(), seconds: 3000,
@@ -31,4 +31,7 @@ api.clean([src]);
 t.is('the file\'s own object is left as it was', src.exercises[0].sets[0], { weight: 80, reps: 8 });
 t.is('seconds and extra fields: junk becomes zero, the rest travels',
   [api.clean([W({ seconds: 'x', records: 3 })]).list[0].seconds, api.clean([W({ records: 3 })]).list[0].records], [0, 3]);
+t.is('an exercise needs a text id and a name, the rest is counted and dropped',
+  api.ex([{ id: 'a', name: 'Bench' }, { id: 'b' }, { name: 'x' }, { id: 5, name: 'y' }, null, 'z']),
+  { list: [{ id: 'a', name: 'Bench' }], skipped: 5 });
 t.done();

@@ -3428,7 +3428,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4427';
+  var APP_VERSION = '3.4428';
 
   /* =========================================================
      STORE
@@ -8696,6 +8696,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return { list: out, skipped: skipped };
   }
 
+  // An exercise needs an id and a name; one without them would stop the exercise list drawing.
+  function cleanExercises(list) {
+    var out = list.filter(function (e) {
+      return e && typeof e === 'object' && typeof e.id === 'string' && e.id && typeof e.name === 'string';
+    });
+    return { list: out, skipped: list.length - out.length };
+  }
+
   function importData(text) {
     var raw = null;
     try { raw = JSON.parse(text); } catch (e) {}
@@ -8703,15 +8711,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       askConfirm('Not a backup file', 'It has no exercise and workout lists in it.', 'OK', null);
       return;
     }
-    var clean = cleanWorkouts(raw.workouts), lost = clean.skipped;
+    var clean = cleanWorkouts(raw.workouts), lost = clean.skipped, exs = cleanExercises(raw.exercises);
     askConfirm('Replace everything?',
-      raw.exercises.length + ' exercise' + (raw.exercises.length === 1 ? '' : 's') +
+      exs.list.length + ' exercise' + (exs.list.length === 1 ? '' : 's') +
       ' and ' + clean.list.length + ' workout' + (clean.list.length === 1 ? '' : 's') +
       ' from the file take the place of what is on this device.' +
-      (lost ? ' ' + lost + ' workout' + (lost === 1 ? ' was' : 's were') + ' skipped: not readable or a repeat.' : ''),
+      (lost ? ' ' + lost + ' workout' + (lost === 1 ? ' was' : 's were') + ' skipped: not readable or a repeat.' : '') +
+      (exs.skipped ? ' ' + exs.skipped + ' exercise' + (exs.skipped === 1 ? ' was' : 's were') + ' skipped: no id or name.' : ''),
       'Import', function () {
-        store.exercises = raw.exercises;
-        store.routines = (raw.routines || []).map(migrate);
+        store.exercises = exs.list;
+        // a routines field that is not a list would throw here, halfway through the import
+        store.routines = (Array.isArray(raw.routines) ? raw.routines : []).map(migrate);
         swapWorkouts(clean.list);
         if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
         if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
