@@ -898,10 +898,11 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .drow{position:relative}
 .drow .no{display:flex;align-items:center;gap:7px}
 /* the set number is a button: it stretches over the whole row, and its preview reads like the session's placeholders */
-.drow .no[data-dprev]{align-self:stretch;margin:-.7rem 0;cursor:pointer;position:relative}
+/* a thumb-sized target: the row's whole height, out to the screen edge on the left and a little into the weight column on the right */
+.drow .no[data-dprev]{align-self:stretch;margin:-.7rem -24px -.7rem calc(var(--pad) * -1);padding-left:var(--pad);cursor:pointer;position:relative}
 .drow .no.hasprev .nol{text-decoration:underline;text-underline-offset:2px}
-/* the P hangs in the margin to the left, so the number itself never moves */
-.dprevp{position:absolute;right:100%;margin-right:5px;font-style:normal;color:var(--accent)}
+/* the P hangs in the margin to the left of the number, so the number itself never moves */
+.dprevp{position:absolute;left:7px;font-style:normal;color:var(--accent)}
 .drow.pv .c{color:var(--fg-3);font-weight:400}
 .medal{
   flex:none;width:21px;height:21px;display:grid;place-items:center;line-height:0;
@@ -3507,7 +3508,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4454';
+  var APP_VERSION = '3.4455';
 
   /* =========================================================
      STORE
