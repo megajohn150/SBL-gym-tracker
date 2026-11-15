@@ -354,8 +354,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .btn-ghost{border:var(--border);color:var(--fg);background:var(--surface)}
 /* the four destructive buttons (delete, erase, confirm, replace) had no rule of their own and showed no background */
 .btn-danger{background:var(--red);color:#fff}
-/* a browser that cannot mix keeps the plain red above; the signal red itself stays as it is, it is used elsewhere */
-.btn-danger{background:color-mix(in srgb,var(--red) 70%,#000)}
+/* in dark the light signal red is too loud on a button; a browser that cannot mix keeps the plain red above */
+[data-theme="dark"] .btn-danger{background:color-mix(in srgb,var(--red) 70%,#000)}
 .btn-danger[disabled]{opacity:.35;cursor:default}
 
 /* --- workout session --- */
@@ -3501,7 +3501,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4451';
+  var APP_VERSION = '3.4452';
 
   /* =========================================================
      STORE
