@@ -187,6 +187,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .packopt{display:flex;align-items:center;gap:10px;padding:12px;font-size:.85rem;font-weight:600;text-align:left;
   border:var(--border);border-radius:calc(var(--radius) - 2px);background:var(--surface)}
 .packopt[disabled]{opacity:.55;cursor:default}
+.packrt{display:grid;gap:6px;margin:-8px 0 16px}
 .rtcard{border-bottom:var(--dash)}
 .rtcard:last-child{border-bottom:none}
 .rtopen{display:block;width:100%;padding:16px 14px 0;text-align:center}
@@ -3289,6 +3290,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button class="packopt" aria-pressed="true" disabled><span class="exchk"></span>Exercises</button>
       <button class="packopt" id="pack-routines" aria-pressed="false"><span class="exchk"></span>Routines</button>
     </div>
+    <div class="packrt" id="pack-rt" hidden></div>
     <button class="btn btn-primary" id="pack-go">Import</button>
   </div>
 </div>
@@ -3557,7 +3559,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4461';
+  var APP_VERSION = '3.4462';
 
   /* =========================================================
      STORE
@@ -6740,14 +6742,36 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawExercises();
   });
   // the starter packs window: for now it only looks the part; Import closes it and nothing is imported
+  var packKey = 'sbl';
+  var PACK_RT = { sbl: ['Anterior', 'Posterior', 'Full Body'], bro: ['Push', 'Pull', 'Legs'] };
+  // the routines of the chosen pack, all ticked
+  function drawPackRt() {
+    $('pack-rt').innerHTML = PACK_RT[packKey].map(function (n) {
+      return '<button class="packopt" aria-pressed="true"><span class="exchk"></span>' + esc(n) + '</button>';
+    }).join('');
+  }
   $('wk-import').addEventListener('click', function () { $('pack-sheet').hidden = false; });
   $('pack-pick').addEventListener('click', function (e) {
     var b = e.target.closest('[data-pack]');
-    if (!b) return;
+    if (!b || !PACK_RT[b.dataset.pack]) return;
+    packKey = b.dataset.pack;
     [].forEach.call($('pack-pick').children, function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+    if (!$('pack-rt').hidden) drawPackRt();
   });
   $('pack-routines').addEventListener('click', function () {
-    this.setAttribute('aria-pressed', String(this.getAttribute('aria-pressed') !== 'true'));
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(on));
+    $('pack-rt').hidden = !on;
+    if (on) drawPackRt();
+  });
+  // ticking the last routine off turns Routines off with it
+  $('pack-rt').addEventListener('click', function (e) {
+    var b = e.target.closest('.packopt');
+    if (!b) return;
+    b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+    if ($('pack-rt').querySelector('[aria-pressed="true"]')) return;
+    $('pack-routines').setAttribute('aria-pressed', 'false');
+    $('pack-rt').hidden = true;
   });
   $('pack-go').addEventListener('click', function () { $('pack-sheet').hidden = true; });
   document.querySelector('[data-pack-close]').addEventListener('click', function () { $('pack-sheet').hidden = true; });
