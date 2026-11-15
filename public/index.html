@@ -2733,7 +2733,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="dsec">Settings</div>
     <ul class="gdl">
       <li><b>Account:</b> Mail and Change password (a new address takes over once its link is opened), sync status, Sign out (this phone keeps no copy), Delete account (removes the account itself, so the email and nick are free again).</li>
-      <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home says so until you dismiss it). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
+      <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
       <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
@@ -3418,7 +3418,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4425';
+  var APP_VERSION = '3.4426';
 
   /* =========================================================
      STORE
@@ -9388,9 +9388,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var standalone = navigator.standalone === true ||
       (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     $('a2hs-bar').hidden = !needsA2hs(navigator.userAgent, navigator.platform,
-      navigator.maxTouchPoints || 0, standalone, load('a2hs'));
+      navigator.maxTouchPoints || 0, standalone, a2hsGone);
   }
-  $('a2hs-x').addEventListener('click', function () { save('a2hs', '1'); drawA2hs(); });
+  // Closing it lasts until the page is opened again, on purpose: push only works in the
+  // installed app, so a tab is meant to keep asking. Nothing is stored.
+  var a2hsGone = false;
+  $('a2hs-x').addEventListener('click', function () { a2hsGone = true; drawA2hs(); });
 
   function drawBackupBar() {
     var due = bk.on && store.workouts.length && bkAge() >= bk.days &&
