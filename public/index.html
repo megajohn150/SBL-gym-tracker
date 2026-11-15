@@ -1167,7 +1167,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   transform:translate(-50%,0);margin-bottom:9px;
 }
 .pxlab{display:flex;gap:4px;margin-top:6px}
-.pxlab span{flex:1;text-align:center;font-size:9px;color:var(--fg-3);white-space:nowrap;overflow:hidden}
+/* a label wider than its slot spills evenly to both sides instead of being cut: the neighbouring slots are empty */
+.pxlab span{flex:1;min-width:0;display:flex;justify-content:center;font-size:9px;color:var(--fg-3);white-space:nowrap}
 .dash{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 var(--pad)}
 .dashbtn{
   padding:14px var(--cardpad);text-align:center;font-size:.9rem;font-weight:600;
@@ -3389,7 +3390,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4417';
+  var APP_VERSION = '3.4418';
 
   /* =========================================================
      STORE
