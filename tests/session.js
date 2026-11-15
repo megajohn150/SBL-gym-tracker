@@ -101,6 +101,20 @@ t.is('the header row counts a unilateral round once, and only when both sides ar
     { skipped: true, sets: [{ label: '01', done: true, weight: '99', reps: '9' }] },
   ]), { cnt: 2, all: 4, vol: 250, prs: 0 });
 
+/* last time, for a finished workout: only what came before it, as its own session saw it */
+const hist = [
+  { date: '2026-05-03T10:00:00Z', exercises: [{ exId: 'x', sets: [{ weight: '70', reps: '8', rir: '1' }, { weight: '70', reps: '7', rir: '' }] }] },
+  { date: '2026-05-02T10:00:00Z', exercises: [{ exId: 'x', sets: [{ weight: '60', reps: '8', rir: '2' }, { weight: '60', reps: '8', rir: '2' }, { weight: '55', reps: '9', rir: '' }] }] },
+  { date: '2026-05-01T10:00:00Z', exercises: [{ exId: 'x', sets: [{ weight: '50', reps: '8', rir: '3' }] }] },
+];
+const lastFor = new Function('store', 'cutoffFor', 'afterCut', 'exKey', 'logged', 'plateCount',
+  slice('  function lastSetsFor(key, before)', '  // the note written during the last session') + '; return lastSetsFor;')(
+  { workouts: hist }, () => 0, () => true, (e) => e.exId, logged, () => 0);
+t.is('with no limit it is what the newest sessions had, set by set',
+  lastFor('x').map((s) => s.weight), ['70', '70', '55']);
+t.is('for the newest workout it is the one before it, and the oldest has nothing before',
+  [lastFor('x', Date.parse(hist[0].date)).map((s) => s.weight), lastFor('x', Date.parse(hist[2].date)).length], [['60', '60', '55'], 0]);
+
 /* ending it */
 const store = { workouts: [{ id: 'older' }] };
 const started = new Date(2026, 4, 1, 17, 30).getTime();
