@@ -69,6 +69,8 @@ const eg = listing([
   { name: 'Incline', sets: [{ label: '01', weight: '10', reps: '1' }, { label: '02', done: true, weight: '10', reps: '2' }] },
 ]);
 t.is('the list is per exercise in workout order, ticked sets only', namesOf(eg), ['Chest fly', 'Incline']);
+const numsOf = (html) => (html.match(/class="exnum">\d+/g) || []).map((s) => s.slice(14));
+t.is('the badge is the exercise\'s place in the workout, not its place in the list', numsOf(eg), ['1', '3']);
 t.is('each set shows its number, weight, reps and volume', rowsOf(eg), ['1 100 8 800 kg', '2 100 9 900 kg', '2 10 2 20 kg']);
 const odd = listing([{ name: 'A<b>', skipped: true, sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, { name: 'B<i>', sets: [{ label: 'L2', done: true, weight: '', reps: '5' }] }]);
 t.is('a skipped exercise is left out, a name with markup is escaped, a bodyweight set shows a dash', [namesOf(odd), rowsOf(odd)],
@@ -83,6 +85,8 @@ const bench = { name: 'Bench', sets: [
   { label: '03', weight: '120', reps: '5', rir: '', prs: ['Weight'], was: { Weight: 105 } }] };
 t.is('a record shows its value from the last ticked set and its rise from before the first one',
   prRows(prList([bench])), ['Heaviest 105 kg \u2191 15 kg', 'Best set 500 kg \u2191 50 kg']);
+t.is('the records list numbers its exercises the same way',
+  numsOf(prList([{ name: 'Row', sets: [] }, bench])), ['2']);
 t.is('exercises without a ticked record, and skipped ones, are left out; none at all says so',
   [namesOf(prList([bench, { name: 'Row', sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, Object.assign({}, bench, { name: 'Skipped', skipped: true })])),
    prList([{ name: 'A', sets: [] }]).replace(/<[^>]+>/g, '')], [['Bench'], 'No records yet.']);
