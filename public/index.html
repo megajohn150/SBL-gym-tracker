@@ -3524,7 +3524,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4457';
+  var APP_VERSION = '3.4458';
 
   /* =========================================================
      STORE
@@ -6145,7 +6145,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     // the menu is for the library; a picker has no business deleting what it is picking from
     if (pickFor || !has) exDel = null;
     $('exlist-menu').hidden = !!pickFor || !has || !!exDel;
-    // while choosing, the footer swaps its button: Cancel above Delete, where "+ New exercise" was
+    // while choosing, the footer swaps its button for the Workout tab's pair: a wide one (Cancel) and a narrow one (Delete)
+    $('ex-footbar').style.gridTemplateColumns = exDel ? '2fr 1fr' : '';
     $('ex-new').hidden = !!exDel;
     $('exlist-cancel').hidden = !exDel;
     var nPicked = exDel ? Object.keys(exDel).length : 0;
