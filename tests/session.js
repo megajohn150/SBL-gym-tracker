@@ -35,6 +35,26 @@ t.is('a session paused by an older version resumes with its clock where it stopp
   [old.pausedAt, Math.round((Date.now() - old.startedAt) / 60e3)], [null, 50]);
 t.is('one that was never paused is left alone', unpause({ startedAt: 5 }).startedAt, 5);
 
+/* the numbers under the header: ticked sets only, a record counted once per category per exercise */
+const shown = {};
+const fmtKg = (kg) => kg + ' kg';
+const logged = (st) => num(st.reps) > 0;
+const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session',
+  slice('  function drawSessTotals()', '  // A typed number moves the medals') + '; return drawSessTotals;');
+const run = (exs) => {
+  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs })();
+  return [shown['sess-vol'], shown['sess-pr-n']];
+};
+t.is('volume and records count only ticked, logged sets', run([
+  { sets: [{ done: true, weight: '100', reps: '5', prs: ['Weight', '1RM'] }, { weight: '120', reps: '5', prs: ['Weight'] }, { done: true, weight: '', reps: '' }] },
+]), ['500 kg', 2]);
+t.is('the same record twice in one exercise is one, in two exercises it is two', run([
+  { sets: [{ done: true, weight: '50', reps: '5', prs: ['Weight'] }, { done: true, weight: '60', reps: '5', prs: ['Weight'] }] },
+  { sets: [{ done: true, weight: '10', reps: '10', prs: ['Weight'] }] },
+]), ['650 kg', 2]);
+t.is('a skipped exercise adds nothing', run([{ skipped: true, sets: [{ done: true, weight: '90', reps: '5', prs: ['Volume'] }] }]), ['0 kg', 0]);
+t.is('a set whose prs is not a list is ignored', run([{ sets: [{ done: true, weight: '20', reps: '5', prs: 'x' }] }]), ['100 kg', 0]);
+
 /* ending it */
 const store = { workouts: [{ id: 'older' }] };
 const started = new Date(2026, 4, 1, 17, 30).getTime();

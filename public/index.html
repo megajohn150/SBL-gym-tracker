@@ -409,6 +409,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .eyepop > span > span{display:flex;align-items:flex-end;gap:6px;animation:eyesway2 1s ease-in-out -.5s infinite alternate}
 .sesscnt{font-weight:700;font-size:.8rem;color:var(--fg-3);margin-left:8px}
 .sesscnt.full{color:inherit}
+.sesscnt svg{vertical-align:-1px;margin-right:3px}
 .iconbtn{width:30px;height:30px;display:grid;place-items:center;color:var(--fg-2);font-size:1.05rem;border-radius:4px;flex:none}
 .iconbtn:hover{color:var(--fg)}
 
@@ -2100,6 +2101,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="sessinfo">
       <span class="clock" id="sess-clock">0:00:00</span>
       <span class="sesscnt" id="sess-cnt" hidden></span>
+      <span class="sesscnt" id="sess-vol">0 kg</span>
+      <span class="sesscnt" id="sess-pr"><svg width="11" height="11" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 .9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg><span id="sess-pr-n">0</span></span>
     </div>
 
     <div class="sscroll">
@@ -3459,7 +3462,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4440';
+  var APP_VERSION = '3.4441';
 
   /* =========================================================
      STORE
@@ -7647,6 +7650,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!ex) {                      // an empty workout is only the closing card, which has "+ Add exercise"
       ['sess-exhead', 'sess-setshead', 'sess-sets', 'sess-addwrap', 'sess-cue', 'sess-injury', 'sess-lastnote'].forEach(function (id) { $(id).hidden = true; });
       $('sess-notebox').parentNode.hidden = true;
+      drawSessTotals();
       $('sess-endpage').hidden = false;
       $('sess-reorder').hidden = true;
       $('sess-chips').innerHTML = '';
@@ -7738,6 +7742,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       : 'Tap a set\u2019s number to fill it with what you did last time. Tap it again to tick the set as done.';
 
     livePrs(ex);
+    drawSessTotals();
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
       return '<div class="swipe">' +
@@ -8000,9 +8005,28 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     padNav();
   }
 
+  // The volume and the records of the sets ticked so far, over the whole workout: one record per
+  // category per exercise, as recomputeRecords counts them. Other exercises keep the prs their last drawing gave them.
+  function drawSessTotals() {
+    var vol = 0, prs = 0;
+    session.exercises.forEach(function (x) {
+      if (x.skipped) return;
+      var hit = {};
+      x.sets.forEach(function (st) {
+        if (!st.done || !logged(st)) return;
+        vol += num(st.weight) * num(st.reps);
+        (Array.isArray(st.prs) ? st.prs : []).forEach(function (c) { hit[c] = true; });
+      });
+      prs += Object.keys(hit).length;
+    });
+    $('sess-vol').textContent = fmtKg(vol);
+    $('sess-pr-n').textContent = prs;
+  }
+
   // A typed number moves the medals of the ticked sets without redrawing the row the pad is on.
   function paintMedals(ex) {
     livePrs(ex);
+    drawSessTotals();
     [].forEach.call($('sess-sets').querySelectorAll('.setrow'), function (row) {
       var old = row.querySelector('.medal');
       if (old) row.removeChild(old);
