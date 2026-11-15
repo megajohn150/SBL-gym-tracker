@@ -402,6 +402,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   to{transform:translate3d(-90px,-130px,0) scale(1)}
 }
 .eyewatch{position:fixed;right:8px;bottom:calc(env(safe-area-inset-bottom) + 68px);z-index:60;pointer-events:none;font-size:2rem;line-height:1;display:flex;gap:8px;align-items:flex-end}
+/* the eyes belong to the workout screen itself: any menu or sheet laid over it (volume, records, history, metadata) covers them */
+body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
 .eyewatch > span{display:block;animation:eyesit 2.4s ease-in-out infinite alternate;will-change:transform}
 .eyewatch > span b{display:block;text-align:center;font-weight:400;margin-bottom:4px}
 @keyframes eyesit{from{transform:translate3d(-6px,2px,0)}to{transform:translate3d(6px,-3px,0)}}
@@ -995,6 +997,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 @keyframes padup{from{opacity:0}to{opacity:1}}
 /* with the pad under it the footer needs no room for the home bar */
 #s-session.padon .sfoot{padding-bottom:12px}
+/* a friend's workout keeps the tab bar, which already clears the home bar */
+#s-livew .sfoot{padding-bottom:12px}
 .pad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pad-grid.w{grid-template-columns:repeat(4,1fr)}
 .pad-grid button{
@@ -3495,7 +3499,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4449';
+  var APP_VERSION = '3.4450';
 
   /* =========================================================
      STORE
