@@ -44,7 +44,7 @@ const recs = new Function('num', slice('  function epley(w, r)', '  function exK
 const REC = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
 const fmtVolume = (kg) => Math.round(kg * 10) / 10 + ' kg';
 const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt', 'setRec', 'REC_NAME', 'fmtVolume',
-  slice('  function drawSessTotals()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml, prs: sessPrHtml };');
+  slice('  function sessStats()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml, prs: sessPrHtml, stats: sessStats };');
 const run = (exs) => {
   totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume).totals();
   return [shown['sess-vol'], shown['sess-pr-n']];
@@ -92,6 +92,14 @@ t.is('each card carries the exercise\'s index, so a tap can open it', [doorsOf(e
 t.is('exercises without a ticked record, and skipped ones, are left out; none at all says so',
   [namesOf(prList([bench, { name: 'Row', sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, Object.assign({}, bench, { name: 'Skipped', skipped: true })])),
    prList([{ name: 'A', sets: [] }]).replace(/<[^>]+>/g, '')], [['Bench'], 'No records yet.']);
+
+const stats = (exs) => built(exs).stats();
+t.is('the header row counts a unilateral round once, and only when both sides are ticked, skipped exercises not at all',
+  stats([
+    { unilateral: true, sets: [{ label: 'R1', done: true, weight: '10', reps: '5' }, { label: 'L1', done: true, weight: '10', reps: '5' }, { label: 'R2', done: true, weight: '10', reps: '5' }, { label: 'L2' }] },
+    { sets: [{ label: '01', done: true, weight: '20', reps: '5' }, { label: '02' }] },
+    { skipped: true, sets: [{ label: '01', done: true, weight: '99', reps: '9' }] },
+  ]), { cnt: 2, all: 4, vol: 250, prs: 0 });
 
 /* ending it */
 const store = { workouts: [{ id: 'older' }] };

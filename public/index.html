@@ -369,8 +369,8 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 }
 .sbar .clock,.sessinfo .clock{font-weight:700;font-size:.95rem;letter-spacing:.04em}
 /* the live workout's header is two rows: name and menu, then the clock and the set count under it; its own bottom rule moves to the second row */
-#s-session .sbar{border-bottom:0;padding-top:calc(env(safe-area-inset-top) + 6px);padding-bottom:4px}
-#s-session .sbar h1{text-align:center}
+#s-session .sbar,#s-livew .sbar{border-bottom:0;padding-top:calc(env(safe-area-inset-top) + 6px);padding-bottom:4px}
+#s-session .sbar h1,#s-livew .sbar h1{text-align:center}
 .sessinfo{flex:none;z-index:6;background:var(--bg);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;text-align:center;border-top:1px dotted var(--line);border-bottom:var(--dash)}
 .sessinfo > span{padding:5px 0}
 .sessinfo > span:not(:last-child){border-right:1px dotted var(--line)}
@@ -2429,8 +2429,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="sbar">
       <button class="iconbtn" data-pop aria-label="Back">&larr;</button>
       <h1 id="lv-title">Workout</h1>
-      <span class="clock" id="lv-clock">0:00:00</span>
       <span class="iconbtn" aria-hidden="true">&#8942;</span>
+    </div>
+    <div class="sessinfo">
+      <span class="clock" id="lv-clock">0:00:00</span>
+      <span class="sesscnt" id="lv-cnt" hidden></span>
+      <span class="sesscnt" id="lv-vol">&ndash;</span>
+      <span class="sesscnt" id="lv-pr"><svg width="11" height="11" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 .9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg><span id="lv-pr-n">0</span></span>
     </div>
     <div class="sscroll" id="lv-body"></div>
     <div class="lvsay" id="lv-say" hidden>
@@ -3490,7 +3495,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4448';
+  var APP_VERSION = '3.4449';
 
   /* =========================================================
      STORE
@@ -4038,6 +4043,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return {
       name: session.name, startedAt: session.startedAt, idx: session.idx,
       react: !store.profile.noReact,          // friends see their reaction buttons greyed out when this is false
+      stats: sessStats(),                     // the header row: sets, volume, records; a viewer cannot work out the records
       exercises: session.exercises.map(function (e) {
         return {
           name: e.name, code: e.code, muscle: e.muscle, unilateral: !!e.unilateral,
@@ -4129,6 +4135,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('lv-title').innerHTML = '<small>' + esc(p.username || 'Friend') + '’s</small>' + esc(d.name);
     $('lv-clock').dataset.lvt = id;
     liveClock();
+    // the owner's own count of the header row; an old app sends none, and a friend's numbers are only numbers
+    var cl = function (v) { return Math.min(9999, Math.max(0, Math.floor(Number(v)) || 0)); }, ls = d.stats;
+    $('lv-cnt').hidden = !(ls && cl(ls.all));
+    if (ls) $('lv-cnt').textContent = cl(ls.cnt) + '/' + cl(ls.all);
+    $('lv-vol').textContent = ls ? fmtKg(Math.min(1e9, Math.max(0, Number(ls.vol)) || 0)) : '\u2013';
+    $('lv-pr-n').textContent = ls ? cl(ls.prs) : '\u2013';
     var planned = ex.unilateral ? ex.sets.length / 2 : ex.sets.length;
     var PIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3-1-6ZM12 15v5"/></svg>';
     var was = $('lv-chips'), left0 = was ? was.scrollLeft : 0;
@@ -7660,18 +7672,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var ex = session.exercises[Math.min(session.idx, last - 1)];
 
     $('sess-title').textContent = session.name;
-    var cnt = 0, all = 0;
-    session.exercises.forEach(function (x) {
-      if (x.skipped) return;
-      // a unilateral round (L1 + R1) is one set, and counts once both sides are ticked
-      var rounds = {};
-      x.sets.forEach(function (t, i) {
-        var r = x.unilateral ? String(t.label).slice(1) : i, o = rounds[r] || (rounds[r] = { n: 0, d: 0 });
-        o.n++;
-        if (t.done) o.d++;
-      });
-      Object.keys(rounds).forEach(function (r) { all++; if (rounds[r].d === rounds[r].n) cnt++; });
-    });
+    var ss = sessStats(), cnt = ss.cnt, all = ss.all;
     $('sess-cnt').hidden = !all;
     $('sess-cnt').textContent = cnt + '/' + all;
     $('sess-cnt').classList.toggle('full', all > 0 && cnt === all);
@@ -8033,22 +8034,33 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     padNav();
   }
 
-  // The volume and the records of the sets ticked so far, over the whole workout: one record per
-  // category per exercise, as recomputeRecords counts them. Other exercises keep the prs their last drawing gave them.
-  function drawSessTotals() {
-    var vol = 0, prs = 0;
+  // The four numbers of the header row, from the sets ticked so far. A unilateral round (L1 + R1) is one set and
+  // counts once both sides are ticked. Records: one per category per exercise, as recomputeRecords counts them;
+  // other exercises keep the prs their last drawing gave them. A friend watching gets these, not the sets' prs.
+  function sessStats() {
+    var cnt = 0, all = 0, vol = 0, prs = 0;
     session.exercises.forEach(function (x) {
       if (x.skipped) return;
-      var hit = {};
-      x.sets.forEach(function (st) {
-        if (!st.done || !logged(st)) return;
+      var rounds = {}, hit = {};
+      x.sets.forEach(function (st, i) {
+        var r = x.unilateral ? String(st.label).slice(1) : i, o = rounds[r] || (rounds[r] = { n: 0, d: 0 });
+        o.n++;
+        if (!st.done) return;
+        o.d++;
+        if (!logged(st)) return;
         vol += num(st.weight) * num(st.reps);
         (Array.isArray(st.prs) ? st.prs : []).forEach(function (c) { hit[c] = true; });
       });
+      Object.keys(rounds).forEach(function (r) { all++; if (rounds[r].d === rounds[r].n) cnt++; });
       prs += Object.keys(hit).length;
     });
-    $('sess-vol').textContent = fmtKg(vol);
-    $('sess-pr-n').textContent = prs;
+    return { cnt: cnt, all: all, vol: vol, prs: prs };
+  }
+
+  function drawSessTotals() {
+    var s = sessStats();
+    $('sess-vol').textContent = fmtKg(s.vol);
+    $('sess-pr-n').textContent = s.prs;
   }
 
   // What the volume above is made of: the ticked sets, exercise by exercise in the workout's own order.

@@ -2,7 +2,9 @@
    sesji. Notatki zostają w domu. */
 const { slice, suite } = require('./lib');
 
-const code = slice('  function livePayload() {', '  // not pushLive');
+const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
+const code = slice('  function sessStats()', '  function drawSessTotals()') + slice('  function livePayload() {', '  // not pushLive');
+const logged = (st) => num(st.reps) > 0;
 const t = suite('live');
 
 const session = {
@@ -15,8 +17,8 @@ const session = {
            { label: '02', weight: '', reps: '', rir: '' }]
   }]
 };
-const payload = new Function('session', 'store', code + '; return livePayload();')(session, { profile: {} });
-const off = new Function('session', 'store', code + '; return livePayload();')(session, { profile: { noReact: true } });
+const payload = new Function('session', 'store', 'num', 'logged', code + '; return livePayload();')(session, { profile: {} }, num, logged);
+const off = new Function('session', 'store', 'num', 'logged', code + '; return livePayload();')(session, { profile: { noReact: true } }, num, logged);
 const text = JSON.stringify(payload);
 
 t.is('the session note does not leave', text.includes('tajna'), false);
@@ -28,4 +30,5 @@ t.is('a set keeps its weight, its tick and its plates',
   payload.exercises[0].sets.map((s) => [s.weight, s.done, s.plate]), [['115.3', true, 2], ['', false, 0]]);
 t.is('a hole in last time stays a hole', payload.exercises[0].prev.length, 2);
 t.is('reactions are on by default, and the flag says when they are off', [payload.react, off.react], [true, false]);
+t.is('the header row goes along, as numbers the viewer cannot work out himself', payload.stats, { cnt: 1, all: 2, vol: 691.8, prs: 0 });
 t.done();
