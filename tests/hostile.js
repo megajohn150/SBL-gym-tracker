@@ -5,7 +5,7 @@ const { slice, suite } = require('./lib');
 const t = suite('hostile');
 
 const clean = new Function(slice('  function cleanSets(v)', '  function fixCues()') +
-  '; return { cleanSets: cleanSets, cleanStep: cleanStep };')();
+  '; return { cleanSets: cleanSets, cleanStep: cleanStep, cleanN: cleanN };')();
 const post = new Function(slice('  function prN(w)', '  function workoutCard') +
   '; return { prN: prN, postOk: postOk };')();
 
@@ -22,4 +22,22 @@ t.is('a post whose exercises are no list is not drawn', post.postOk({ exercises:
 t.is('a post whose sets are no list is not drawn', post.postOk({ exercises: [{ sets: null }] }), false);
 t.is('a set without a text label is not drawn', post.postOk({ exercises: [{ sets: [{ label: 5 }] }] }), false);
 t.is('a proper post is drawn', post.postOk({ exercises: [{ sets: [{ label: '01' }] }] }), true);
+
+/* a profile row is readable by every account, so its numbers are a stranger's */
+t.is('markup in a workout count is zero', clean.cleanN('<img src=x onerror=alert(1)>'), 0);
+t.is('a count stays a whole number', [clean.cleanN(212), clean.cleanN('37.9'), clean.cleanN(-4), clean.cleanN(null)], [212, 37, 0, 0]);
+
+/* an exercise out of a friend's library becomes one of yours */
+const lentEx = new Function('uid', 'deriveCode', 'cleanStep', slice('  function lentEx(src)', '  function applyFollow') +
+  '; return lentEx;')(() => 'id1', (n) => n.slice(0, 2).toUpperCase(), clean.cleanStep);
+const lent = lentEx({ name: 42, code: { a: 1 }, muscle: ['x'], head: null, cue: 7, unilateral: 'yes', step: '<b>' });
+t.is('every field of it is the type the app writes', [typeof lent.name, typeof lent.code, typeof lent.muscle, typeof lent.head, typeof lent.cue, lent.unilateral, 'step' in lent],
+  ['string', 'string', 'string', 'string', 'string', true, false]);
+t.is('so its name can be lowercased like any other', lent.name.toLowerCase(), '42');
+t.is('a proper exercise comes through as it is', lentEx({ name: 'Row', code: 'RW', muscle: 'Lats', cue: 'pull', step: 2.5 }),
+  { id: 'id1', name: 'Row', code: 'RW', muscle: 'Lats', head: '', cue: 'pull', unilateral: false, step: 2.5 });
+t.is('a name of a thousand letters is cut', lentEx({ name: 'x'.repeat(1000) }).name.length, 80);
+
+const medal = new Function(slice('  function medal(st, name)', '  // A ticked set that breaks a record') + '; return medal;')();
+t.is('a set whose records are no list draws no medal', [medal({ prs: 'Weight' }, 'x'), medal({ prs: { length: 3 } }, 'x'), medal({}, 'x')], ['', '', '']);
 t.done();

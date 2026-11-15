@@ -124,6 +124,18 @@ create policy "insert own" on public.tracker for insert with check (auth.uid() =
 create policy "update own" on public.tracker for update using (auth.uid() = user_id)
                                                         with check (auth.uid() = user_id);
 
+-- Nowe konto dostaje pusty wiersz dziennika (rev 0) już przy rejestracji. Aplikacja
+-- poznaje go po rev = 0 i wysyła to, co ma na urządzeniu, zamiast scalać z pustką.
+create or replace function public.new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.tracker (user_id) values (new.id) on conflict do nothing;
+  return new;
+end $$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.new_user();
+
 -- Nazwa musi zaczynać się i kończyć literą lub cyfrą, 3-20 znaków — żeby nie
 -- dało się zająć nicka typu "..." albo "__". Aplikacja pilnuje tego samego.
 do $$ begin
@@ -640,3 +652,19 @@ begin
 end $$;
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- ------------------------------------------------------------------
+-- 14. Uprawnienia. Funkcje triggerów odpala baza, nie klient: trigger nie
+--     potrzebuje EXECUTE, żeby zadziałać, więc API nie ma po co ich widzieć.
+--     friends_with i can_see_post stoją w politykach RLS, więc zalogowany
+--     musi móc je wykonać; niezalogowany nie.
+-- ------------------------------------------------------------------
+revoke execute on function
+  public.new_user(), public.notify_push(), public.live_post(), public.live_lib(),
+  public.live_undo(), public.live_prof(), public.live_unfoll(), public.live_self(),
+  public.live_sess()
+  from public, anon, authenticated;
+revoke execute on function public.can_see_post(uuid, text), public.friends_with(uuid)
+  from public, anon;
+grant execute on function public.can_see_post(uuid, text), public.friends_with(uuid)
+  to authenticated;

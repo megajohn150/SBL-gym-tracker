@@ -16,7 +16,8 @@ const save = () => {};
 const syncState = () => {};
 const saveLocalSession = () => {};
 const queuePush = () => { cloud.dirty = true; };
-const cloudPush = () => Promise.resolve();
+let pushes = 0;
+const cloudPush = () => { pushes++; return Promise.resolve(); };
 const saveStore = () => { queuePush(); };
 const fixHeads = () => 0;
 const fixCues = () => 0;
@@ -100,5 +101,20 @@ cloudPull().then(() => {
   return cloudPull();
 }).then(() => {
   t.is('pierwsze pobranie dochodzi', store.routines.length, 2);
+
+  /* 4. coś zapisane bez sieci, aplikacja zamknięta, otwarta znowu: pierwsze pobranie
+        nie może położyć chmury na niewysłanym, a skończony trening nie wraca jako sesja */
+  reset();
+  cloud.pulled = false;
+  cloud.rev = 0;
+  cloud.dirty = true;
+  pushes = 0;
+  store.routines = [{ id: 'mine', name: 'offline edit', items: [] }];
+  answer = () => Promise.resolve({ data: { data: shape(), session: { exercises: [] }, rev: 4 } });
+  return cloudPull();
+}).then(() => {
+  t.is('niewysłane zmiany przeżywają restart', store.routines.map((r) => r.name), ['offline edit']);
+  t.is('i idą w górę od razu, żeby spotkać się z chmurą na blokadzie', pushes, 1);
+  t.is('sesja z chmury nie wraca', session, null);
   t.done();
 });

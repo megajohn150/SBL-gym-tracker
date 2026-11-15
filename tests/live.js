@@ -22,8 +22,8 @@ const text = JSON.stringify(payload);
 t.is('the session note does not leave', text.includes('tajna'), false);
 t.is('neither does a note on an exercise', text.includes('bolało') || text.includes('zeszły'), false);
 t.is('the exercise id stays home too', text.includes('"exId"'), false);
-t.is('what the screen draws goes', [payload.name, payload.idx, payload.pausedAt, payload.exercises[0].cue],
-  ['Anterior', 1, 0, '2 | Lowest']);
+t.is('what the screen draws goes', [payload.name, payload.idx, 'pausedAt' in payload, payload.exercises[0].cue],
+  ['Anterior', 1, false, '2 | Lowest']);
 t.is('a set keeps its weight, its tick and its plates',
   payload.exercises[0].sets.map((s) => [s.weight, s.done, s.plate]), [['115.3', true, 2], ['', false, 0]]);
 t.is('a hole in last time stays a hole', payload.exercises[0].prev.length, 2);

@@ -149,6 +149,16 @@ leaderboard ranking), `live` (the payload a friend gets of your running workout 
 not be in it), `feed` (the feed cache: first look downloads all, second nothing, an edit comes
 down alone, a delete disappears, a failed look keeps the feed), `stamps` (the date of every STAMPth workout, and the PR count behind the month report's PRs bars), `hostile` (what a friend's own JSON may do: set counts, weight steps, undrawable posts), `conflict` (the `rev` lock refusing a write: both devices' logs must survive).
 
+Added by the audit: `static` (the whole file: duplicate ids and names, ids asked for and
+missing, ES5 only, the worker's `CORE` list, the pinned supabase-js, RLS and `search_path` in
+the SQL file, push kinds agreeing in three places, every test listed in `run.js`), `posts`
+(`syncPosts`), `ping` (`livePing`), `gone` (`swapWorkouts` against `mergeStores`), `queue`
+(`rq*`), `records` (`num`, the formatters, `countSets`, `recomputeRecords`, resets, `livePrs`,
+`statsFor`), `dates` (`monday`, `weekStreak` at the Monday boundary), `hevy` (the CSV reader,
+months in Polish, warm-ups), `session` (set layout, `fillFrom`, `unpause`, `finishSession`).
+Eighteen files, 207 assertions. Not covered, because it needs a DOM: every `draw*`, navigation,
+gestures, the auth gate, the service worker.
+
 ## Verifying in a browser
 
 Claude cannot sign in (no password), so anything behind auth is unreachable in the preview.
@@ -194,7 +204,7 @@ exercise = { id, name, code, muscle, head, cue, unilateral, step?, resetAt? }   
 routine  = { id, name, items, shared?, follow? }
 item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"; sets is 1..12
 follow   = { by, rid, user, map, side, born, at, dead }
-session  = { name, startedAt, pausedAt, idx, routineId, note?, exercises }
+session  = { name, startedAt, idx, routineId, note?, exercises }
 sessionEx= { exId, name, code, muscle, unilateral, side, cue, step, reps, prev, prevNote, snote?, skipped?, sets }
 set      = { label, weight, reps, rir, plate?, done?, prs?, was? }   // all strings; '' means not logged; prs/was are derived
 workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // records and set.prs/.was are derived
@@ -203,12 +213,17 @@ targets  = { <muscle or head>: { sets?, days? }, Total: { days } }   // Total = 
 injuries = [{ id, name, muscles: [...], date }]
 profile  = { handle, name, bio, pic, unameAt?, noReact? }
 profile.stats = { workouts, streak, records, stamps50 }   // published; records: { <lowercased exercise name>: [heaviest, est. 1RM, best set] }
-live_session.data = { name, startedAt, pausedAt, idx, react, exercises: [{ name, code, muscle, unilateral, cue, reps, prev, sets }] }
+live_session.data = { name, startedAt, idx, react, exercises: [{ name, code, muscle, unilateral, cue, reps, prev, sets }] }
 ```
 
 `loadStore` copies only `handle`, `name`, `bio` and `pic` out of the stored profile, so
 `noReact` and `unameAt` exist in memory only after the first `cloudPull` of a session. More
-localStorage keys than the list above: `tip-sets`, `tip-fill` (the two one-time session tips).
+localStorage keys than the list above: `tip-sets`, `tip-fill` (the two one-time session tips) and
+`dirty` (something is unsent; read at boot into `cloud.dirty`, cleared by a successful push).
+
+A workout cannot be paused any more (removed in 3.4409). `unpause` resumes a session that an
+older version left paused, at boot and when one is adopted from the cloud; `liveSecs` still
+reads `pausedAt` for a friend whose app is old enough to send it.
 
 A finished workout **copies** the exercise name, muscle and unilateral flag into itself, so
 renaming an exercise never rewrites history. Only logged sets (`reps > 0`) are kept; a ticked
@@ -387,13 +402,14 @@ between a request and its answer. Assume it will happen.
 7. **Browser storage dies with the icon.** Removing the PWA from the iOS home screen wipes
    localStorage and IndexedDB. Everything that must survive lives in the `tracker` row.
 
-8. **The first pull of a session is never guarded.** `cloudPull` skips the merge only when
-   `cloud.pulled` is already true, and `cloud.dirty` lives in memory. After any reload the
-   remote `routines`, `exercises`, `targets` and `profile` replace the local ones wholesale.
-   So every path that reloads the page must push first, the way `startOver` does. The
-   `controllerchange` reload at the bottom of BOOT does not.
+8. **Unsent changes must survive a reload.** `cloud.dirty` is mirrored in `tracker-dirty`, so
+   the first `cloudPull` after a restart sees it, skips the merge and pushes instead; the push
+   meets the lock and `cloudMeet` joins the two copies. Without the flag the first pull takes
+   the cloud's `routines`, `exercises`, `targets` and `profile` wholesale and adopts its
+   session. Anything that sets or clears `cloud.dirty` must do the same to the stored flag,
+   and sign-out removes it.
 9. **One early `return` in a shared handler silences everything behind it.** The broadcast
-   handler in `liveOn` serves the live reactions and every database ping. A guard added for
+   handler of the channel (`livePing`) serves the live reactions and every database ping. A guard added for
    one kind, placed before the dispatch, drops them all.
 10. **A value that looks like a number is still a friend's JSON.** `profiles.stats`,
     `posts.data`, `library.data` and `live_session.data` are typed by nobody. `x || 0`,
@@ -455,6 +471,12 @@ How to work with it:
   the run that is 10:00 in Warsaw on the 1st goes through, to everyone with a subscription and
   a post last month. `delete_my_account()` is an RPC that deletes the caller's `auth.users`
   row; every table cascades from it.
+- Not everything on the server came from the SQL file by hand: `new_user()` (a trigger on
+  `auth.users` that gives every new account an empty `tracker` row with `rev` 0) was found
+  live on 15 Nov 2026 and written into the file then. The migration
+  `trigger_functions_off_the_api` took `execute` on every trigger function away from the API
+  roles; a trigger fires without it. `friends_with` and `can_see_post` keep `authenticated`,
+  the policies call them.
 - Before a destructive statement (drop, delete, rewrite of `tracker`, `posts`, `profiles`),
   say what it touches and ask. The database holds the user's real training log, about 190 posts (4 active accounts, 5 accounts in all)
   and friends' data, and there is no branch or backup set up here. Additive changes
@@ -566,37 +588,31 @@ update `graphify-out/`; this file and a grep are the map.
 | Adds attribution to a commit, or a long report after a small change | default habit | one evocative sentence as the message, one or two lines as the reply, in Polish |
 | Says "done" after the edit | no checklist | run the list at the bottom |
 
-## Known bugs, found by the audit of 15 November 2026
+## The audit of 15 November 2026
 
-Open when this file was written. Check whether each still stands before relying on it, and
-do not fix one in passing: each is its own change, with its own test.
+Eleven bugs were found by reading every line, and fixed in 3.4409. They are listed because
+each one is a shape that will come back; the test named after it is what keeps it away.
 
-1. `liveOn`: with Live reactions off, `if (store.profile.noReact && pk !== 'leave') return;`
-   runs before `liveHit`, so `post`, `react`, `prof`, `lib`, `sess`, `foll` and `data:<rev>`
-   are dropped too. The feed, the bell and the other device's log stop arriving live.
-2. `drawUser`: `stats.workouts` goes into markup as `(stats.workouts || 0)` with no escape,
-   before the friends check. `profiles` is world-readable among accounts, so a stranger's
-   profile can run script in whoever opens it. `openStamps` loops on the same raw number.
-3. `syncPosts`: `sigs.posts[w.id]` is set before the upsert; a failed upload of an edited
-   workout is never retried (reproduced in node).
-4. Unsent changes do not survive a reload (trap 8): exercises, routines, targets and profile
-   edited offline are replaced by the cloud's on the next start, and a workout finished
-   offline can come back as a session in progress (`cloudPull` adopts the remote session).
-5. Booted without a network, `loadSocial` is never called again: no feed, friends or live
-   pings until the app is reloaded.
-6. `togglePause` does not call `saveSession()`: a pause is lost on reload and friends do not
-   see it until the next set is touched.
-7. Sign-out and delete-account leave the device's `push_subs` row and browser subscription:
-   the phone keeps the old account's pushes, and the next account sees push as already "On".
-8. `applyFollow` / `copyRoutine` store a friend's exercise `name`, `muscle`, `head` and `code`
-   unchecked; a non-string name later throws in every `x.name.toLowerCase()`.
-9. `paintActs` builds a selector from a post id (`[data-acts="…"]`) without `CSS.escape`;
-   `drawDetail` calls `st.prs.map` on a friend's set without checking it is an array.
-10. Undo of a workout delete, a JSON import and a restored version all fight `gone` (trap 12)
-    once a second device has synced.
-11. Small: `pushOn` and `followSet` ignore `r.error` and report success; the Guide lists
-    "Move up or down" in the exercise menu, which has no such item, and puts "Erase
-    everything" under Account (it is under Data).
+| What was wrong | Where | Kept away by |
+|---|---|---|
+| A stranger's `profiles.stats.workouts` went into markup unescaped | `drawUser`, `openStamps` → `cleanN` | `hostile` |
+| Reactions switched off dropped every database ping | `liveOn` → `livePing` | `ping` |
+| A failed upload of an edited workout was never retried | `syncPosts` (`sent`) | `posts` |
+| Unsent changes were lost on reload; a finished workout came back as a session | `cloudPull`, `queuePush`, `tracker-dirty` | `pull` (case 4) |
+| An app opened offline never loaded friends or the feed | the `online` listener | not tested |
+| Pause was not saved | the feature was removed (`unpause`) | `session` |
+| Sign-out left the push subscription with the old account | `leaveDevice` → `dropPush` | not tested |
+| A friend's exercise name that was not text broke every search | `lentEx`, `fixCues`, `copyRoutine` | `hostile` |
+| A selector and a `.map` built from a friend's JSON | `paintActs`, `medal` | `hostile` |
+| A workout brought back was deleted again by the next device | `swapWorkouts`, the undo of a delete | `gone` |
+| `pushOn` and `followSet` reported success on an error; the Guide described two things that are not there | both, and `s-guide` | not tested |
+
+Still open, and known:
+
+- `shortcut:` only the `online` event retries the first look of an app opened offline.
+- `pushOn` after a refused upsert leaves the browser subscribed, so the row reads "On".
+- `rls_auto_enable()` (Supabase's own event trigger) and leaked-password protection are the
+  two advisor warnings left; the second is a switch in the dashboard, Auth → Passwords.
 
 ## Conventions
 

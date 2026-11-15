@@ -2633,8 +2633,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Sets.</b> Add Set under the list. Swipe a set left, then Delete (unilateral: both sides go).</li>
       <li><b>Medals.</b> A ticked set that beats your heaviest weight, estimated 1RM or best set (weight x reps) gets a medal and a short banner. Tap the medal to see the old record. The first time you do an exercise only sets the bar; nothing to beat yet.</li>
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
-      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle, this workout only); Move up or down; <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
-      <li><b>Top menu (&#8942;).</b> Add exercise, Pause (the clock stops), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
+      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle, this workout only); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
+      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
       <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
     </ul>
@@ -2694,11 +2694,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     <div class="dsec">Settings</div>
     <ul class="gdl">
-      <li><b>Account:</b> Mail and Change password (a new address takes over once its link is opened), sync status, Sign out (this phone keeps no copy), Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm), Delete account (removes the account itself, so the email and nick are free again).</li>
+      <li><b>Account:</b> Mail and Change password (a new address takes over once its link is opened), sync status, Sign out (this phone keeps no copy), Delete account (removes the account itself, so the email and nick are free again).</li>
       <li><b>Notifications:</b> Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
-      <li><b>Data:</b> Export backup / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
+      <li><b>Data:</b> Export backup / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device.</li>
       <li>The version number at the bottom of Settings opens this guide.</li>
     </ul>
@@ -3018,7 +3018,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="pop-menu">
       <button id="menu-add">Add exercise</button>
       <button id="menu-reorder">Reorder exercises</button>
-      <button id="menu-pause">Pause workout</button>
       <button id="menu-discard" class="danger">Discard workout</button>
     </div>
   </div>
@@ -3337,7 +3336,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var root = document.documentElement;
   var meta = document.getElementById('theme-color');
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  var NAMES = { doc: 'Document', receipt: 'Receipt', editorial: 'Editorial', mellow: 'Mellow', cocoa: 'Cocoa' };
   var $ = function (id) { return document.getElementById(id); };
 
   var NOTE_PLUS = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
@@ -3366,7 +3364,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4408';
+  var APP_VERSION = '3.4409';
 
   /* =========================================================
      STORE
@@ -3429,6 +3427,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // drawn into an attribute. Both are forced to what the app itself could have written.
   function cleanSets(v) { return Math.min(12, Math.max(1, Math.floor(Number(v)) || 1)); }
   function cleanStep(v) { return typeof v === 'number' && v > 0 && v <= 100 ? v : 0; }
+  // a count out of somebody's profile row: a whole number, never markup
+  function cleanN(v) { return Math.max(0, Math.floor(Number(v)) || 0); }
 
   function fixCues() {
     var n = 0;
@@ -3445,6 +3445,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
     store.exercises.forEach(function (x) {
       if (typeof x.cue !== 'string') { x.cue = ''; n++; }
+      if (typeof x.name !== 'string') { x.name = String(x.name); n++; }   // every search lowercases it
       if ('step' in x && !cleanStep(x.step)) { delete x.step; n++; }
     });
     return n;
@@ -3474,6 +3475,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     } catch (e) {}
   }
   function saveSession() { saveLocalSession(); queuePush(); touchStale(); queueLive(); }
+  // Pausing is gone. A session paused by an older version gets its clock back as if resumed now.
+  function unpause(s) {
+    if (s && s.pausedAt) { s.startedAt += Date.now() - s.pausedAt; s.pausedAt = null; }
+    return s;
+  }
 
   /* =========================================================
      CLOUD
@@ -3507,7 +3513,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   var sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
   var me = null;
-  var cloud = { rev: 0, timer: null, dirty: false, pulled: false, dataSig: '', sessSig: '' };
+  // `dirty` is also kept on the device: a reload must still know there is something unsent
+  var cloud = { rev: 0, timer: null, dirty: !!load('dirty'), pulled: false, dataSig: '', sessSig: '' };
 
   // the red dot after the Profile tab: changes are waiting and the cloud is out of reach
   function syncDot(on) {
@@ -3594,8 +3601,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         // would quietly undo it — and the change would be made, undone and
         // made again, every time, for ever. Ours goes up first instead, and
         // the next look will have it.
-        if (r.data && asked !== null && (cloud.dirty || sigOf(store) !== asked)) {
+        // The same holds for the first look after a reload that left something unsent
+        // (written with no signal, then the app was closed): the push meets the lock and
+        // joins the two copies, where a merge would take the cloud's routines over ours.
+        if (r.data && (cloud.dirty || (asked !== null && sigOf(store) !== asked))) {
           syncState('ok');
+          if (asked === null) return cloudPush();
           queuePush();
           return;
         }
@@ -3617,7 +3628,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
         // never drop a workout that is running here; adopt one from elsewhere
         if (r.data.session && r.data.session.exercises && !session) {
-          session = r.data.session;
+          session = unpause(r.data.session);
           saveLocalSession();
         }
         redrawAll();
@@ -3636,7 +3647,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var dataSig = sigOf(store), sessSig = sigOf(session);
     var sendData = force || dataSig !== cloud.dataSig;
     var sendSess = force || sessSig !== cloud.sessSig;
-    if (!sendData && !sendSess) { cloud.dirty = false; syncState('ok'); return Promise.resolve(); }
+    if (!sendData && !sendSess) { cloud.dirty = false; save('dirty', ''); syncState('ok'); return Promise.resolve(); }
 
     syncState('busy');
     var next = cloud.rev + 1;
@@ -3656,6 +3667,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
       cloud.rev = next;
       cloud.dirty = false;
+      save('dirty', '');
       cloud.dataSig = dataSig;
       cloud.sessSig = sessSig;
       syncState('ok');
@@ -3679,8 +3691,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // one write per burst of changes, not one per keystroke
   function queuePush() {
-    if (!me) return;
+    // noted before the sign-in check: an app opened with no network has no user yet
     cloud.dirty = true;
+    save('dirty', '1');
+    if (!me) return;
     clearTimeout(cloud.timer);
     cloud.timer = setTimeout(function () { cloudPush(); }, 1500);
   }
@@ -3748,6 +3762,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function openStamps(n, dates) {
     var out = '';
+    n = Math.min(cleanN(n), 50000);              // a friend's count, so it is not trusted to end the loop
+    if (!Array.isArray(dates)) dates = [];
     for (var k = Math.floor(n / STAMP) * STAMP; k >= STAMP; k -= STAMP) {
       var d = dates[k / STAMP - 1];     // a friend on an older app has no dates to give
       out += '<div class="stmprow">' + stampTag(k, true).replace(' data-stamps="' + k + '"', '') +
@@ -3885,7 +3901,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // note on an exercise and the "last time" note are nobody else's business.
   function livePayload() {
     return {
-      name: session.name, startedAt: session.startedAt, pausedAt: session.pausedAt || 0, idx: session.idx,
+      name: session.name, startedAt: session.startedAt, idx: session.idx,
       react: !store.profile.noReact,          // friends see their reaction buttons greyed out when this is false
       exercises: session.exercises.map(function (e) {
         return {
@@ -3914,6 +3930,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     q.then(function (r) { if (!r.error) livePub = s; });
   }
 
+  // pausedAt is read here only for a friend whose app is old enough to still pause
   function liveSecs(d) { return Math.floor(((d.pausedAt || Date.now()) - d.startedAt) / 1000); }
 
   // everybody training right now whom the database lets you see
@@ -4197,12 +4214,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (!cloud.pulled) { social.dirty = true; return Promise.resolve(); }
     return sb.from('posts').select('id').eq('user_id', me.id).then(function (r) {
       if (r.error) { social.dirty = true; return; }
-      var have = {}, mine = {}, add = [];
+      var have = {}, mine = {}, add = [], sent = {};
       (r.data || []).forEach(function (row) { have[row.id] = 1; });
       store.workouts.forEach(function (w) {
         mine[w.id] = 1;
         var s = sigOf(w);
-        if (!have[w.id] || sigs.posts[w.id] !== s) { add.push(postRow(w)); sigs.posts[w.id] = s; }
+        if (!have[w.id] || sigs.posts[w.id] !== s) { add.push(postRow(w)); sent[w.id] = s; }
       });
       var drop = Object.keys(have).filter(function (id) { return !mine[id]; });
       Object.keys(sigs.posts).forEach(function (id) { if (!mine[id]) delete sigs.posts[id]; });
@@ -4213,6 +4230,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (!jobs.length) { sigsSave(); return; }
       return Promise.all(jobs).then(function (res) {
         if (res.some(function (x) { return x && x.error; })) { social.dirty = true; return; }
+        // only now: a signature noted before the answer made a failed upload look finished
+        Object.keys(sent).forEach(function (id) { sigs.posts[id] = sent[id]; });
         sigsSave();
       });
     });
@@ -4258,6 +4277,24 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   function liveSay(st) { liveSt = st; drawLiveRow(); }
 
+  // One channel carries two things: a friend watching your workout, which is shown and not
+  // queued (there is nothing to reload), and the database's own news. Switching the
+  // reactions off silences the first kind only.
+  function livePing(m) {
+    var p = (m && m.payload) || {}, pk = p.k;
+    var peeky = pk === 'like' || pk === 'flex' || pk === 'say' || pk === 'look';
+    if (peeky && store.profile.noReact) return;
+    if (pk === 'like') { likePop(p.n); return; }
+    if (pk === 'flex') { likePop(p.n, FLEX_ON); return; }
+    if (pk === 'say') {
+      likePop(p.n, '<span class="saytxt">' + esc(String(p.t || '').slice(0, 20)) + '</span>', true);
+      return;
+    }
+    if (pk === 'look') { watchOn(p.n); return; }
+    if (pk === 'leave') { watchOff(p.n); return; }
+    liveHit(pk || 'react');
+  }
+
   function liveOn() {
     if (!sb || !me || liveCh) return;
     var who = me.id;
@@ -4269,20 +4306,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     Promise.resolve(sb.realtime.setAuth()).catch(function () {}).then(function () {
       if (!liveCh || liveCh.id !== who || !me || me.id !== who) return;
       liveCh.ch = sb.channel('u:' + who, { config: { private: true } })
-        .on('broadcast', { event: 'ping' }, function (m) {
-          // a friend watching your workout: shown, not queued, there is nothing to reload
-          var pk = m && m.payload && m.payload.k;
-          if (store.profile.noReact && pk !== 'leave') return;       // reactions are switched off
-          if (pk === 'like') { likePop(m.payload.n); return; }
-          if (pk === 'flex') { likePop(m.payload.n, FLEX_ON); return; }
-          if (pk === 'say') {
-            likePop(m.payload.n, '<span class="saytxt">' + esc(String(m.payload.t || '').slice(0, 20)) + '</span>', true);
-            return;
-          }
-          if (pk === 'look') { watchOn(m.payload.n); return; }
-          if (pk === 'leave') { watchOff(m.payload.n); return; }
-          liveHit((m && m.payload && m.payload.k) || 'react');
-        })
+        .on('broadcast', { event: 'ping' }, livePing)
         .subscribe(function (st) {
           if (!liveCh || liveCh.id !== who) return;     // already taken down here
           if (st === 'SUBSCRIBED') { liveTry = 0; liveSay('on'); return; }
@@ -4388,7 +4412,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     liveCheck();
     refreshSocial();
   });
-  addEventListener('online', function () { liveCheck(); refreshSocial(true); });
+  addEventListener('online', function () {
+    // An app opened with no network never got its first look at the log or at who you are.
+    // shortcut: only this event retries, add one on return to the app if iOS proves to skip it
+    if (me && !social.username && $('uname').hidden) {
+      (cloud.pulled || cloud.dirty ? Promise.resolve() : cloudPull()).then(loadSocial);
+    }
+    liveCheck();
+    refreshSocial(true);
+  });
 
   function loadFollows() {
     if (!sb || !me) return Promise.resolve();
@@ -4749,7 +4781,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var q = on
       ? sb.from('follows').insert({ follower: me.id, followee: id })
       : sb.from('follows').delete().eq('follower', me.id).eq('followee', id);
-    return q.then(function () {
+    return q.then(function (r) {
+      if (r && r.error) { toast('Could not ' + (on ? 'follow' : 'unfollow')); return; }
       if (on) social.following[id] = 1; else delete social.following[id];
       drawUser();
       return loadFollows();
@@ -4778,7 +4811,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var follows = !!social.following[id];
     $('u-title').textContent = p.username || 'Profile';
 
-    var stats = p.stats || {};
+    // the row is whatever its owner wrote into it, and any account can read it
+    var raw = p.stats || {}, stats = { workouts: cleanN(raw.workouts), streak: cleanN(raw.streak) };
     var head = '<div class="ptop"><span class="pavwrap">' + avatarTag(66, '', p) +
       (stats.workouts >= STAMP ? stampTag(Math.floor(stats.workouts / STAMP) * STAMP) : '') + '</span>' +
       '<span class="pid"><span class="pname">' + esc(p.name || p.username || '') + '</span>' +
@@ -5185,26 +5219,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         return e.name.toLowerCase() === String(src.name).toLowerCase();
       })[0];
       if (!mineEx) {
-        mineEx = {
-          id: uid(), name: src.name, code: src.code || deriveCode(src.name),
-          muscle: src.muscle, head: src.head || '', cue: src.cue || '',
-          unilateral: !!src.unilateral
-        };
-        if (cleanStep(src.step)) mineEx.step = src.step;
+        mineEx = lentEx(src);
         store.exercises.push(mineEx);
       }
       map[it.exId] = mineEx.id;
     });
-    var copy = JSON.parse(JSON.stringify(rt));
-    copy.id = uid();
-    // a copy is yours alone: it is not followed, and handing it on further is
-    // the original author's call, not yours
-    delete copy.shared;
-    delete copy.follow;
-    delete copy.from;
-    copy.name = routineName(copy.name);
-    copy.items = (copy.items || []).filter(function (it) { return map[it.exId]; })
-      .map(function (it) { it.exId = map[it.exId]; return it; });
+    // A copy is yours alone: it is not followed, and handing it on further is the original
+    // author's call, not yours. It is built field by field, so nothing else of theirs rides in.
+    var copy = {
+      id: uid(), name: routineName(String(rt.name || 'Routine')),
+      items: (rt.items || []).filter(function (it) { return map[it.exId]; }).map(function (it) {
+        return { exId: map[it.exId], sets: cleanSets(it.sets), reps: String(it.reps || '').slice(0, 20),
+                 side: byId(map[it.exId]).unilateral ? (it.side === 'L' ? 'L' : 'R') : null };
+      })
+    };
     store.routines.push(copy);
     saveStore();
     drawRoutines();
@@ -5255,6 +5283,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     }).join('\u0002');
   }
 
+  // A friend's exercise as one of yours. Their library is JSON they wrote themselves: every
+  // field is forced to the type the app would have written, because the name is lowercased
+  // by every search and a name that is not text would stop them all.
+  function lentEx(src) {
+    var name = String(src.name || 'Exercise').slice(0, 80);
+    var x = {
+      id: uid(), name: name, code: String(src.code || deriveCode(name)).slice(0, 7),
+      muscle: String(src.muscle || ''), head: String(src.head || ''),
+      cue: String(src.cue || '').slice(0, 120), unilateral: !!src.unilateral
+    };
+    if (cleanStep(src.step)) x.step = src.step;
+    return x;
+  }
+
   function applyFollow(r, src, theirEx) {
     var f = r.follow, before = rtSay(r.name, r.items), items = [];
     f.side = f.side || {};                      // whichever sides you picked
@@ -5268,12 +5310,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           return e.name.toLowerCase() === String(their.name).toLowerCase();
         })[0];
         if (!mine) {
-          mine = {
-            id: uid(), name: their.name, code: their.code || deriveCode(their.name),
-            muscle: their.muscle, head: their.head || '', cue: their.cue || '',
-            unilateral: !!their.unilateral
-          };
-          if (cleanStep(their.step)) mine.step = their.step;
+          mine = lentEx(their);
           store.exercises.push(mine);
         }
         f.map[it.exId] = mine.id;
@@ -5285,16 +5322,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           mine.name.toLowerCase() === String(their.name).toLowerCase()) {
         f.born[mine.id] = mine.name;
       }
-      if (lent && f.born[mine.id] === mine.name && mine.name !== their.name) {
-        mine.name = their.name;
-        mine.code = their.code || mine.code;
-        f.born[mine.id] = their.name;
+      if (lent && f.born[mine.id] === mine.name && mine.name !== their.name && typeof their.name === 'string' && their.name) {
+        mine.name = their.name.slice(0, 80);
+        mine.code = String(their.code || mine.code).slice(0, 7);
+        f.born[mine.id] = mine.name;
       }
       // what is in the routine is theirs; how you log it is yours, so the
       // side you start on survives every change they make
       items.push({
-        exId: mine.id, sets: cleanSets(it.sets), reps: it.reps || '',
-        side: mine.unilateral ? (f.side[mine.id] || it.side || 'R') : null
+        exId: mine.id, sets: cleanSets(it.sets), reps: String(it.reps || '').slice(0, 20),
+        side: mine.unilateral ? (f.side[mine.id] || (it.side === 'L' ? 'L' : 'R')) : null
       });
     });
     r.items = items;
@@ -5309,7 +5346,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var lib = (userView && userView.lib) || {}, who = userView && userView.id;
     if (!rt || !who) return;
     var r = {
-      id: uid(), name: routineName(rt.name || 'Routine'), items: [],
+      id: uid(), name: routineName(String(rt.name || 'Routine')), items: [],
       follow: {
         by: who, rid: rt.id, map: {}, at: 0, dead: 0,
         user: ((userView.p || {}).username) || 'a friend'
@@ -5412,7 +5449,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     // push it into this account. Drop it and start over clean.
     var prevUid = load('uid');
     if (prevUid && prevUid !== me.id) {
-      ['data', 'session', 'feed-' + prevUid].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
+      ['data', 'session', 'dirty', 'feed-' + prevUid].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
       save('uid', me.id);
       location.reload();
       return;
@@ -7304,7 +7341,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function sessionSeconds() {
     if (!session) return 0;
-    return Math.floor(((session.pausedAt || Date.now()) - session.startedAt) / 1000);
+    return Math.floor((Date.now() - session.startedAt) / 1000);
   }
   function clockText(t) {
     return Math.floor(t / 3600) + ':' + pad2(Math.floor(t / 60) % 60) + ':' + pad2(t % 60);
@@ -7367,7 +7404,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     session = {
       name: routine.name,
       startedAt: Date.now(),
-      pausedAt: null,
       idx: 0,
       routineId: routine.id,
       exercises: routine.items.map(function (it) {
@@ -7379,7 +7415,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   $('rt-empty-start').addEventListener('click', function () {
-    session = { name: 'Workout', startedAt: Date.now(), pausedAt: null, idx: 0, routineId: null, exercises: [] };
+    session = { name: 'Workout', startedAt: Date.now(), idx: 0, routineId: null, exercises: [] };
     touchStale();
     push('session');
   });
@@ -8379,6 +8415,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     setTimeout(function () { val.textContent = 'JSON'; }, 2500);
   }
 
+  // The whole log swapped for another copy of it: a backup file, a previous version. Every
+  // device keeps the list of deleted ids and it only ever grows, so taking an id off it here
+  // lasts until the next device syncs. What the new copy lacks is therefore marked deleted,
+  // and what it brings back from the dead comes back under a new id.
+  function swapWorkouts(list) {
+    var dead = {}, has = {};
+    store.gone.forEach(function (id) { dead[id] = 1; });
+    list.forEach(function (w) { if (dead[w.id]) w.id = uid(); has[w.id] = 1; });
+    store.workouts.forEach(function (w) { if (!has[w.id] && !dead[w.id]) store.gone.push(w.id); });
+    store.workouts = list;
+  }
+
   function importData(text) {
     var raw = null;
     try { raw = JSON.parse(text); } catch (e) {}
@@ -8393,12 +8441,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       'Import', function () {
         store.exercises = raw.exercises;
         store.routines = (raw.routines || []).map(migrate);
-        store.workouts = raw.workouts;
-        // a file brings back workouts that may have been deleted since; the list of deleted
-        // ids is not in the file, and would strip them again on the next pull
-        var back = {};
-        raw.workouts.forEach(function (w) { back[w.id] = 1; });
-        store.gone = store.gone.filter(function (id) { return !back[id]; });
+        swapWorkouts(raw.workouts);
         if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
         if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
         if (raw.profile) {
@@ -8537,8 +8580,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   function leaveDevice(out) {
     var id = me && me.id;
-    Promise.resolve(out()).catch(function () {}).then(function () {
-      ['uid', 'music', 'data', 'session'].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
+    // before signing out, while the row can still be deleted: or this phone would keep
+    // getting the old account's notifications, and the next account would see push as on
+    dropPush().then(out).catch(function () {}).then(function () {
+      ['uid', 'music', 'data', 'session', 'dirty'].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
       // "this device keeps no copy": friends' cached sessions and the saved versions go too
       if (id) localStorage.removeItem('tracker-feed-' + id);
       try { indexedDB.deleteDatabase('tracker-snaps'); } catch (e) {}
@@ -8694,7 +8739,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         return sb.from('push_subs').upsert({
           user_id: me.id, endpoint: sub.endpoint, p256dh: k.p256dh, auth: k.auth
         }, { onConflict: 'endpoint' });
-      }).then(function () {
+      }).then(function (r) {
+        if (r && r.error) throw r.error;         // the browser said yes, the server did not
         pushLive = true;
         toast('Notifications on');
         drawPushRow();
@@ -8705,14 +8751,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
   }
 
-  function pushOff() {
-    pushSub().then(function (sub) {
+  // this device stops receiving: the browser's subscription and its row both go
+  function dropPush() {
+    return pushSub().then(function (sub) {
       if (!sub) return null;
       var url = sub.endpoint;
       return sub.unsubscribe().then(function () {
         if (sb && me) return sb.from('push_subs').delete().eq('endpoint', url);
       });
-    }).then(function () {
+    }).catch(function () {});
+  }
+
+  function pushOff() {
+    dropPush().then(function () {
       pushLive = false;
       toast('Notifications off');
       drawPushRow();
@@ -9194,9 +9245,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           snapTake(true, function () {
             store = {
               exercises: raw.exercises || [], routines: (raw.routines || []).map(migrate),
-              workouts: raw.workouts || [], gone: raw.gone || [], targets: raw.targets || {},
+              workouts: store.workouts, gone: store.gone, targets: raw.targets || {},
               injuries: raw.injuries || [], profile: raw.profile || store.profile
             };
+            swapWorkouts(raw.workouts || []);
             saveStore();
             redrawAll();
             cloudPush(true);                     // the cloud row is overwritten, not merged
@@ -9507,7 +9559,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   // One key can be on screen three times — the card, the open workout, the header.
   function paintActs(k) {
-    document.querySelectorAll('[data-acts="' + k + '"]').forEach(function (box) {
+    // compared, not put into a selector: a post id is text its poster chose
+    document.querySelectorAll('[data-acts]').forEach(function (box) {
+      if (box.dataset.acts !== k) return;
       box.innerHTML = box.dataset.head === '1' ? headActs(k)
         : actsInner(k, box.dataset.full === '1');
     });
@@ -11773,7 +11827,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   function medal(st, name) {
-    if (!st.prs || !st.prs.length) return '';
+    if (!Array.isArray(st.prs) || !st.prs.length) return '';   // a friend's set may carry anything
     return '<button class="medal" data-rec="' + esc(JSON.stringify(setRec(st, name))) + '">' + MEDAL_SVG + '</button>';
   }
 
@@ -12039,7 +12093,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     if (act === 'delete') {
       askConfirm('Delete workout?', 'It will be removed from Home.', 'Delete', function () {
-        var dead = detailW;
+        var dead = detailW, rev0 = cloud.rev;
         store.workouts = store.workouts.filter(function (x) { return x.id !== dead.id; });
         if (store.gone.indexOf(dead.id) < 0) store.gone.push(dead.id);
         recomputeRecords();
@@ -12048,7 +12102,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         popTo('home');
         drawHome();
         toastUndo('Workout deleted', function () {
-          store.gone = store.gone.filter(function (id) { return id !== dead.id; });
+          // Once the deletion has gone up, other devices remember the id for good (see
+          // swapWorkouts), so the workout returns under a new one.
+          if (cloud.rev !== rev0) dead.id = uid();
+          else store.gone = store.gone.filter(function (id) { return id !== dead.id; });
           store.workouts.push(dead);
           store.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
           recomputeRecords();
@@ -12301,36 +12358,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     askConfirm('Discard workout?', 'Everything logged in this session will be lost.', 'Discard', dropSession);
   }
 
-  function togglePause() {
-    if (!session) return;
-    if (session.pausedAt) {
-      session.startedAt += Date.now() - session.pausedAt;
-      session.pausedAt = null;
-    } else {
-      session.pausedAt = Date.now();
-    }
-    paintClocks();
-    drawDock();
-  }
-
   function paintClocks() {
     if (!session) return;
-    var txt = clockText(sessionSeconds()), paused = !!session.pausedAt;
+    var txt = clockText(sessionSeconds());
     $('sess-clock').textContent = txt;
-    $('sess-clock').classList.toggle('paused', paused);
     $('dock-time').textContent = txt;
-    $('dock-time').classList.toggle('paused', paused);
   }
 
   $('sess-menu').addEventListener('click', function () {
     if (!session) return;
-    $('menu-pause').textContent = session.pausedAt ? 'Resume workout' : 'Pause workout';
     $('menu-reorder').hidden = session.exercises.length < 2;
     $('menu-sheet').hidden = false;
   });
   function closeMenu() { $('menu-sheet').hidden = true; }
   document.querySelector('[data-menu-close]').addEventListener('click', closeMenu);
-  $('menu-pause').addEventListener('click', function () { closeMenu(); togglePause(); });
   $('menu-discard').addEventListener('click', function () { closeMenu(); discardSession(); });
 
   // the closing card offers the same thing as the menu: one more exercise before you end
@@ -12530,8 +12571,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     dockShow();
     if (live) {
       $('dock-name').textContent = session.name;
-      $('dock-card').querySelector('.lab').textContent =
-        session.pausedAt ? 'Workout paused' : 'Workout in progress';
       paintClocks();
     }
   }
@@ -12843,7 +12882,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
 
   setInterval(function () {
-    if (session && !session.pausedAt) paintClocks();
+    if (session) paintClocks();
     tickRest();
   }, 1000);
 
@@ -12869,7 +12908,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function applySkin(skin) {
     root.setAttribute('data-skin', skin);
     applyMode(load('mode') || 'system');          // a locked skin changes what the mode means
-    if ($('theme-value')) $('theme-value').textContent = NAMES[skin];
     document.querySelectorAll('[data-pick-theme]').forEach(function (b) {
       b.setAttribute('aria-pressed', String(b.dataset.pickTheme === skin));
     });
@@ -12964,7 +13002,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   drawRoutines();
   try {
     var live = JSON.parse(load('session') || 'null');
-    if (live && live.exercises) session = live;
+    if (live && live.exercises) session = unpause(live);
   } catch (e) {}
 
   recomputeRecords();
