@@ -371,9 +371,13 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 /* the live workout's header is two rows: name and menu, then the clock and the set count under it; its own bottom rule moves to the second row */
 #s-session .sbar{border-bottom:0;padding-top:calc(env(safe-area-inset-top) + 6px);padding-bottom:4px}
 #s-session .sbar h1{text-align:center}
-.sessinfo{flex:none;z-index:6;background:var(--bg);display:flex;justify-content:center;align-items:baseline;padding:5px var(--pad);border-top:1px dotted var(--line);border-bottom:var(--dash)}
+.sessinfo{flex:none;z-index:6;background:var(--bg);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;text-align:center;border-top:1px dotted var(--line);border-bottom:var(--dash)}
+.sessinfo > span{padding:5px 0}
+.sessinfo > span:not(:last-child){border-right:1px dotted var(--line)}
+/* the set count is hidden for an empty workout, but its cell stays so the other three keep their places */
+.sessinfo > [hidden]{display:block;visibility:hidden}
 .sessinfo .clock{font-size:.8rem}
-.sessinfo .sesscnt{font-size:.7rem}
+.sessinfo .sesscnt{font-size:.7rem;margin-left:0}
 .eyepop{
   position:fixed;right:8px;bottom:calc(env(safe-area-inset-bottom) + 68px);z-index:60;
   display:flex;align-items:flex-end;gap:6px;pointer-events:none;
@@ -3462,7 +3466,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4441';
+  var APP_VERSION = '3.4442';
 
   /* =========================================================
      STORE
