@@ -2746,7 +2746,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
       <li><b>Three tabs.</b> Home: your log and your friends'. Workout: your routines. Profile: charts, stats, friends, settings.</li>
       <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back.</li>
-      <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;.</li>
+      <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;. The import button at the top of the Workout tab brings in a starter pack (SBL or Bro Lifter): all of its exercises, and the routines you tick. An exercise you already have by name is not added twice; a routine that is already there is skipped, and one with the same name but other exercises comes in as "Name 2".</li>
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go.</li>
     </ul>
 
@@ -3563,7 +3563,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4463';
+  var APP_VERSION = '3.4464';
 
   /* =========================================================
      STORE
@@ -6745,7 +6745,166 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     exDel = {};
     drawExercises();
   });
-  // the starter packs window: for now it only looks the part; Import closes it and nothing is imported
+  // Starter packs: the exercises and routines a window can bring into the library. A routine item is
+  // [exercise name, sets, reps, side]; only exercises a routine uses are in a pack.
+  var PACKS = {
+    sbl: {
+      exercises: [
+      { name: 'Chest Fly (Machine)', code: 'CHEST', muscle: 'Chest', step: 7, cue: '2  |  Lowest' },
+      { name: 'Leg Extension (Machine)', code: 'LEG EXT', muscle: 'Quads', unilateral: true, step: 7, cue: '1  |  Lowest' },
+      { name: 'Lateral Raise (Machine)', code: 'SIDE', muscle: 'Shoulders', head: 'Side delt', unilateral: true, step: 7, cue: '2  |  Middle  |  2' },
+      { name: 'Incline Chest Press (Machine)', code: 'INCLINE', muscle: 'Chest', step: 1.25, cue: 'Put 5kg plates between pad and machine arm' },
+      { name: 'Leg Press (Machine)', code: 'LEG PRS', muscle: 'Quads', step: 11, cue: 'Second closest' },
+      { name: 'Shoulder Press (Machine)', code: 'OHP', muscle: 'Shoulders', head: 'Front delt', step: 7, cue: 'Lowest' },
+      { name: 'Tricep Extension (Cable)', code: 'TRI EXT', muscle: 'Triceps', unilateral: true, step: 2.3, cue: 'Height : 16  |  Supinated grip' },
+      { name: 'Hip Adduction (Machine)', code: 'ADDUCT', muscle: 'Adductors', step: 7, cue: '4th dot' },
+      { name: 'Calf Press (Machine)', code: 'CALVES', muscle: 'Calves', step: 11, cue: 'Furthest' },
+      { name: 'Lat Pulldown (Cable)', code: 'LAT PUL', muscle: 'Lats', step: 7, cue: 'Daisy chained' },
+      { name: 'Close Grip Lat Pulldown (Cable)', code: 'CLOSE', muscle: 'Lats', step: 7 },
+      { name: 'Lying Leg Curl (Machine)', code: 'HAM', muscle: 'Hamstrings', step: 1.1, cue: 'Lowest  |  -1  |  2' },
+      { name: 'Kelso Shrug (Cable Machine)', code: 'KELSO', muscle: 'Upper back', step: 7, cue: '9  |  Lowest' },
+      { name: 'AB Crunch (Machine)', code: 'CRUNCH', muscle: 'Abs', step: 7 },
+      { name: 'Toosa Curl (Dumbbell)', code: 'TOOSA', muscle: 'Biceps', step: 2 },
+      { name: 'Rear Delt Fly (Cable)', code: 'REAR', muscle: 'Shoulders', head: 'Rear delt', unilateral: true, step: 2.3, cue: 'Height : 11' },
+      { name: 'Reverse Curl (Cable)', code: 'BRACHII', muscle: 'Forearms', unilateral: true, step: 2.3, cue: 'Height : 5' },
+      { name: '45° Back Extension (Barbell)', code: '45 DEG', muscle: 'Hamstrings', step: 1.25 },
+      ],
+      routines: [
+      { name: 'Anterior', items: [
+        [ 'Chest Fly (Machine)', 2, '5-9', null ],
+        [ 'Leg Extension (Machine)', 2, '4-7', 'L' ],
+        [ 'Lateral Raise (Machine)', 2, '6-10', 'R' ],
+        [ 'Incline Chest Press (Machine)', 1, '4-8', null ],
+        [ 'Leg Press (Machine)', 1, '4-10', null ],
+        [ 'Shoulder Press (Machine)', 2, '4-10', null ],
+        [ 'Tricep Extension (Cable)', 2, '4-10', 'R' ],
+        [ 'Hip Adduction (Machine)', 1, '4-10', null ],
+        [ 'Calf Press (Machine)', 2, '6-10', null ],
+      ] },
+      { name: 'Posterior', items: [
+        [ 'Lat Pulldown (Cable)', 2, '5-10', null ],
+        [ 'Close Grip Lat Pulldown (Cable)', 1, '5-8', null ],
+        [ 'Lying Leg Curl (Machine)', 2, '5-10', null ],
+        [ 'Kelso Shrug (Cable Machine)', 2, '5-10', null ],
+        [ 'AB Crunch (Machine)', 2, '6-12', null ],
+        [ 'Toosa Curl (Dumbbell)', 2, '5-10', null ],
+        [ 'Rear Delt Fly (Cable)', 2, '5-10', 'L' ],
+        [ 'Reverse Curl (Cable)', 1, '4-8', 'L' ],
+        [ '45° Back Extension (Barbell)', 1, '6-10', null ],
+      ] },
+      { name: 'Full Body', items: [
+        [ 'Lat Pulldown (Cable)', 2, '5-10', null ],
+        [ 'Close Grip Lat Pulldown (Cable)', 1, '5-8', null ],
+        [ 'Chest Fly (Machine)', 2, '5-9', null ],
+        [ 'Leg Extension (Machine)', 2, '4-7', 'L' ],
+        [ 'Incline Chest Press (Machine)', 1, '4-8', null ],
+        [ 'Kelso Shrug (Cable Machine)', 1, '5-10', null ],
+        [ 'Lateral Raise (Machine)', 1, '6-10', 'R' ],
+        [ 'Leg Press (Machine)', 1, '4-10', null ],
+        [ 'Lying Leg Curl (Machine)', 2, '5-10', null ],
+        [ 'Shoulder Press (Machine)', 1, '4-10', null ],
+        [ 'Toosa Curl (Dumbbell)', 1, '5-10', null ],
+        [ 'Tricep Extension (Cable)', 1, '4-10', 'R' ],
+        [ 'Rear Delt Fly (Cable)', 1, '5-10', 'R' ],
+        [ 'AB Crunch (Machine)', 1, '6-12', null ],
+        [ 'Calf Press (Machine)', 1, '6-10', null ],
+      ] },
+      ]
+    },
+    bro: {
+      exercises: [
+        { name: 'Bench Press (Barbell)', muscle: 'Chest' },
+        { name: 'Incline Chest Press (Dumbbell)', muscle: 'Chest' },
+        { name: 'Shoulder Press (Dumbbell)', muscle: 'Shoulders', head: 'Front delt' },
+        { name: 'Lateral Raise (Dumbbell)', muscle: 'Shoulders', head: 'Side delt' },
+        { name: 'Triceps Pushdown (Cable)', muscle: 'Triceps' },
+        { name: 'Lat Pulldown (Cable)', muscle: 'Lats' },
+        { name: 'Seated Row (Cable)', muscle: 'Upper back' },
+        { name: 'Bench Supported Row (Dumbbell)', muscle: 'Lats', unilateral: true },
+        { name: 'Face Pull (Cable)', muscle: 'Shoulders', head: 'Rear delt' },
+        { name: 'Bicep Curl (Dumbbell)', muscle: 'Biceps' },
+        { name: 'Hammer Curl (Dumbbell)', muscle: 'Biceps' },
+        { name: 'Squat (Barbell)', muscle: 'Quads' },
+        { name: 'Leg Press (Machine)', muscle: 'Quads' },
+        { name: 'Lying Leg Curl (Machine)', muscle: 'Hamstrings' },
+        { name: 'Leg Extension (Machine)', muscle: 'Quads' },
+        { name: 'Standing Calf Raise (Machine)', muscle: 'Calves' },
+        { name: 'Plank (Bodyweight)', muscle: 'Abs' }
+      ],
+      routines: [
+        { name: 'Push', items: [
+          ['Bench Press (Barbell)', 4, '8-12', null],
+          ['Incline Chest Press (Dumbbell)', 4, '10-12', null],
+          ['Shoulder Press (Dumbbell)', 4, '8-12', null],
+          ['Lateral Raise (Dumbbell)', 4, '12-15', null],
+          ['Triceps Pushdown (Cable)', 4, '10-15', null]
+        ] },
+        { name: 'Pull', items: [
+          ['Lat Pulldown (Cable)', 4, '8-12', null],
+          ['Seated Row (Cable)', 4, '10-12', null],
+          ['Bench Supported Row (Dumbbell)', 4, '10-12', null],
+          ['Face Pull (Cable)', 3, '12-15', null],
+          ['Bicep Curl (Dumbbell)', 4, '10-12', null],
+          ['Hammer Curl (Dumbbell)', 4, '10-12', null]
+        ] },
+        { name: 'Legs', items: [
+          ['Squat (Barbell)', 4, '8-12', null],
+          ['Leg Press (Machine)', 4, '10-12', null],
+          ['Lying Leg Curl (Machine)', 4, '10-15', null],
+          ['Leg Extension (Machine)', 4, '10-15', null],
+          ['Standing Calf Raise (Machine)', 4, '12-15', null],
+          ['Plank (Bodyweight)', 4, '30-45s', null]
+        ] }
+      ]
+    }
+  };
+
+  // The same exercise is the one with the same name: it is never added twice, and a routine uses the one
+  // that is already there. A routine that already exists under that name (or "name 2", "name 3") with the same
+  // exercises is left alone; with other exercises it comes in as the next free "name N". A unilateral
+  // exercise always has a side, a standard one never does, whichever of the two the library already holds.
+  // `wanted` lists the routines to bring; the exercises of the pack always come. Returns what happened.
+  function importPack(key, wanted) {
+    var pack = PACKS[key], out = { ex: 0, rt: 0, skipped: 0, renamed: 0 }, mine = {};
+    if (!pack) return out;
+    var setKey = function (items) {
+      var seen = {};
+      items.forEach(function (it) { seen[it.exId] = true; });
+      return Object.keys(seen).sort().join('|');
+    };
+    pack.exercises.forEach(function (p) {
+      var x = store.exercises.filter(function (e) { return nameKey(e.name) === nameKey(p.name); })[0];
+      if (!x) {
+        x = { id: uid(), name: p.name, code: (p.code || deriveCode(p.name)).toUpperCase().slice(0, 7),
+          muscle: p.muscle, head: p.head || '', cue: p.cue || '', unilateral: !!p.unilateral };
+        if (p.step) x.step = p.step;
+        store.exercises.push(x);
+        out.ex++;
+      }
+      mine[p.name] = x;
+    });
+    pack.routines.forEach(function (r) {
+      if (wanted.indexOf(r.name) < 0) return;
+      var items = r.items.map(function (it) {
+        var x = mine[it[0]];
+        return { exId: x.id, sets: it[1], reps: it[2], side: x.unilateral ? (it[3] || 'R') : null };
+      });
+      var base = nameKey(r.name), same = setKey(items);
+      var have = store.routines.some(function (x) {
+        var n = nameKey(x.name);
+        return n.indexOf(base) === 0 && /^( \d+)?$/.test(n.slice(base.length)) && setKey(x.items) === same;
+      });
+      if (have) { out.skipped++; return; }
+      var name = routineName(r.name);
+      if (name !== r.name) out.renamed++;
+      store.routines.push({ id: uid(), name: name, items: items });
+      out.rt++;
+    });
+    if (out.ex || out.rt) saveStore();
+    return out;
+  }
+
+  // the starter packs window
   var packKey = 'sbl';
   var PACK_RT = { sbl: ['Anterior', 'Posterior', 'Full Body'], bro: ['Push', 'Pull', 'Legs'] };
   // the routines of the chosen pack, all ticked
@@ -6777,7 +6936,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('pack-routines').setAttribute('aria-pressed', 'false');
     $('pack-rt').hidden = true;
   });
-  $('pack-go').addEventListener('click', function () { $('pack-sheet').hidden = true; });
+  $('pack-go').addEventListener('click', function () {
+    var want = [];
+    if ($('pack-routines').getAttribute('aria-pressed') === 'true') {
+      [].forEach.call($('pack-rt').querySelectorAll('[aria-pressed="true"]'), function (b) { want.push(b.textContent); });
+    }
+    var out = importPack(packKey, want), parts = [];
+    $('pack-sheet').hidden = true;
+    drawExercises();
+    drawRoutines();
+    if (out.ex) parts.push(out.ex + ' new exercise' + (out.ex === 1 ? '' : 's'));
+    if (out.rt) parts.push(out.rt + ' routine' + (out.rt === 1 ? '' : 's') + (out.renamed ? ' (' + out.renamed + ' renamed)' : ''));
+    if (out.skipped) parts.push(out.skipped + ' already there');
+    toast(parts.length ? 'Imported: ' + parts.join(', ') : 'It was all there already');
+  });
   document.querySelector('[data-pack-close]').addEventListener('click', function () { $('pack-sheet').hidden = true; });
 
   $('exlist-delgo').addEventListener('click', function () {
