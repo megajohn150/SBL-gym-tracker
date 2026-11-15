@@ -2662,6 +2662,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go.</li>
     </ul>
 
+    <div class="dsec">Gestures</div>
+    <ul class="gdl">
+      <li><b>Pull down.</b> On Home, Workout or Profile, drag the page down from the top and let go: the app reloads and picks up a new version, without closing it.</li>
+      <li><b>Swipe back.</b> Start at the very left edge of the screen and swipe right to go back.</li>
+      <li><b>Hold the sun / moon.</b> On Profile a tap switches light and dark; holding it steps through the other themes (Cocoa is only changed in Themes).</li>
+      <li><b>Tap a bar.</b> On a chart a tap on a bar shows its value; a bar with a PR opens that workout from the bubble.</li>
+      <li><b>Swipe the weekly recap</b> sideways to change the week.</li>
+      <li><b>Also:</b> hold the thumb under a session to see who liked it, hold backspace on the number pad to clear a box, tap a medal for the old record, swipe a set left to delete it.</li>
+    </ul>
+
     <div class="dsec">Training</div>
     <ul class="gdl">
       <li><b>Moving around.</b> The strip on top jumps to any exercise (a tick = all sets done); Prev / Next walk through them; the end card is after the last one. Tap the exercise name to open its history and records.</li>
@@ -2736,7 +2746,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
-      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
+      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device, and says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device.</li>
       <li>The version number at the bottom of Settings opens this guide.</li>
     </ul>
@@ -3418,7 +3428,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4426';
+  var APP_VERSION = '3.4427';
 
   /* =========================================================
      STORE
@@ -8649,6 +8659,43 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     store.workouts = list;
   }
 
+  // A file from another app, edited by hand or cut short must not reach the log as it is: it
+  // would break Home, the calendar and the statistics, and then travel to the cloud and to
+  // friends' feeds. Each workout is copied and only the fields the screens read are made safe
+  // (text stays text, numbers become the strings the app keeps). One that cannot be drawn is
+  // left out and counted; a repeated or missing id is dealt with so swapWorkouts gets unique ones.
+  function cleanWorkouts(list) {
+    var seen = {}, skipped = 0, out = [];
+    var txt = function (v) { return v == null ? '' : String(v); };
+    list.forEach(function (w) {
+      if (!w || typeof w !== 'object' || !Array.isArray(w.exercises) || !isFinite(new Date(w.date).getTime())) {
+        skipped++; return;
+      }
+      var id = typeof w.id === 'string' && w.id ? w.id : uid();
+      if (seen[id]) { skipped++; return; }
+      var ex = [];
+      w.exercises.forEach(function (e) {
+        if (!e || typeof e !== 'object' || !Array.isArray(e.sets)) return;
+        var c = JSON.parse(JSON.stringify(e));          // a copy: the file's own objects stay as they were
+        c.name = txt(e.name);
+        c.sets = c.sets.filter(function (st) { return st && typeof st === 'object'; }).map(function (st, i) {
+          st.label = st.label == null || st.label === '' ? pad2(i + 1) : txt(st.label);
+          st.weight = txt(st.weight); st.reps = txt(st.reps); st.rir = txt(st.rir);
+          return st;
+        });
+        ex.push(c);
+      });
+      if (w.exercises.length && !ex.length) { skipped++; return; }    // nothing in it could be read
+      var c = JSON.parse(JSON.stringify(w));
+      c.id = id; c.exercises = ex; c.name = txt(w.name) || 'Workout'; c.note = txt(w.note);
+      c.seconds = Math.max(0, Number(w.seconds) || 0);
+      if (!postOk(c)) { skipped++; return; }
+      seen[id] = 1;
+      out.push(c);
+    });
+    return { list: out, skipped: skipped };
+  }
+
   function importData(text) {
     var raw = null;
     try { raw = JSON.parse(text); } catch (e) {}
@@ -8656,14 +8703,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       askConfirm('Not a backup file', 'It has no exercise and workout lists in it.', 'OK', null);
       return;
     }
+    var clean = cleanWorkouts(raw.workouts), lost = clean.skipped;
     askConfirm('Replace everything?',
       raw.exercises.length + ' exercise' + (raw.exercises.length === 1 ? '' : 's') +
-      ' and ' + raw.workouts.length + ' workout' + (raw.workouts.length === 1 ? '' : 's') +
-      ' from the file take the place of what is on this device.',
+      ' and ' + clean.list.length + ' workout' + (clean.list.length === 1 ? '' : 's') +
+      ' from the file take the place of what is on this device.' +
+      (lost ? ' ' + lost + ' workout' + (lost === 1 ? ' was' : 's were') + ' skipped: not readable or a repeat.' : ''),
       'Import', function () {
         store.exercises = raw.exercises;
         store.routines = (raw.routines || []).map(migrate);
-        swapWorkouts(raw.workouts);
+        swapWorkouts(clean.list);
         if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
         if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
         if (raw.profile) {
