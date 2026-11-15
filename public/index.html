@@ -2228,7 +2228,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       </div>
       <div class="feed" id="p-feed"></div>
       <div class="note" id="p-none" hidden>Nothing matches that.</div>
-      <div class="note" id="p-empty" hidden>Nothing logged yet.</div>
+      <div class="note" id="p-empty" hidden>Nothing logged yet.
+        <button class="dashbtn" data-tabgo="workout" style="width:100%;margin-top:.8rem">Start a workout</button></div>
     </div>
 
   </section>
@@ -2291,6 +2292,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll">
       <div id="people-list"></div>
       <div class="note" id="people-note" style="padding:1.2rem var(--pad)"></div>
+      <div id="people-find" style="padding:0 var(--pad)" hidden>
+        <button class="dashbtn" data-push="find" style="width:100%">Find people</button>
+      </div>
     </div>
     <div class="footbar" id="people-week" hidden>
       <button class="btn btn-ghost" data-wkb>Friends leaderboard</button>
@@ -3377,7 +3381,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4414';
+  var APP_VERSION = '3.4415';
 
   /* =========================================================
      STORE
@@ -4608,6 +4612,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var ids = peopleIds();
     $('people-title').textContent = PEOPLE_TITLE[peopleMode];
     $('people-note').hidden = ids.length > 0;
+    $('people-find').hidden = ids.length > 0 || peopleMode !== 'friends' || !!peopleList;
     $('people-note').textContent = peopleMode === 'friends'
       ? 'Follow each other and they show up here.'
       : peopleMode === 'fans'
