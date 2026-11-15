@@ -115,6 +115,24 @@ t.is('with no limit it is what the newest sessions had, set by set',
 t.is('for the newest workout it is the one before it, and the oldest has nothing before',
   [lastFor('x', Date.parse(hist[0].date)).map((s) => s.weight), lastFor('x', Date.parse(hist[2].date)).length], [['60', '60', '55'], 0]);
 
+/* deleting exercises from the library, one or many: they leave every routine, and the undo brings all of it back */
+{
+  const lib = { exercises: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], routines: [
+    { id: 'r1', items: [{ exId: 'a' }, { exId: 'b' }, { exId: 'c' }] }, { id: 'r2', items: [{ exId: 'c' }] }, { id: 'r3', items: [{ exId: 'b' }] }] };
+  const del = new Function('store', 'routineById',
+    slice('  function removeExercises(ids)', "  $('ex-delete').addEventListener") + '; return { remove: removeExercises, restore: restoreExercises, using: routinesUsing };')(
+    lib, (id) => lib.routines.filter((r) => r.id === id)[0]);
+  t.is('it counts the routines that hold any of them', [del.using(['a']), del.using(['a', 'c']), del.using(['x'])], [1, 2, 0]);
+  const snap = del.remove(['a', 'c']);
+  t.is('several go from the library and from every routine at once',
+    [lib.exercises.map((x) => x.id), lib.routines.map((r) => r.items.map((i) => i.exId))], [['b'], [['b'], [], ['b']]]);
+  t.is('the snapshot keeps what was taken', snap.dead.map((x) => x.id).sort(), ['a', 'c']);
+  del.restore(snap);
+  t.is('undo puts the exercises and the routines\' items back',
+    [lib.exercises.map((x) => x.id).sort(), lib.routines.map((r) => r.items.map((i) => i.exId))], [['a', 'b', 'c'], [['a', 'b', 'c'], ['c'], ['b']]]);
+  t.is('emptying the library marks it wiped, so the other devices drop their copies too', [lib.wiped === undefined, (del.remove(['a', 'b', 'c']), typeof lib.wiped)], [true, 'number']);
+}
+
 /* ending it */
 const store = { workouts: [{ id: 'older' }] };
 const started = new Date(2026, 4, 1, 17, 30).getTime();

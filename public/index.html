@@ -175,6 +175,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .row .lab{flex:1;font-weight:500;min-width:0}
 .row .val{color:var(--fg-3);font-size:.875rem}
 .row .chev{color:var(--fg-3);font-size:.9rem}
+/* choosing exercises to delete: a ring grows on the left of each row and pushes the name to the right */
+.exchk{flex:none;width:22px;height:22px;border:1.5px solid var(--fg-3);border-radius:50%;display:grid;place-items:center}
+.exchk::after{content:"";width:5px;height:10px;border:solid var(--accent-ink);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg);opacity:0}
+.row.exsel[aria-pressed="true"] .exchk{background:var(--accent);border-color:var(--accent)}
+.row.exsel[aria-pressed="true"] .exchk::after{opacity:1}
 .rtcard{border-bottom:var(--dash)}
 .rtcard:last-child{border-bottom:none}
 .rtopen{display:block;width:100%;padding:16px 14px 0;text-align:center}
@@ -1966,7 +1971,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
       <h1 id="ex-bar-title">Exercises</h1>
-      <span></span>
+      <button class="dmenu" id="exlist-menu" aria-label="Exercises menu" hidden>&#8942;</button>
     </div>
 
     <div class="scroll">
@@ -2001,7 +2006,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
 
     <div class="footbar" id="ex-footbar" hidden>
-      <button class="btn btn-primary" data-push="exercise-form">+ New exercise</button>
+      <button class="btn btn-primary" id="ex-new" data-push="exercise-form">+ New exercise</button>
+      <button class="btn btn-ghost" id="exlist-cancel" hidden>Cancel</button>
+      <button class="btn btn-danger" id="exlist-delgo" hidden disabled>Delete</button>
     </div>
   </section>
 
@@ -2717,7 +2724,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload.</li>
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
       <li><b>Three tabs.</b> Home: your log and your friends'. Workout: your routines. Profile: charts, stats, friends, settings.</li>
-      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately.</li>
+      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back.</li>
       <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;.</li>
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go.</li>
     </ul>
@@ -3059,6 +3066,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button data-period="6m">6 months</button>
       <button data-period="1y">1 year</button>
       <button data-period="all">Lifetime</button>
+    </div>
+  </div>
+</div>
+
+<div class="pop" id="exlist-pop" hidden>
+  <div class="pop-bg" data-exlist-close></div>
+  <div class="pop-wrap">
+    <div class="pop-menu">
+      <button id="exlist-pop-del">Delete exercises</button>
     </div>
   </div>
 </div>
@@ -3508,7 +3524,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4456';
+  var APP_VERSION = '3.4457';
 
   /* =========================================================
      STORE
@@ -5858,6 +5874,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (pickMuscle && !exEditId) mus.value = pickMuscle;
     }
     if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
+    if (id !== 's-exercises') exDel = null;
     if (id === 's-home') refreshSocial();
     if (id === 's-stats') {
       var lastm = new Date();
@@ -6117,6 +6134,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var pickFor = null;     // non-null when the list is being used as a picker
   var pickMuscle = null;  // when set, the picker shows that muscle only
   var exFilter = null;    // a muscle the list is narrowed to, from the Filter button
+  var exDel = null;       // choosing exercises to delete: null when off, else the ids picked so far ({ id: true })
   var pickMode = 'recent'; // the picker lists the latest-used exercises first, or groups them by muscle
 
   function drawExercises() {
@@ -6124,6 +6142,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('ex-empty').hidden = has;
     $('ex-list-wrap').hidden = !has;
     $('ex-footbar').hidden = !has;
+    // the menu is for the library; a picker has no business deleting what it is picking from
+    if (pickFor || !has) exDel = null;
+    $('exlist-menu').hidden = !!pickFor || !has || !!exDel;
+    // while choosing, the footer swaps its button: Cancel above Delete, where "+ New exercise" was
+    $('ex-new').hidden = !!exDel;
+    $('exlist-cancel').hidden = !exDel;
+    var nPicked = exDel ? Object.keys(exDel).length : 0;
+    $('exlist-delgo').hidden = !exDel;
+    $('exlist-delgo').disabled = !nPicked;
+    $('exlist-delgo').textContent = nPicked ? 'Delete (' + nPicked + ')' : 'Delete';
     $('ex-filter').hidden = !!pickMuscle;                 // a swap is already one muscle
     $('ex-filter').classList.toggle('on', !!exFilter && !pickMuscle);
     $('ex-filter').innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4L3 5Z"/></svg>' +
@@ -6160,7 +6188,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     // under a muscle's own heading the picture is in the heading; in the recent list each row has its own
     var row = function (x, art) {
-      return '<button class="row" data-ex="' + x.id + '">' + (art ? muscleArt(x.muscle, 34) : '') +
+      return '<button class="row' + (exDel ? ' exsel' : '') + '" data-ex="' + x.id + '"' +
+        (exDel ? ' aria-pressed="' + !!exDel[x.id] + '"' : '') + '>' + (exDel ? '<span class="exchk"></span>' : '') +
+        (art ? muscleArt(x.muscle, 34) : '') +
         '<span class="lab"><span class="nmrow"><span class="nm">' + esc(x.name) + '</span>' +
         (x.unilateral ? '<span class="tag uni">Uni</span>' : '') + '</span></span>' +
         '<span class="tag">' + esc(codeOf(x)) + '</span>' +
@@ -6221,6 +6251,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   $('ex-list').addEventListener('click', function (e) {
     var row = e.target.closest('[data-ex]');
     if (!row) return;
+    if (exDel) {
+      if (exDel[row.dataset.ex]) delete exDel[row.dataset.ex]; else exDel[row.dataset.ex] = true;
+      drawExercises();
+      return;
+    }
     if (!pickFor) { openHistory(row.dataset.ex); return; }
     if (pickFor === 'session') {
       pickFor = null;
@@ -6608,38 +6643,83 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       drawRoutines();
     }
   }
+  // Takes exercises out of the library and out of every routine; the snapshot is what the undo needs.
+  function removeExercises(ids) {
+    var gone = {};
+    ids.forEach(function (id) { gone[id] = true; });
+    var dead = store.exercises.filter(function (x) { return gone[x.id]; });
+    var where = store.routines.map(function (r) {
+      return { id: r.id, items: r.items.slice() };
+    });
+    store.exercises = store.exercises.filter(function (x) { return !gone[x.id]; });
+    store.routines.forEach(function (r) {
+      r.items = r.items.filter(function (it) { return !gone[it.exId]; });
+    });
+    if (!store.exercises.length) store.wiped = Date.now();
+    return { dead: dead, where: where };
+  }
+  function restoreExercises(snap) {
+    snap.dead.forEach(function (x) { store.exercises.push(x); });
+    snap.where.forEach(function (w) {
+      var r = routineById(w.id);
+      if (r) r.items = w.items;
+    });
+  }
+  function routinesUsing(ids) {
+    return store.routines.filter(function (r) {
+      return r.items.some(function (it) { return ids.indexOf(it.exId) > -1; });
+    }).length;
+  }
+
   $('ex-delete').addEventListener('click', function () {
     if (!exEditId) return;
-    var used = store.routines.filter(function (r) {
-      return r.items.some(function (it) { return it.exId === exEditId; });
-    }).length;
+    var used = routinesUsing([exEditId]);
     askConfirm('Delete exercise?',
       used
         ? 'It will also be removed from ' + used + ' routine' + (used === 1 ? '' : 's') +
           '. Past workouts keep it.'
         : 'Past workouts keep it.',
       'Delete', function () {
-        var dead = byId(exEditId);
-        var where = store.routines.map(function (r) {
-          return { id: r.id, items: r.items.slice() };
-        });
-        store.exercises = store.exercises.filter(function (x) { return x.id !== exEditId; });
-        store.routines.forEach(function (r) {
-          r.items = r.items.filter(function (it) { return it.exId !== exEditId; });
-        });
-        if (!store.exercises.length) store.wiped = Date.now();
+        var snap = removeExercises([exEditId]);
         saveStore();
         resetExForm();
         popTo('exercises');
         drawExercises();
         drawRoutines();
-        if (!dead) return;
+        if (!snap.dead.length) return;
         toastUndo('Exercise deleted', function () {
-          store.exercises.push(dead);
-          where.forEach(function (w) {
-            var r = routineById(w.id);
-            if (r) r.items = w.items;
-          });
+          restoreExercises(snap);
+          saveStore();
+          drawExercises();
+          drawRoutines();
+        });
+      });
+  });
+
+  // the three dots on the library: choose several exercises, then delete them in one go
+  $('exlist-menu').addEventListener('click', function () { $('exlist-pop').hidden = false; });
+  $('exlist-cancel').addEventListener('click', function () { exDel = null; drawExercises(); });
+  document.querySelector('[data-exlist-close]').addEventListener('click', function () { $('exlist-pop').hidden = true; });
+  $('exlist-pop-del').addEventListener('click', function () {
+    $('exlist-pop').hidden = true;
+    exDel = {};
+    drawExercises();
+  });
+  $('exlist-delgo').addEventListener('click', function () {
+    var ids = Object.keys(exDel || {}).filter(function (id) { return byId(id); });
+    if (!ids.length) return;
+    var used = routinesUsing(ids), n = ids.length;
+    askConfirm('Delete ' + n + ' exercise' + (n === 1 ? '' : 's') + '?',
+      (used ? 'They will also be removed from ' + used + ' routine' + (used === 1 ? '' : 's') + '. ' : '') +
+        'Past workouts keep them.',
+      'Delete', function () {
+        var snap = removeExercises(ids);
+        exDel = null;
+        saveStore();
+        drawExercises();
+        drawRoutines();
+        toastUndo(n === 1 ? 'Exercise deleted' : n + ' exercises deleted', function () {
+          restoreExercises(snap);
           saveStore();
           drawExercises();
           drawRoutines();
