@@ -2211,8 +2211,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             <button class="pshare" data-chartshare="p" aria-label="Share chart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
           </span>
         </div>
-        <div class="pbars pgut" id="p-bars"></div>
-        <div class="pxlab pgut" id="p-xlab"></div>
+        <div class="pbars" id="p-bars"></div>
+        <div class="pxlab" id="p-xlab"></div>
         <div class="pseg" id="p-metrics">
           <button data-metric="duration" aria-pressed="false">Duration</button>
           <button data-metric="volume" aria-pressed="false">Volume</button>
@@ -3397,7 +3397,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4420';
+  var APP_VERSION = '3.4421';
 
   /* =========================================================
      STORE
@@ -8504,7 +8504,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var when = xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month';
     var H = 900, sc = chartScale(buckets, style), n = buckets.length;
     shareCanvas('chart-' + new Date().toISOString().slice(0, 10) + '.png', 1080, H, function (g, c, txt, face, disp, W) {
-      var pad = IMG_PAD, x0 = pad + 80, x1 = W - pad - 80, y0 = 490, y1 = H - 150, ph = y1 - y0, slot = (x1 - x0) / n;
+      var pad = IMG_PAD, gut = kind === 'p' ? 0 : 80, x0 = pad + gut, x1 = W - pad - gut, y0 = 490, y1 = H - 150, ph = y1 - y0, slot = (x1 - x0) / n;
       txt('SBL TRACKER', pad, 120, 30, 700, c('--fg-3'));
       txt(title, pad, 215, 80, 800, c('--fg'), 'left', disp);
       txt(sub + '  \u00b7  ' + xp.short, pad, 268, 32, 400, c('--fg-2'));
@@ -8527,7 +8527,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         g.stroke();
       }
       // the two end values stand beside the plot, level with the first and the last point
-      var ends = chartEnds(buckets);
+      var ends = kind === 'p' ? null : chartEnds(buckets);
       if (ends) {
         if (!ends[2]) txt(fmt(ends[0]), x0 - 16, yOf(ends[0]) + 9, 26, 700, c('--fg-3'), 'right');
         txt(fmt(ends[1]), x1 + 16, yOf(ends[1]) + 9, 26, 700, c('--fg-3'), 'left');
@@ -10408,8 +10408,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       p.unit === 'day' ? 'today' : p.unit === 'week' ? 'this week' : 'this month';
     $('p-range').textContent = p.short;
 
-    $('p-bars').innerHTML = '<span class="pmark">' + yEnds(buckets, chartScale(buckets, 'bars'),
-      function (v) { return metricLabel(v).join(' ').trim(); }) + '</span>' + buckets.map(function (x) {
+    $('p-bars').innerHTML = buckets.map(function (x) {
       return '<button class="pbar" data-tip="' +
         esc(String(metricLabel(x.v).join(' ')).trim() + '  \u00b7  ' + x.lab) + '">' +
         '<i style="height:' + Math.max(2, Math.round(x.v / max * 100)) + '%"></i></button>';
