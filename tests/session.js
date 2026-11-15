@@ -61,6 +61,7 @@ t.is('a set whose prs is not a list is ignored', run([{ sets: [{ done: true, wei
 
 const built = (exs) => totals(null, num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume);
 const listing = (exs) => built(exs).html();
+const prList = (exs) => built(exs).prs();
 const rowsOf = (html) => (html.match(/<div class="drow">.*?<\/div>/g) || []).map((r) => r.replace(/<\/span><span[^>]*>/g, ' ').replace(/<[^>]+>/g, ''));
 const namesOf = (html) => (html.match(/class="nm">[^<]*/g) || []).map((s) => s.slice(11));
 const eg = listing([
@@ -77,7 +78,6 @@ t.is('a skipped exercise is left out, a name with markup is escaped, a bodyweigh
   [['B&lt;i>'], ['L2 &ndash; 5 0 kg']]);
 t.is('nothing ticked says so', listing([{ name: 'A', sets: [{ label: '01', weight: '5', reps: '5' }] }]).replace(/<[^>]+>/g, ''), 'Nothing ticked yet.');
 
-const prList = (exs) => built(exs).prs();
 const prRows = (html) => (html.match(/<div class="drow">.*?<\/div>/g) || []).map((r) => r.replace(/<\/span><span[^>]*>/g, ' ').replace(/<[^>]+>/g, ''));
 const bench = { name: 'Bench', sets: [
   { label: '01', done: true, weight: '100', reps: '5', rir: '', prs: ['Weight', 'Volume'], was: { Weight: 90, Volume: 450 } },
@@ -87,6 +87,8 @@ t.is('a record shows its value from the last ticked set and its rise from before
   prRows(prList([bench])), ['Heaviest 105 kg \u2191 15 kg', 'Best set 500 kg \u2191 50 kg']);
 t.is('the records list numbers its exercises the same way',
   numsOf(prList([{ name: 'Row', sets: [] }, bench])), ['2']);
+const doorsOf = (html) => (html.match(/data-vex="\d+"/g) || []).map((s) => s.slice(10, -1));
+t.is('each card carries the exercise\'s index, so a tap can open it', [doorsOf(eg), doorsOf(prList([{ name: 'Row', sets: [] }, bench]))], [['0', '2'], ['1']]);
 t.is('exercises without a ticked record, and skipped ones, are left out; none at all says so',
   [namesOf(prList([bench, { name: 'Row', sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, Object.assign({}, bench, { name: 'Skipped', skipped: true })])),
    prList([{ name: 'A', sets: [] }]).replace(/<[^>]+>/g, '')], [['Bench'], 'No records yet.']);

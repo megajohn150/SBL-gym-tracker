@@ -421,7 +421,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 #vol-sheet .sheet-card h3{margin-bottom:4px}
 /* the exercise's number, as on the session screen, scaled from its 54px picture to the 42px one here */
 #vol-list .exnum{width:42px;height:42px;font-size:.82rem;border-radius:calc(var(--radius) * .78)}
-#vol-list .dex{padding:.6rem 0}
+#vol-list .dex{padding:.6rem 0;cursor:pointer}
 #vol-list .dex + .dex{padding-top:.6rem}
 #vol-list .dexline{margin-bottom:0}
 #vol-list .dhead,#vol-list .drow{grid-template-columns:2fr 2fr 2fr 4fr}
@@ -3490,7 +3490,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4446';
+  var APP_VERSION = '3.4447';
 
   /* =========================================================
      STORE
@@ -8058,7 +8058,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (x.skipped) return;
       var rows = x.sets.filter(function (st) { return st.done && logged(st); });
       if (!rows.length) return;
-      out += '<div class="dex"><div class="dexline"><div class="dexhead"><span class="exnum">' + (xi + 1) + '</span>' + muscleArt(x.muscle) +
+      out += '<div class="dex" data-vex="' + xi + '"><div class="dexline"><div class="dexhead"><span class="exnum">' + (xi + 1) + '</span>' + muscleArt(x.muscle) +
         '<span class="dext"><span class="nm">' + esc(x.name) + '</span></span></div></div>' +
         '<div class="dhead"><span></span><span>Weight</span><span>Reps</span><span>Volume</span></div>' +
         rows.map(function (st) {
@@ -8087,7 +8087,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       });
       var rows = ['Weight', '1RM', 'Volume'].filter(function (c) { return cats[c]; });
       if (!rows.length) return;
-      out += '<div class="dex prx"><div class="dexline"><div class="dexhead"><span class="exnum">' + (xi + 1) + '</span>' + muscleArt(x.muscle) +
+      out += '<div class="dex prx" data-vex="' + xi + '"><div class="dexline"><div class="dexhead"><span class="exnum">' + (xi + 1) + '</span>' + muscleArt(x.muscle) +
         '<span class="dext"><span class="nm">' + esc(x.name) + '</span></span></div></div>' +
         '<div class="dhead"><span></span><span>Now</span><span>Gain</span></div>' +
         rows.map(function (c) {
@@ -12456,6 +12456,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var rb = e.target.closest('[data-rec]');
     if (e.target.closest('[data-rec-close]')) $('rec-sheet').hidden = true;
     if (e.target.closest('[data-vol-close]')) $('vol-sheet').hidden = true;
+    // a card of either list is a door to that exercise on the session screen, to change what was logged
+    var vx = e.target.closest('[data-vex]');
+    if (vx && session && session.exercises[Number(vx.dataset.vex)]) {
+      session.idx = Number(vx.dataset.vex);
+      $('vol-sheet').hidden = true;
+      drawSession();
+    }
     if (e.target.closest('[data-vol]') && session) {
       $('vol-title').textContent = 'Volume so far';
       $('vol-list').innerHTML = sessVolHtml();
