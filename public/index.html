@@ -2603,7 +2603,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <div class="rows">
         <button class="row" id="set-export">
           <span class="lab">Export backup</span>
-          <span class="val" id="set-export-val">JSON</span>
+          <span class="val" id="set-export-val">JSON or CSV</span>
           <span class="chev">&rsaquo;</span>
         </button>
         <button class="row" id="set-import">
@@ -2732,7 +2732,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Notifications:</b> Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
-      <li><b>Data:</b> Export backup / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
+      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device.</li>
       <li>The version number at the bottom of Settings opens this guide.</li>
     </ul>
@@ -3308,6 +3308,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet center" id="exp-sheet" hidden>
+  <div class="sheet-bg" data-exp-close></div>
+  <div class="sheet-card">
+    <h3>Export</h3>
+    <button class="btn btn-primary" id="exp-json">Backup (JSON)</button>
+    <p class="hint" style="padding:6px 0 0;text-align:center">Everything: log, routines, exercises, targets.</p>
+    <button class="btn btn-primary" id="exp-csv" style="margin-top:12px">Log (CSV)</button>
+    <p class="hint" style="padding:6px 0 0;text-align:center">One row per set, in the layout the Hevy import reads. Routines, targets and skipped exercises stay out, and it does not count as a backup.</p>
+    <button class="btn btn-ghost" id="exp-cancel" style="margin-top:8px">Cancel</button>
+  </div>
+</div>
+
 <div class="sheet center" id="lr-sheet" hidden>
   <div class="sheet-bg" data-lr-close></div>
   <div class="sheet-card">
@@ -3402,7 +3414,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4423';
+  var APP_VERSION = '3.4424';
 
   /* =========================================================
      STORE
@@ -8590,21 +8602,35 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       routines: store.routines, workouts: store.workouts, targets: store.targets,
       injuries: store.injuries
     };
-    var url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)],
-      { type: 'application/json' }));
+    downloadFile(JSON.stringify(payload, null, 2), 'application/json', '.json');
+    save('bk-last', new Date().toISOString());
+    drawBackupRows();
+    drawBackupBar();
+    exportSaved();
+  }
+
+  function downloadFile(text, type, ext) {
+    var url = URL.createObjectURL(new Blob([text], { type: type }));
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'gym-tracker-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = 'gym-tracker-' + new Date().toISOString().slice(0, 10) + ext;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-    save('bk-last', new Date().toISOString());
-    drawBackupRows();
-    drawBackupBar();
+  }
+  function exportSaved() {
     var val = $('set-export-val');
     val.textContent = 'Saved';
-    setTimeout(function () { val.textContent = 'JSON'; }, 2500);
+    setTimeout(function () { val.textContent = 'JSON or CSV'; }, 2500);
+  }
+
+  // The log as a CSV a spreadsheet opens: not a backup, so the backup reminder is left alone.
+  function exportCsv() {
+    if (!store.workouts.length) { toast('Nothing to export yet'); return; }
+    // the BOM lets Excel read Polish letters; the import's header trim drops it again
+    downloadFile('\ufeff' + hevyCsv(store.workouts), 'text/csv;charset=utf-8', '.csv');
+    exportSaved();
   }
 
   // The whole log swapped for another copy of it: a backup file, a previous version. Every
@@ -8990,7 +9016,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     pushSub().then(function (sub) { if (sub) pushOff(); else pushOn(); });
   });
 
-  $('set-export').addEventListener('click', exportData);
+  $('set-export').addEventListener('click', function () { $('exp-sheet').hidden = false; });
+  function closeExp() { $('exp-sheet').hidden = true; }
+  $('exp-cancel').addEventListener('click', closeExp);
+  document.querySelector('[data-exp-close]').addEventListener('click', closeExp);
+  $('exp-json').addEventListener('click', function () { closeExp(); exportData(); });
+  $('exp-csv').addEventListener('click', function () { closeExp(); exportCsv(); });
   /* =========================================================
      Hevy's own export, read straight into the log. One row is one
      set; the rows of a session arrive together, in order.
@@ -9127,6 +9158,33 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       e.sets.push({ weight: String(num(r[at.weight_kg]) || ''), reps: String(reps), rir: rir });
     });
     return { workouts: out, warmups: skippedWarm };
+  }
+
+  // The reverse of hevyParse: one row per logged set, oldest workout first. Fields with a comma,
+  // a quote or a line break are quoted and the quotes doubled, as csvRows reads them back.
+  // RPE is 10 minus RIR; a set taken to failure is typed "failure" instead.
+  function csvCell(v) {
+    var t = String(v == null ? '' : v);
+    return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+  function hevyStamp(d) {
+    return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() + ', ' +
+      pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+  }
+  function hevyCsv(workouts) {
+    var lines = ['title,start_time,end_time,description,exercise_title,exercise_notes,set_index,set_type,weight_kg,reps,rpe'];
+    workouts.slice().sort(function (a, b) { return new Date(a.date) - new Date(b.date); }).forEach(function (w) {
+      var start = new Date(w.date), end = new Date(start.getTime() + (Number(w.seconds) || 0) * 1000);
+      w.exercises.forEach(function (e) {
+        e.sets.filter(logged).forEach(function (st, i) {
+          var rir = String(st.rir == null ? '' : st.rir), fail = rir === 'F';
+          lines.push([w.name, hevyStamp(start), hevyStamp(end), w.note, e.name, e.note, i,
+            fail ? 'failure' : 'normal', num(st.weight) || '', num(st.reps),
+            /^\d+$/.test(rir) ? 10 - Number(rir) : ''].map(csvCell).join(','));
+        });
+      });
+    });
+    return lines.join('\n') + '\n';
   }
 
   function hevyImport(text) {
