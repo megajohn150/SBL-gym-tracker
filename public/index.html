@@ -3364,7 +3364,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4410';
+  var APP_VERSION = '3.4411';
 
   /* =========================================================
      STORE
@@ -6103,6 +6103,20 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('ex-code').placeholder = deriveCode($('ex-name').value) || 'BP';
   }
   $('ex-name').addEventListener('input', syncExForm);
+  // Typing a new name pre-picks the muscle (and the shoulder head) the way the Hevy import
+  // does, until the person touches either select; a locked select (pickMuscle) stays put.
+  var exMuscleTouched = false;
+  $('ex-name').addEventListener('input', function () {
+    var mus = $('ex-muscle'), g = exEditId || exMuscleTouched || mus.disabled ? '' : hevyMuscle(this.value);
+    if (!g) return;
+    mus.value = g;
+    var n = plainName(this.value);
+    $('ex-head').value = g !== 'Shoulders' ? '' : /lateral|side|boczn/.test(n) ? 'Side delt'
+      : /rear|reverse|tyl/.test(n) ? 'Rear delt' : 'Front delt';
+    syncHeadRow();
+  });
+  $('ex-muscle').addEventListener('change', function () { exMuscleTouched = true; });
+  $('ex-head').addEventListener('change', function () { exMuscleTouched = true; });
   $('ex-code').addEventListener('input', function () {
     var v = $('ex-code').value.toUpperCase().slice(0, 7);
     if (v !== $('ex-code').value) $('ex-code').value = v;
@@ -6118,6 +6132,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function fillExForm(x) {
     exEditId = x ? x.id : null;
+    exMuscleTouched = false;
     $('ex-delete').hidden = !x;
     $('ex-error').hidden = true;
     exType = x && x.unilateral ? 'unilateral' : 'standard';

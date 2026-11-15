@@ -15,6 +15,12 @@ t.is('something that is no date is nothing', api.date('soon'), null);
 t.is('the first pattern that fits wins: legs before arms',
   [api.muscle('Uginanie nóg leżąc'), api.muscle('Uginanie ramion'), api.muscle('Bench Press (Barbell)'), api.muscle('Zzz')],
   ['Hamstrings', 'Biceps', 'Chest', '']);
+// the exercise form's suggestion reads the same list, so a typed name should land right
+t.is('typed names get a sensible muscle',
+  ['Squat', 'Leg Press', 'Lat Pulldown', 'Face Pull', 'Barbell Row', 'Tricep Pushdown', 'Hammer Curl', 'Lateral Raise',
+   'Overhead Press', 'Crunch', 'Calf Raise', 'Hip Thrust', 'Wyciskanie hantli', 'Podciąganie', 'Martwy ciąg'].map(api.muscle),
+  ['Quads', 'Quads', 'Lats', 'Upper back', 'Upper back', 'Triceps', 'Biceps', 'Shoulders',
+   'Shoulders', 'Abs', 'Calves', 'Glutes', 'Chest', 'Lats', 'Upper back']);
 
 const head = 'title,start_time,end_time,description,exercise_title,superset_id,exercise_notes,set_index,set_type,weight_kg,reps,distance_km,duration_seconds,rpe';
 const csv = [head,
