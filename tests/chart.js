@@ -36,4 +36,6 @@ t.is('the side labels stand level with the first and the last point, or only the
    api.yEnds(B([0, 50]), api.scale(B([0, 50]), 'bars'), (v) => v + ' kg'), api.yEnds(B([0, 0]), api.scale(B([0, 0]), 'bars'), (v) => v)],
   ['<em class="pyv pyl" style="bottom:60.00%">60 kg</em><em class="pyv pyr" style="bottom:100.00%">100 kg</em>',
    '<em class="pyv pyr" style="bottom:100.00%">50 kg</em>', '']);
+t.is('without a formatter a chart has no side values and no gutters',
+  [/pyv|pgut/.test(api.body(bs, 'line', day, () => '')), /pyv/.test(html), /pgut/.test(html)], [false, true, true]);
 t.done();
