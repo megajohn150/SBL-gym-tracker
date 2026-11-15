@@ -415,11 +415,17 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .sesscnt.full{color:inherit}
 .sesscnt svg{vertical-align:-1px;margin-right:3px}
 #sess-vol{cursor:pointer}
-#vol-list{max-height:60vh;overflow-y:auto}
-.volx{font-weight:600;padding:12px 0 4px;border-top:var(--border)}
-.volx:first-child{border-top:0;padding-top:0}
-.volrow{display:flex;justify-content:space-between;padding:4px 0;color:var(--fg-2)}
-.volrow span:first-child{color:var(--fg-3)}
+#vol-list{max-height:60vh;overflow-y:auto;scrollbar-width:none}
+/* the same block as a finished workout's detail, tighter: set number, weight and reps take 20% each, the volume 40% */
+#vol-sheet .sheet-card{padding-top:10px;padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
+#vol-sheet .sheet-card h3{margin-bottom:4px}
+#vol-list .dex{padding:.6rem 0}
+#vol-list .dex + .dex{padding-top:.6rem}
+#vol-list .dexline{margin-bottom:0}
+#vol-list .dhead,#vol-list .drow{grid-template-columns:2fr 2fr 2fr 4fr}
+#vol-list .dhead{padding:.5rem 0 .3rem}
+#vol-list .drow{padding:.4rem 0}
+#vol-list .dhead span:last-child,#vol-list .drow .c.volr{text-align:right}
 .iconbtn{width:30px;height:30px;display:grid;place-items:center;color:var(--fg-2);font-size:1.05rem;border-radius:4px;flex:none}
 .iconbtn:hover{color:var(--fg)}
 
@@ -3479,7 +3485,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4443';
+  var APP_VERSION = '3.4444';
 
   /* =========================================================
      STORE
@@ -8047,10 +8053,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (x.skipped) return;
       var rows = x.sets.filter(function (st) { return st.done && logged(st); });
       if (!rows.length) return;
-      out += '<div class="volx">' + esc(x.name) + '</div>' + rows.map(function (st) {
-        return '<div class="volrow"><span>' + esc(String(st.label).replace(/^0+/, '')) + '</span><span>' +
-          fmtKg(num(st.weight) * num(st.reps)) + '</span></div>';
-      }).join('');
+      out += '<div class="dex"><div class="dexline"><div class="dexhead">' + muscleArt(x.muscle) +
+        '<span class="dext"><span class="nm">' + esc(x.name) + '</span></span></div></div>' +
+        '<div class="dhead"><span></span><span>Weight</span><span>Reps</span><span>Volume</span></div>' +
+        rows.map(function (st) {
+          return '<div class="drow"><span class="no">' + esc(String(st.label).replace(/^0+/, '')) + '</span>' +
+            '<span class="c">' + (st.weight === '' ? '&ndash;' : esc(st.weight)) + '</span>' +
+            '<span class="c">' + esc(st.reps) + '</span>' +
+            '<span class="c volr">' + fmtKg(num(st.weight) * num(st.reps)) + '</span></div>';
+        }).join('') + '</div>';
     });
     return out || '<p class="hint" style="padding:8px 0;text-align:center">Nothing ticked yet.</p>';
   }

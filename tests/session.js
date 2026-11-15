@@ -40,10 +40,10 @@ const shown = {};
 const fmtKg = (kg) => kg + ' kg';
 const logged = (st) => num(st.reps) > 0;
 const esc = (s) => String(s).replace(/</g, '&lt;');
-const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc',
+const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt',
   slice('  function drawSessTotals()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml };');
 const run = (exs) => {
-  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc).totals();
+  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '').totals();
   return [shown['sess-vol'], shown['sess-pr-n']];
 };
 t.is('volume and records count only ticked, logged sets', run([
@@ -56,17 +56,20 @@ t.is('the same record twice in one exercise is one, in two exercises it is two',
 t.is('a skipped exercise adds nothing', run([{ skipped: true, sets: [{ done: true, weight: '90', reps: '5', prs: ['Volume'] }] }]), ['0 kg', 0]);
 t.is('a set whose prs is not a list is ignored', run([{ sets: [{ done: true, weight: '20', reps: '5', prs: 'x' }] }]), ['100 kg', 0]);
 
-const listing = (exs) => totals(null, num, logged, fmtKg, { exercises: exs }, esc).html();
-const text = (html) => html.replace(/<\/span><span>/g, ' ').replace(/<\/(div|p)>/g, '|').replace(/<[^>]+>/g, '').replace(/\|$/, '');
-t.is('the list is per exercise in workout order, ticked sets only, each with its volume', text(listing([
+const listing = (exs) => totals(null, num, logged, fmtKg, { exercises: exs }, esc, () => '').html();
+const rowsOf = (html) => (html.match(/<div class="drow">.*?<\/div>/g) || []).map((r) => r.replace(/<\/span><span[^>]*>/g, ' ').replace(/<[^>]+>/g, ''));
+const namesOf = (html) => (html.match(/class="nm">[^<]*/g) || []).map((s) => s.slice(11));
+const eg = listing([
   { name: 'Chest fly', sets: [{ label: '01', done: true, weight: '100', reps: '8' }, { label: '02', done: true, weight: '100', reps: '9' }] },
   { name: 'Leg ext', sets: [{ label: '01', weight: '50', reps: '5' }] },
   { name: 'Incline', sets: [{ label: '01', weight: '10', reps: '1' }, { label: '02', done: true, weight: '10', reps: '2' }] },
-])), 'Chest fly|1 800 kg|2 900 kg|Incline|2 20 kg');
-t.is('a set keeps its own number, a skipped exercise and a name with markup are handled',
-  text(listing([{ name: 'A<b>', skipped: true, sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, { name: 'B<i>', sets: [{ label: 'L2', done: true, weight: '5', reps: '5' }] }])),
-  'B&lt;i>|L2 25 kg');
-t.is('nothing ticked says so', text(listing([{ name: 'A', sets: [{ label: '01', weight: '5', reps: '5' }] }])), 'Nothing ticked yet.');
+]);
+t.is('the list is per exercise in workout order, ticked sets only', namesOf(eg), ['Chest fly', 'Incline']);
+t.is('each set shows its number, weight, reps and volume', rowsOf(eg), ['1 100 8 800 kg', '2 100 9 900 kg', '2 10 2 20 kg']);
+const odd = listing([{ name: 'A<b>', skipped: true, sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, { name: 'B<i>', sets: [{ label: 'L2', done: true, weight: '', reps: '5' }] }]);
+t.is('a skipped exercise is left out, a name with markup is escaped, a bodyweight set shows a dash', [namesOf(odd), rowsOf(odd)],
+  [['B&lt;i>'], ['L2 &ndash; 5 0 kg']]);
+t.is('nothing ticked says so', listing([{ name: 'A', sets: [{ label: '01', weight: '5', reps: '5' }] }]).replace(/<[^>]+>/g, ''), 'Nothing ticked yet.');
 
 /* ending it */
 const store = { workouts: [{ id: 'older' }] };
