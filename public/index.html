@@ -2291,6 +2291,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll">
       <div id="people-list"></div>
       <div class="note" id="people-note" style="padding:1.2rem var(--pad)"></div>
+      <div id="people-week"></div>
     </div>
   </section>
 
@@ -2689,6 +2690,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="dsec">Friends</div>
     <ul class="gdl">
       <li>Find people by username and follow. When you follow each other you are <b>friends</b>: you see each other's workouts, routines, week chart, streak, and live workouts. Strangers see only name, bio and counts.</li>
+      <li><b>This week:</b> the Friends list ends with a board of you and every friend since Monday: workouts, sets, volume. It is counted from the sessions your feed already holds.</li>
       <li><b>Compare</b> (on a friend's profile): the last 30 days side by side (muscle radar, workout count, time, volume) and the lifts you both have, by name. Open one for 1RM, heaviest and best set, plus a leaderboard. Lifts you share in a friend's workout open the same screen.</li>
     </ul>
 
@@ -3364,7 +3366,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4411';
+  var APP_VERSION = '3.4412';
 
   /* =========================================================
      STORE
@@ -4612,6 +4614,21 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         (kick ? '<button class="followbtn off" data-kick="' + id + '">Remove</button>'
           : (rel ? '<span class="rel">' + rel + '</span>' : '')) + '</div>';
     }).join('');
+    drawPeopleWeek(ids);
+  }
+
+  // The week board sits under your own friends list only. The feed may be a moment stale
+  // until the next loadFeed, which redraws Home but not this screen.
+  function drawPeopleWeek(ids) {
+    var box = $('people-week');
+    if (peopleMode !== 'friends' || peopleList || !ids.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="eyebrow" style="padding:1rem var(--pad) .3rem">This week</div>' +
+      weekBoard(social.feed, store.workouts, ids, new Date()).map(function (r) {
+        var p = r.id === 'me' ? { username: 'You' } : social.people[r.id] || { username: '…' };
+        return '<div class="prow"><span class="pid2"><span class="un">' + esc(p.username || '…') + '</span>' +
+          '<span class="nm2">' + r.sets + (r.sets === 1 ? ' set' : ' sets') + ' · ' + esc(fmtVolume(r.volume)) + '</span></span>' +
+          '<span class="rel">' + r.workouts + (r.workouts === 1 ? ' workout' : ' workouts') + '</span></div>';
+      }).join('');
   }
 
   // Nobody writes down who follows a routine: the answer is in your friends'
@@ -10561,6 +10578,23 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     sets = total;
     return { by: by, days: days, heads: heads, hdays: hdays, total: total, sets: sets,
              volume: volume, seconds: seconds, workouts: count };
+  }
+
+  // This week (Monday on) for you and each friend, counted from the posts the feed already
+  // holds: nothing new is published. A friend with no post this week is a row of zeros.
+  // shortcut: only the feed's first page (60 posts) is read, so a very busy group undercounts;
+  // upgrade by paging the feed to Monday.
+  function weekBoard(feed, mine, ids, now) {
+    var from = monday(now), to = addDays(from, 7);
+    function row(id, list) {
+      var s = statsFor(from, to, list);
+      return { id: id, workouts: s.workouts, sets: s.sets, volume: s.volume };
+    }
+    return ids.map(function (id) {
+      return row(id, feed.filter(function (w) { return w.by === id; }));
+    }).concat([row('me', mine)]).sort(function (a, b) {
+      return b.workouts - a.workouts || b.sets - a.sets || b.volume - a.volume;
+    });
   }
 
   function byGroup(by) {

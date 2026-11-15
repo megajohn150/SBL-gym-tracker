@@ -4,14 +4,14 @@ const { slice, suite } = require('./lib');
 const t = suite('records');
 
 const code = slice("  var MONTHS = ['Jan'", '  function finishSession(seconds)');
-const stats = slice("  var HEADS = ['Front delt'", '  function byGroup(by)');
+const stats = slice('  function monday(d) {', '  function byGroup(by)');
 const cells = slice('  var MUSCLE_CELL = {', '  // Measured centres');
 const store = { exercises: [{ id: 'a', name: 'Bench' }, { id: 's', name: 'Raise', head: 'Rear delt' }], workouts: [] };
 const byId = (id) => store.exercises.filter((x) => x.id === id)[0] || null;
 const api = new Function('store', 'byId', 'pad2', code + cells + stats +
   '; return { num: num, logged: logged, fmtDuration: fmtDuration, fmtKg: fmtKg, fmtVolume: fmtVolume, countSets: countSets,' +
   ' workoutTotals: workoutTotals, muscleSplit: muscleSplit, epley: epley, recompute: recomputeRecords, bestsFor: bestsFor,' +
-  ' livePrs: livePrs, statsFor: statsFor };')(store, byId, (n) => (n < 10 ? '0' + n : String(n)));
+  ' livePrs: livePrs, statsFor: statsFor, weekBoard: weekBoard };')(store, byId, (n) => (n < 10 ? '0' + n : String(n)));
 
 const set = (weight, reps, rir, label) => ({ label: label || '01', weight: String(weight), reps: String(reps), rir: rir == null ? '' : String(rir) });
 const W = (id, day, sets, extra) => ({ id, date: new Date(2026, 0, day, 18).toISOString(), seconds: 3600,
@@ -71,6 +71,15 @@ t.is('the span is half open: Monday 00:00 is in, the next Monday is out', [s.wor
 t.is('a shoulder set is counted under its head', [s.by.Shoulders, s.heads['Rear delt'], s.hdays['Rear delt']], [1, 1, 1]);
 t.is('a muscle the app does not know is Other, not lost', [s.by.Other, s.total], [1, 4]);
 t.is('somebody else\'s list is counted the same way', api.statsFor(from, to, [store.workouts[0]]).sets, 2);
+// Wednesday 7 Jan 2026: the week runs Mon 5 to Sun 11, so Monday 12 and the Sunday before are out
+const post = (by, day, n) => ({ by, date: new Date(2026, 0, day, 18).toISOString(),
+  exercises: [{ exId: 'a', muscle: 'Chest', sets: Array.from({ length: n }, () => set(100, 5)) }] });
+const board = api.weekBoard([post('f1', 5, 3), post('f1', 6, 3), post('f2', 4, 9), post('f2', 12, 9), post('f3', 7, 5)],
+  [post('me', 7, 2)], ['f1', 'f2', 'f3', 'f4'], new Date(2026, 0, 7, 12));
+t.is('the board counts from Monday, ranks by workouts, and keeps a silent friend at zero',
+  board.map((r) => [r.id, r.workouts, r.sets]),
+  [['f1', 2, 6], ['f3', 1, 5], ['me', 1, 2], ['f2', 0, 0], ['f4', 0, 0]]);
+t.is('volume is weight times reps', board[0].volume, 6 * 500);
 t.is('the split is in whole percent, biggest first', api.muscleSplit({ exercises: [
   { muscle: 'Chest', sets: [set(1, 1), set(1, 1), set(1, 1)] }, { muscle: 'Biceps', sets: [set(1, 1)] }] }),
   [{ muscle: 'Chest', pct: 75 }, { muscle: 'Biceps', pct: 25 }]);
