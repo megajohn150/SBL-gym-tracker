@@ -2746,7 +2746,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report.</li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only.</li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral.</li>
-      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON import replaces what is on the device, and says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
+      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON file is either merged, which adds what is missing and keeps what is here, or replaces everything on the device; it says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one).</li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device.</li>
       <li>The version number at the bottom of Settings opens this guide.</li>
     </ul>
@@ -3322,6 +3322,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet center" id="impc-sheet" hidden>
+  <div class="sheet-bg" data-impc-close></div>
+  <div class="sheet-card">
+    <h3>Import backup</h3>
+    <p class="confirm-text" id="impc-text"></p>
+    <button class="btn btn-primary" id="impc-merge">Merge</button>
+    <p class="hint" style="padding:6px 0 0;text-align:center">Adds what is missing. What is here stays as it is.</p>
+    <button class="btn btn-danger" id="impc-replace" style="margin-top:12px">Replace everything</button>
+    <p class="hint" style="padding:6px 0 0;text-align:center">The file takes the place of what is on this device.</p>
+    <button class="btn btn-ghost" id="impc-cancel" style="margin-top:8px">Cancel</button>
+  </div>
+</div>
+
 <div class="sheet center" id="exp-sheet" hidden>
   <div class="sheet-bg" data-exp-close></div>
   <div class="sheet-card">
@@ -3428,7 +3441,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4428';
+  var APP_VERSION = '3.4429';
 
   /* =========================================================
      STORE
@@ -8704,6 +8717,61 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return { list: out, skipped: list.length - out.length };
   }
 
+  // The file added to what is already here, nothing taken away. A workout is the same one when its
+  // id or its start time is already in the log. An exercise is the same one when its id, or failing
+  // that its name, is already here: the file's workouts and routines are then pointed at the local
+  // exercise. On a clash this device wins; what the file brings is added around it. `exs` and `wk`
+  // are the cleaned lists (cleanExercises, cleanWorkouts) and are handed over, not copied.
+  function mergeImport(st, raw, exs, wk) {
+    var byId = {}, byName = {}, remap = {}, addedEx = 0, added = 0, same = 0;
+    st.exercises.forEach(function (x) { byId[x.id] = x; byName[nameKey(x.name)] = x; });
+    exs.forEach(function (x) {
+      if (byId[x.id]) return;
+      var twin = byName[nameKey(x.name)];
+      if (twin) { remap[x.id] = twin.id; return; }
+      st.exercises.push(x); byId[x.id] = x; byName[nameKey(x.name)] = x; addedEx++;
+    });
+    var fix = function (id) { return remap[id] || id; };
+
+    var have = {}, starts = {}, dead = {};
+    st.workouts.forEach(function (w) { have[w.id] = 1; starts[new Date(w.date).getTime()] = 1; });
+    st.gone.forEach(function (id) { dead[id] = 1; });
+    wk.forEach(function (w) {
+      if (have[w.id] || starts[new Date(w.date).getTime()]) { same++; return; }
+      if (dead[w.id]) w.id = uid();                 // deleted here once; it comes back under a new id
+      w.exercises.forEach(function (e) { if (e.exId) e.exId = fix(e.exId); });
+      st.workouts.push(w); have[w.id] = 1; starts[new Date(w.date).getTime()] = 1; added++;
+    });
+    st.workouts.sort(function (a, b) { return new Date(b.date) - new Date(a.date); });
+
+    var rts = {}, addedRt = 0;
+    st.routines.forEach(function (r) { rts[r.id] = 1; });
+    (Array.isArray(raw.routines) ? raw.routines : []).map(migrate).forEach(function (r) {
+      if (!r || typeof r !== 'object' || !r.id || rts[r.id]) return;
+      (Array.isArray(r.items) ? r.items : []).forEach(function (it) { if (it && it.exId) it.exId = fix(it.exId); });
+      st.routines.push(r); rts[r.id] = 1; addedRt++;
+    });
+    if (raw.targets && typeof raw.targets === 'object' && !Array.isArray(raw.targets)) {
+      Object.keys(raw.targets).forEach(function (k) { if (!(k in st.targets)) st.targets[k] = raw.targets[k]; });
+    }
+    if (Array.isArray(raw.injuries)) {
+      var inj = {};
+      st.injuries.forEach(function (x) { inj[x.id] = 1; });
+      raw.injuries.forEach(function (x) { if (x && typeof x === 'object' && x.id && !inj[x.id]) { st.injuries.push(x); inj[x.id] = 1; } });
+    }
+    return { workouts: added, same: same, exercises: addedEx, routines: addedRt };
+  }
+
+  function importDone() {
+    recomputeRecords();
+    saveStore();
+    drawHome();
+    drawRoutines();
+    drawExercises();
+    drawProfile();
+  }
+
+  var impPick = null;
   function importData(text) {
     var raw = null;
     try { raw = JSON.parse(text); } catch (e) {}
@@ -8712,35 +8780,46 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       return;
     }
     var clean = cleanWorkouts(raw.workouts), lost = clean.skipped, exs = cleanExercises(raw.exercises);
-    askConfirm('Replace everything?',
+    impPick = { raw: raw, clean: clean, exs: exs };
+    $('impc-text').textContent = 'The file has ' +
       exs.list.length + ' exercise' + (exs.list.length === 1 ? '' : 's') +
-      ' and ' + clean.list.length + ' workout' + (clean.list.length === 1 ? '' : 's') +
-      ' from the file take the place of what is on this device.' +
+      ' and ' + clean.list.length + ' workout' + (clean.list.length === 1 ? '' : 's') + '.' +
       (lost ? ' ' + lost + ' workout' + (lost === 1 ? ' was' : 's were') + ' skipped: not readable or a repeat.' : '') +
-      (exs.skipped ? ' ' + exs.skipped + ' exercise' + (exs.skipped === 1 ? ' was' : 's were') + ' skipped: no id or name.' : ''),
-      'Import', function () {
-        store.exercises = exs.list;
-        // a routines field that is not a list would throw here, halfway through the import
-        store.routines = (Array.isArray(raw.routines) ? raw.routines : []).map(migrate);
-        swapWorkouts(clean.list);
-        if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
-        if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
-        if (raw.profile) {
-          ['handle', 'name', 'bio'].forEach(function (k) {
-            if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
-          });
-          if (typeof raw.profile.pic === 'number' || typeof raw.profile.pic === 'string') {
-            store.profile.pic = raw.profile.pic;
-          }
-        }
-        recomputeRecords();
-        saveStore();
-        drawHome();
-        drawRoutines();
-        drawExercises();
-        drawProfile();
-      });
+      (exs.skipped ? ' ' + exs.skipped + ' exercise' + (exs.skipped === 1 ? ' was' : 's were') + ' skipped: no id or name.' : '');
+    $('impc-sheet').hidden = false;
   }
+  function closeImpc() { $('impc-sheet').hidden = true; impPick = null; }
+  $('impc-cancel').addEventListener('click', closeImpc);
+  document.querySelector('[data-impc-close]').addEventListener('click', closeImpc);
+  $('impc-merge').addEventListener('click', function () {
+    var p = impPick;
+    closeImpc();
+    if (!p) return;
+    var r = mergeImport(store, p.raw, p.exs.list, p.clean.list);
+    importDone();
+    toast('Merged: ' + r.workouts + ' workout' + (r.workouts === 1 ? '' : 's') + ' added, ' + r.same + ' already here', 3000);
+  });
+  $('impc-replace').addEventListener('click', function () {
+    var p = impPick;
+    closeImpc();
+    if (!p) return;
+    var raw = p.raw;
+    store.exercises = p.exs.list;
+    // a routines field that is not a list would throw here, halfway through the import
+    store.routines = (Array.isArray(raw.routines) ? raw.routines : []).map(migrate);
+    swapWorkouts(p.clean.list);
+    if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
+    if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
+    if (raw.profile) {
+      ['handle', 'name', 'bio'].forEach(function (k) {
+        if (typeof raw.profile[k] === 'string') store.profile[k] = raw.profile[k];
+      });
+      if (typeof raw.profile.pic === 'number' || typeof raw.profile.pic === 'string') {
+        store.profile.pic = raw.profile.pic;
+      }
+    }
+    importDone();
+  });
 
   function resetEverything() {
     // the other devices must drop these too, not hand them back on their next push
