@@ -1147,6 +1147,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .pseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 /* bars or a line, and where the records fell */
 .phead-r{display:flex;align-items:center;gap:10px;flex:none}
+.pshare{flex:none;line-height:0;color:var(--fg-3);padding:4px}
 .pstyle{display:flex;border:var(--border);border-radius:calc(var(--radius) - 3px);overflow:hidden}
 .pstyle button{padding:5px 8px;line-height:0;color:var(--fg-3)}
 .pstyle button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -2197,7 +2198,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <div class="pchart">
         <div class="pchart-h">
           <span><b id="p-metric">0</b> <span id="p-metric-unit">reps</span> <i id="p-metric-when">this week</i></span>
-          <button class="prange" id="p-range">Last 3 months</button>
+          <span class="phead-r">
+            <button class="prange" id="p-range">Last 3 months</button>
+            <button class="pshare" data-chartshare="p" aria-label="Share chart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
+          </span>
         </div>
         <div class="pbars" id="p-bars"></div>
         <div class="pxlab" id="p-xlab"></div>
@@ -3385,7 +3389,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4416';
+  var APP_VERSION = '3.4417';
 
   /* =========================================================
      STORE
@@ -6291,7 +6295,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         (xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month') +
       '</i></span>' +
       '<span class="phead-r">' + styleToggle(xStyle) +
-        '<button class="prange" id="xh-range">' + xp.short + '</button></span></div>' +
+        '<button class="prange" id="xh-range">' + xp.short + '</button>' + shareBtn('x') + '</span></div>' +
       chartBody(buckets, xStyle, xp, function (b) {
         var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
         return String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
@@ -7142,7 +7146,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         (xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month') +
       '</i></span>' +
       '<span class="phead-r">' + styleToggle(xStyle) +
-        '<button class="prange" id="rv-range">' + xp.short + '</button></span></div>' +
+        '<button class="prange" id="rv-range">' + xp.short + '</button>' + shareBtn('rv') + '</span></div>' +
       chartBody(buckets, xStyle, xp, function (b) {
         return String(rvLabel(b.v).join(' ')).trim() + '  \u00b7  ' + b.lab;
       }) +
@@ -8462,6 +8466,77 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     });
   }
   $('sum-share').addEventListener('click', shareSummary);
+
+  // A chart as a picture, drawn again on a canvas from the same buckets and the same scale
+  // as the HTML one. kind: 'x' an exercise, 'rv' a routine, 'p' the profile (always bars).
+  function shareChart(kind) {
+    var buckets, xp, head, title, sub, style = 'bars', cur;
+    if (kind === 'x') {
+      var ex = byId(histId);
+      if (!ex) return;
+      buckets = exerciseBuckets(ex.id); xp = periodOf(xPeriod); style = xStyle; title = ex.name;
+      cur = buckets[buckets.length - 1].v; head = xLabel(cur);
+      sub = { weight: 'Heaviest', orm: 'Est. 1RM', vol: 'Best set' }[xMetric];
+    } else if (kind === 'rv') {
+      var rt = routineById(rvId);
+      if (!rt) return;
+      buckets = routineBuckets(); xp = periodOf(rvPeriod); style = xStyle; title = rt.name || 'Routine';
+      cur = buckets[buckets.length - 1].v; head = rvLabel(cur);
+      sub = { vol: 'Volume', reps: 'Reps', time: 'Time' }[rvMetric];
+    } else {
+      buckets = chartBuckets(); xp = period(); title = 'Workouts';
+      cur = buckets[buckets.length - 1].v; head = metricLabel(cur);
+      sub = { duration: 'Duration', volume: 'Volume', reps: 'Reps' }[pMetric];
+    }
+    var big = String(head[0]) + (head[1] ? ' ' + head[1] : '');
+    var when = xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month';
+    var H = 900, sc = chartScale(buckets, style), n = buckets.length;
+    shareCanvas('chart-' + new Date().toISOString().slice(0, 10) + '.png', 1080, H, function (g, c, txt, face, disp, W) {
+      var pad = IMG_PAD, x0 = pad, x1 = W - pad, y0 = 480, y1 = H - 150, ph = y1 - y0, slot = (x1 - x0) / n;
+      txt('SBL TRACKER', pad, 120, 30, 700, c('--fg-3'));
+      txt(title, pad, 215, 80, 800, c('--fg'), 'left', disp);
+      txt(sub + '  \u00b7  ' + xp.short, pad, 268, 32, 400, c('--fg-2'));
+      g.font = '700 96px ' + disp;
+      var bw = g.measureText(big).width;
+      txt(big, pad, 400, 96, 700, c('--fg'), 'left', disp);
+      txt(when, pad + bw + 22, 400, 34, 400, c('--fg-3'));
+      g.strokeStyle = c('--line'); g.lineWidth = 2;
+      g.beginPath(); g.moveTo(x0, y1); g.lineTo(x1, y1); g.stroke();
+      var yOf = function (v) { return y1 - chartH(sc, v) / 100 * ph; };
+      if (style === 'line') {
+        g.strokeStyle = c('--fg'); g.lineWidth = 5; g.lineJoin = 'round'; g.lineCap = 'round';
+        g.beginPath();
+        var on = false;
+        buckets.forEach(function (b, i) {
+          if (!b.v) return;
+          var px = x0 + (i + 0.5) * slot;
+          if (on) g.lineTo(px, yOf(b.v)); else { g.moveTo(px, yOf(b.v)); on = true; }
+        });
+        g.stroke();
+      }
+      buckets.forEach(function (b, i) {
+        var cx = x0 + (i + 0.5) * slot, ty = null, tick = xTick(b, i, n, sc.step, xp);
+        if (style === 'bars') {
+          var h = Math.max(4, b.v / sc.xmax * ph);
+          g.globalAlpha = b.v ? 0.85 : 1;
+          g.fillStyle = b.v ? c('--fg') : c('--line');
+          g.fillRect(cx - slot * 0.35, y1 - h, slot * 0.7, h);
+          g.globalAlpha = 1;
+          if (b.v) ty = y1 - h;
+        } else if (b.v) {
+          ty = yOf(b.v);
+          g.fillStyle = b.pr ? c('--accent') : c('--fg');
+          g.beginPath(); g.arc(cx, ty, 9, 0, Math.PI * 2); g.fill();
+        }
+        if (b.pr && ty !== null) txt('PR', cx, ty - 22, 24, 700, c('--accent'), 'center');
+        if (tick) txt(tick, cx, y1 + 48, 24, 400, c('--fg-3'), 'center');
+      });
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-chartshare]');
+    if (b) shareChart(b.dataset.chartshare);
+  });
 
   /* =========================================================
      BACKUP
@@ -10151,21 +10226,33 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '</span>';
   }
 
-  function chartBody(buckets, style, xp, tipOf) {
+  // The scale of a chart, shared by the HTML body below and the shared image, so the two
+  // cannot drift apart. Bars are read against zero. A line is read against itself, so it
+  // starts a little below the lightest session instead — otherwise every week of work is a
+  // flat line glued to the top of the box. One session alone has nothing to be read against,
+  // so it sits mid-box rather than pinned to the ceiling.
+  function chartScale(buckets, style) {
     var xmax = Math.max.apply(null, buckets.map(function (b) { return b.v; }).concat([1]));
-    var n = buckets.length, step = Math.ceil(n / 4);
-    var at = function (i) { return (i + 0.5) / n * 100; };
-    // Bars are read against zero. A line is read against itself, so it starts
-    // a little below the lightest session instead — otherwise every week of
-    // work is a flat line glued to the top of the box.
     var seen = buckets.filter(function (b) { return b.v > 0; }).map(function (b) { return b.v; });
     var vmin = seen.length ? Math.min.apply(null, seen) : 0;
     var base = (style === 'line' && seen.length > 1 && vmin < xmax)
       ? vmin - (xmax - vmin) * 0.35 : 0;
-    // one session alone has nothing to be read against, so it sits mid-box
-    // rather than pinned to the ceiling
     var top = (style === 'line' && seen.length === 1) ? xmax * 2 : xmax;
-    var hOf = function (v) { return (v - base) / (top - base) * 100; };
+    return { xmax: xmax, base: base, top: top, step: Math.ceil(buckets.length / 4) };
+  }
+  // height of a value, in percent of the box
+  function chartH(sc, v) { return (v - sc.base) / (sc.top - sc.base) * 100; }
+  // the label under a bucket, or '' when this one is skipped
+  function xTick(b, i, n, step, xp) {
+    if ((n - 1 - i) % step) return '';
+    var d = new Date(b.from);
+    return xp.unit === 'month' ? MONTHS[d.getMonth()] : dayLab(d);
+  }
+
+  function chartBody(buckets, style, xp, tipOf) {
+    var sc = chartScale(buckets, style), xmax = sc.xmax, step = sc.step, n = buckets.length;
+    var at = function (i) { return (i + 0.5) / n * 100; };
+    var hOf = function (v) { return chartH(sc, v); };
     var pts = buckets.map(function (b, i) {
       return b.v > 0 ? at(i).toFixed(2) + ',' + (100 - hOf(b.v)).toFixed(2) : null;
     }).filter(Boolean).join(' ');
@@ -10191,10 +10278,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           '<i style="height:' + Math.max(2, Math.round(b.v / xmax * 100)) + '%"></i></button>';
       }).join('') + '</div>' +
       '<div class="pxlab">' + buckets.map(function (b, i) {
-        if ((n - 1 - i) % step) return '<span></span>';
-        var d = new Date(b.from);
-        return '<span>' + (xp.unit === 'month' ? MONTHS[d.getMonth()] : dayLab(d)) + '</span>';
+        return '<span>' + xTick(b, i, n, step, xp) + '</span>';
       }).join('') + '</div>';
+  }
+
+  function shareBtn(kind) {
+    return '<button class="pshare" data-chartshare="' + kind + '" aria-label="Share chart">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+      'stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>';
   }
 
   function xLabel(v) {
