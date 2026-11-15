@@ -1928,8 +1928,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <!-- ===================== WORKOUT ===================== -->
   <section class="screen" id="s-workout" data-tab="workout" data-title="Workout">
     <div class="head">
-      <p class="eyebrow">Your library</p>
-      <h1 class="title">Workout</h1>
+      <div class="phead">
+        <span>
+          <p class="eyebrow">Your library</p>
+          <h1 class="title">Workout</h1>
+        </span>
+        <span class="picons">
+          <button class="iconbtn" id="wk-import" aria-label="Import"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.8 10.9 12 15.1l4.2-4.2M4.5 15.5v2.2A2.3 2.3 0 0 0 6.8 20h10.4a2.3 2.3 0 0 0 2.3-2.3v-2.2"/></svg></button>
+        </span>
+      </div>
       <p class="sub">Routines you have saved.</p>
     </div>
 
@@ -3524,7 +3531,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4458';
+  var APP_VERSION = '3.4459';
 
   /* =========================================================
      STORE
