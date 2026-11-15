@@ -40,10 +40,13 @@ const shown = {};
 const fmtKg = (kg) => kg + ' kg';
 const logged = (st) => num(st.reps) > 0;
 const esc = (s) => String(s).replace(/</g, '&lt;');
-const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt',
-  slice('  function drawSessTotals()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml };');
+const recs = new Function('num', slice('  function epley(w, r)', '  function exKey') + slice('  function setRec(', '  function medal(') + '; return setRec;')(num);
+const REC = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
+const fmtVolume = (kg) => Math.round(kg * 10) / 10 + ' kg';
+const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt', 'setRec', 'REC_NAME', 'fmtVolume',
+  slice('  function drawSessTotals()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml, prs: sessPrHtml };');
 const run = (exs) => {
-  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '').totals();
+  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume).totals();
   return [shown['sess-vol'], shown['sess-pr-n']];
 };
 t.is('volume and records count only ticked, logged sets', run([
@@ -56,7 +59,8 @@ t.is('the same record twice in one exercise is one, in two exercises it is two',
 t.is('a skipped exercise adds nothing', run([{ skipped: true, sets: [{ done: true, weight: '90', reps: '5', prs: ['Volume'] }] }]), ['0 kg', 0]);
 t.is('a set whose prs is not a list is ignored', run([{ sets: [{ done: true, weight: '20', reps: '5', prs: 'x' }] }]), ['100 kg', 0]);
 
-const listing = (exs) => totals(null, num, logged, fmtKg, { exercises: exs }, esc, () => '').html();
+const built = (exs) => totals(null, num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume);
+const listing = (exs) => built(exs).html();
 const rowsOf = (html) => (html.match(/<div class="drow">.*?<\/div>/g) || []).map((r) => r.replace(/<\/span><span[^>]*>/g, ' ').replace(/<[^>]+>/g, ''));
 const namesOf = (html) => (html.match(/class="nm">[^<]*/g) || []).map((s) => s.slice(11));
 const eg = listing([
@@ -70,6 +74,18 @@ const odd = listing([{ name: 'A<b>', skipped: true, sets: [{ label: '01', done: 
 t.is('a skipped exercise is left out, a name with markup is escaped, a bodyweight set shows a dash', [namesOf(odd), rowsOf(odd)],
   [['B&lt;i>'], ['L2 &ndash; 5 0 kg']]);
 t.is('nothing ticked says so', listing([{ name: 'A', sets: [{ label: '01', weight: '5', reps: '5' }] }]).replace(/<[^>]+>/g, ''), 'Nothing ticked yet.');
+
+const prList = (exs) => built(exs).prs();
+const prRows = (html) => (html.match(/<div class="drow">.*?<\/div>/g) || []).map((r) => r.replace(/<\/span><span[^>]*>/g, ' ').replace(/<[^>]+>/g, ''));
+const bench = { name: 'Bench', sets: [
+  { label: '01', done: true, weight: '100', reps: '5', rir: '', prs: ['Weight', 'Volume'], was: { Weight: 90, Volume: 450 } },
+  { label: '02', done: true, weight: '105', reps: '5', rir: '', prs: ['Weight'], was: { Weight: 100 } },
+  { label: '03', weight: '120', reps: '5', rir: '', prs: ['Weight'], was: { Weight: 105 } }] };
+t.is('a record shows its value from the last ticked set and its rise from before the first one',
+  prRows(prList([bench])), ['Heaviest 105 kg \u2191 15 kg', 'Best set 500 kg \u2191 50 kg']);
+t.is('exercises without a ticked record, and skipped ones, are left out; none at all says so',
+  [namesOf(prList([bench, { name: 'Row', sets: [{ label: '01', done: true, weight: '5', reps: '5' }] }, Object.assign({}, bench, { name: 'Skipped', skipped: true })])),
+   prList([{ name: 'A', sets: [] }]).replace(/<[^>]+>/g, '')], [['Bench'], 'No records yet.']);
 
 /* ending it */
 const store = { workouts: [{ id: 'older' }] };
