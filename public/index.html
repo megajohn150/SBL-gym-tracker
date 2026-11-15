@@ -2291,7 +2291,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="scroll">
       <div id="people-list"></div>
       <div class="note" id="people-note" style="padding:1.2rem var(--pad)"></div>
-      <div id="people-week"></div>
+      <div id="people-week" style="padding:0 var(--pad) 1.5rem"></div>
     </div>
   </section>
 
@@ -2345,6 +2345,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <span></span>
     </div>
     <div class="scroll" id="lb-body"></div>
+  </section>
+
+  <section class="screen" id="s-wkb" data-tab="profile" data-title="Friends leaderboard">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Friends leaderboard</h1>
+      <span></span>
+    </div>
+    <div class="scroll" id="wkb-body"></div>
   </section>
 
   <section class="screen" id="s-livew" data-tab="home" data-title="Workout">
@@ -2690,7 +2699,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="dsec">Friends</div>
     <ul class="gdl">
       <li>Find people by username and follow. When you follow each other you are <b>friends</b>: you see each other's workouts, routines, week chart, streak, and live workouts. Strangers see only name, bio and counts.</li>
-      <li><b>This week:</b> the Friends list ends with a board of you and every friend since Monday: workouts, sets, volume. It is counted from the sessions your feed already holds.</li>
+      <li><b>Friends leaderboard:</b> the button at the end of the Friends list ranks you and every friend since Monday by workouts, with sets and volume under each name. Medals go to the top three. It is counted from the sessions your feed already holds.</li>
       <li><b>Compare</b> (on a friend's profile): the last 30 days side by side (muscle radar, workout count, time, volume) and the lifts you both have, by name. Open one for 1RM, heaviest and best set, plus a leaderboard. Lifts you share in a friend's workout open the same screen.</li>
     </ul>
 
@@ -3366,7 +3375,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4412';
+  var APP_VERSION = '3.4413';
 
   /* =========================================================
      STORE
@@ -4617,18 +4626,35 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawPeopleWeek(ids);
   }
 
-  // The week board sits under your own friends list only. The feed may be a moment stale
-  // until the next loadFeed, which redraws Home but not this screen.
+  // Under your own friends list only: a button to the week board.
   function drawPeopleWeek(ids) {
-    var box = $('people-week');
-    if (peopleMode !== 'friends' || peopleList || !ids.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="eyebrow" style="padding:1rem var(--pad) .3rem">This week</div>' +
-      weekBoard(social.feed, store.workouts, ids, new Date()).map(function (r) {
-        var p = r.id === 'me' ? { username: 'You' } : social.people[r.id] || { username: '…' };
-        return '<div class="prow"><span class="pid2"><span class="un">' + esc(p.username || '…') + '</span>' +
-          '<span class="nm2">' + r.sets + (r.sets === 1 ? ' set' : ' sets') + ' · ' + esc(fmtVolume(r.volume)) + '</span></span>' +
-          '<span class="rel">' + r.workouts + (r.workouts === 1 ? ' workout' : ' workouts') + '</span></div>';
-      }).join('');
+    $('people-week').innerHTML = peopleMode !== 'friends' || peopleList || !ids.length ? ''
+      : '<button class="dashbtn" data-wkb style="width:100%">Friends leaderboard</button>';
+  }
+  $('people-week').addEventListener('click', function (e) {
+    if (e.target.closest('[data-wkb]')) openWeekBoard();
+  });
+
+  // The week board, drawn like the exercise leaderboard: a medal for the top three, ties
+  // sharing a place. Somebody who did nothing this week gets no medal. The feed may be a
+  // moment stale until the next loadFeed.
+  function openWeekBoard() {
+    push('wkb');
+    var rows = weekBoard(social.feed, store.workouts, friendIds(), new Date());
+    rows.forEach(function (r, i) {
+      var q = rows[i - 1];
+      r.rank = q && q.workouts === r.workouts && q.sets === r.sets && q.volume === r.volume ? q.rank : i + 1;
+    });
+    paint($('wkb-body'), '<div class="dsec" style="border-top:none;margin-top:0">This week \u00b7 workouts</div>' +
+      rows.map(function (r) {
+        var p = r.id === 'me' ? store.profile : social.people[r.id] || {};
+        return '<div class="lbcard"><span class="rk"><u class="m' + (r.workouts && r.rank < 4 ? r.rank : 0) + '">' +
+          r.rank + '</u></span>' + avatarTag(40, '', p) +
+          '<b>' + (r.id === 'me' ? 'You' : esc(p.username || '\u2026')) +
+          '<span style="display:block;font-weight:400;font-size:.72rem;color:var(--fg-3)">' +
+          r.sets + (r.sets === 1 ? ' set' : ' sets') + ' \u00b7 ' + esc(fmtVolume(r.volume)) + '</span></b>' +
+          '<span class="kg">' + r.workouts + (r.workouts === 1 ? ' workout' : ' workouts') + '</span></div>';
+      }).join('') + '<div style="height:1.5rem"></div>');
   }
 
   // Nobody writes down who follows a routine: the answer is in your friends'
