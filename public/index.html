@@ -278,6 +278,11 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
   font-size:1rem;appearance:none;-webkit-appearance:none;
 }
 .field input::placeholder{color:var(--fg-3)}
+.pwwrap{position:relative}
+.field .pwwrap input{padding-right:48px}
+.pweye{position:absolute;right:2px;top:0;bottom:0;width:44px;display:grid;place-items:center;color:var(--fg-3)}
+.pweye[aria-pressed="true"]{color:var(--fg)}
+.pweye:not([aria-pressed="true"]) .pwslash{display:none}
 .field input:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:2px}
 .field select{
   background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
@@ -2949,7 +2954,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="field" id="au-emailrow" style="padding:0 0 .7rem"><label for="au-email">Email</label>
       <input type="email" id="au-email" autocomplete="email" autocapitalize="none" spellcheck="false"></div>
     <div class="field" id="au-passrow" style="padding:0 0 .9rem"><label for="au-pass" id="au-passlab">Password</label>
-      <input type="password" id="au-pass" autocomplete="current-password"></div>
+      <div class="pwwrap"><input type="password" id="au-pass" autocomplete="current-password"><button type="button" class="pweye" data-pw="au-pass" aria-pressed="false" aria-label="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="pwslash" d="M4 4l16 16"/></svg></button></div></div>
     <p class="gate-err" id="gate-err" hidden></p>
     <p class="gate-ok" id="gate-ok" hidden></p>
     <button class="btn btn-primary" id="au-go">Sign in</button>
@@ -3140,9 +3145,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <div class="sheet-card">
     <h3 id="acc-h"></h3>
     <div class="field" style="padding:.3rem 0 .6rem"><label for="acc-a" id="acc-al"></label>
-      <input type="text" id="acc-a" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+      <div class="pwwrap"><input type="text" id="acc-a" autocomplete="off" autocapitalize="none" spellcheck="false"><button type="button" class="pweye" data-pw="acc-a" id="acc-aeye" aria-pressed="false" aria-label="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="pwslash" d="M4 4l16 16"/></svg></button></div></div>
     <div class="field" id="acc-brow" style="padding:0 0 .6rem"><label for="acc-b">Repeat it</label>
-      <input type="password" id="acc-b" autocomplete="new-password"></div>
+      <div class="pwwrap"><input type="password" id="acc-b" autocomplete="new-password"><button type="button" class="pweye" data-pw="acc-b" aria-pressed="false" aria-label="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="pwslash" d="M4 4l16 16"/></svg></button></div></div>
     <p class="hint" id="acc-msg" style="padding:0 0 .8rem;min-height:1.2em"></p>
     <button class="btn btn-primary" id="acc-go">Save</button>
     <button class="btn btn-ghost" id="acc-cancel" style="margin-top:8px">Cancel</button>
@@ -3397,7 +3402,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4422';
+  var APP_VERSION = '3.4423';
 
   /* =========================================================
      STORE
@@ -5516,6 +5521,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var was = me && me.id;
     me = u || null;
     document.getElementById('gate').hidden = !!me && !recovering;
+    pwHide();
     document.getElementById('set-email').textContent = me ? me.email : '\u2014';
     if (!me) { social.fol = false; liveOff(); syncState('off'); return; }
     // Another account than the one this device last held (a confirmation link opened while
@@ -5544,8 +5550,24 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // recover = arrived from that link and picking a new password
   var auMode = 'in';
 
+  // The eye on a password field shows what was typed. It always starts hidden again, whenever
+  // the sign-in mode changes, the account sheet opens or closes, or the gate opens or closes.
+  function pwSet(b, on) {
+    document.getElementById(b.dataset.pw).type = on ? 'text' : 'password';
+    b.setAttribute('aria-pressed', String(on));
+    b.setAttribute('aria-label', on ? 'Hide password' : 'Show password');
+  }
+  function pwHide() {
+    document.querySelectorAll('[data-pw]').forEach(function (b) { if (!b.hidden) pwSet(b, false); });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pw]');
+    if (b) pwSet(b, b.getAttribute('aria-pressed') !== 'true');
+  });
+
   function setAuMode(m) {
     auMode = m;
+    pwHide();
     gateErr('');
     gateOk('');
     var recover = m === 'recover', forgot = m === 'forgot';
@@ -8673,6 +8695,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function openAcc(mode) {
     accMode = mode;
     var mail = mode === 'mail';
+    $('acc-aeye').hidden = mail;       // an address is not a secret
+    pwHide();
     $('acc-h').textContent = mail ? 'Change mail' : 'Change password';
     $('acc-al').textContent = mail ? 'New email' : 'New password';
     $('acc-a').type = mail ? 'text' : 'password';
@@ -8683,7 +8707,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('acc-go').disabled = false;
     $('acc-sheet').hidden = false;
   }
-  function closeAcc() { $('acc-sheet').hidden = true; }
+  function closeAcc() { $('acc-sheet').hidden = true; pwHide(); }
   $('set-mail').addEventListener('click', function () { openAcc('mail'); });
   $('set-pass').addEventListener('click', function () { openAcc('pass'); });
   $('acc-cancel').addEventListener('click', closeAcc);
