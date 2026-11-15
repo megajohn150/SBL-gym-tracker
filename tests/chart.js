@@ -7,7 +7,7 @@ const code = slice('  function chartScale(', '  function shareBtn(');
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayLab = (d) => d.getDate() + ' ' + MONTHS[d.getMonth()];
 const api = new Function('MONTHS', 'dayLab', 'CUP_SM', 'esc',
-  code + '; return { scale: chartScale, h: chartH, tick: xTick, body: chartBody };')(MONTHS, dayLab, '', (v) => String(v));
+  code + '; return { scale: chartScale, h: chartH, tick: xTick, body: chartBody, ends: chartEnds, yEnds: yEnds };')(MONTHS, dayLab, '', (v) => String(v));
 
 const B = (vs) => vs.map((v, i) => ({ from: new Date(2026, 0, 1 + i).getTime(), v }));
 const day = { unit: 'day' }, month = { unit: 'month' };
@@ -27,4 +27,10 @@ t.is('the dots on the page sit where the shared picture puts them', marks,
 t.is('the label step counts back from the newest bucket',
   bs.map((b, i) => api.tick(b, i, bs.length, 2, day)), ['', '2 Jan', '', '4 Jan', '', '6 Jan', '', '8 Jan']);
 t.is('a month chart is labelled by month', api.tick(bs[0], 0, 1, 1, month), 'Jan');
+
+t.is('the ends are the first and the last logged value, zeros around them ignored',
+  [api.ends(B([0, 62.5, 0, 70, 77, 0])), api.ends(B([0, 0]))], [[62.5, 77, false], null]);
+t.is('one logged bucket is one number, not the same one twice', api.ends(B([0, 50, 0]))[2], true);
+t.is('the row writes both numbers, or only the last', [api.yEnds(B([60, 0, 77]), (v) => v + ' kg'), api.yEnds(B([0, 50]), (v) => v + ' kg'), api.yEnds(B([0, 0]), (v) => v)],
+  ['<span>60 kg</span><span>77 kg</span>', '<span></span><span>50 kg</span>', '']);
 t.done();
