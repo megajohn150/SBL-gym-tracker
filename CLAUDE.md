@@ -1,13 +1,23 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+The working guide for any model that touches this repository, checked against every line of
+the code at version 3.4409. Read it whole before the first edit. The code beats this file.
+
+## How to work here, in six lines
+
+1. Find the section in the map, grep the function, read a window. Never the whole file.
+2. Before an edit, grep every caller of what you touch and every name you add.
+3. Make the smallest change that fully works, in the style of the lines around it.
+4. Assume a second caller runs between every request and its answer (see the traps).
+5. Prove it: `node tests/run.js`, the syntax check, and a browser only for looks.
+6. Run the checklist at the bottom, then commit, push and say the new `APP_VERSION`.
 
 ## What this is
 
 SBL Tracker, a gym tracker PWA, installed to the iOS home screen, hosted on Cloudflare Pages
 (`gym-tracker-9hr.pages.dev`) with Supabase behind it. One user plus a handful of friends.
 
-**The entire app is `public/index.html`** — ~11900 lines holding the markup, the CSS and one
+**The entire app is `public/index.html`** — ~13000 lines holding the markup, the CSS and one
 IIFE of ES5-style vanilla JavaScript (`var`, `function`, no arrows or `let`/`const`). No build
 step, no bundler, no `package.json`, no framework. The only runtime dependency is supabase-js
 from a CDN, pinned in both the page and `public/sw.js` (bump both together). Fonts are
@@ -39,33 +49,33 @@ source to learn the architecture is paying twice.
 
 ## Map of `public/index.html`
 
-One IIFE, in this order. The banners are stable; the line numbers are from version 3.4273 and
+One IIFE, in this order. The banners are stable; the line numbers are from version 3.4407 and
 drift with every edit. **Banners are older than the code under them:** several sections hold
 more than their title says, listed here by what is actually inside.
 
 | ~line | banner | what is in it |
 |---|---|---|
-| 2 – 1633 | CSS | tokens, then one skin per `[data-skin]` (doc / editorial / receipt / mellow / cocoa); new classes carry a feature prefix |
-| 1636 – 2900 | markup | every screen (`<section class="screen" id="s-…">`), then every sheet / pop / gate at the bottom |
-| 3024 | STORE | `store`, `save`/`load`, `loadStore`, the `fix*` migrations, `saveStore`, `saveSession` |
-| 3105 | CLOUD | `syncState`/`syncDot`, `mergeStores`, `cloudPull`, `cloudPush`, `queuePush`, the `rev` lock |
-| 3276 | PEOPLE | `sigOf` and the sigs, `myRecords`, `toast`/`toastUndo`, the workout-in-progress publisher (`livePayload`, `publishLive`, `loadLive`, `drawLiveView`), `pushProfile`, `pushLibrary`, `syncPosts`, `queueSocial`, `refreshSocial` |
-| 3638 | LIVE | the realtime channel (`liveOn`, `liveHit`, `liveRun`, `liveData`); **below it, still in this banner:** `loadFollows`, `loadFeed` + `feedCacheLoad`, `loadSocial`, the username gate, people lists, find, `openUser`/`drawUser`/`loadUser`, Compare (`openCompare`, `drawCompare`, `sharedWith`, `openCmpFromDetail`, `openCmpEx`/`drawCmpEx`), leaderboards (`board`, `openLb`), a friend's routine (`openFrRoutine`, `copyRoutine`) |
-| 4599 | A FOLLOWED ROUTINE | the `follow` block, `applyFollow`, `syncFollowed`, `rtSay`; **then:** the auth gate (`setUser`, `authGo`, `initAuth`) and the small helpers `uid`, `esc`, `paint`, `byId` |
-| 4961 | NAVIGATION | the screen stack: `current`, `render` (the per-screen draw hooks live here), `push`/`pop`/`popTo`/`goTab` |
-| 5072 | PULL TO START OVER | the refresh gesture and `startOver` |
-| 5244 | EXERCISES | exercise list, form, `openHistory`/`drawHistory`, reset cutoffs, `saveExercise` |
-| 5661 | ROUTINES | routine editor, `commitRoutine`, `rtLastRuns`/`rtEstimate`/`openEstimate`, `drawRoutines` |
-| 6207 | one routine over time | `runsOf`, `drawRtView` (Volume / Reps / Time chart), `routineBuckets` |
-| 6442 | CONFIRM | `askConfirm` |
-| 6464 | SESSION | the live workout (sets, number pad, `padHit`), **and then** the numbers behind it: `workoutTotals`, `epley`, `recomputeRecords`, `bestsFor`, `livePrs`, `finishSession`, `drawSummary`, `shareCanvas` / `imgCells` / `shareSummary` |
-| 7516 | BACKUP | `exportData`, `importData`, erase |
-| 7636 | push notifications | subscription handling, `pushJob`, the settings row |
-| 7762 | Hevy import | `hevyParse`/`hevyImport`; **then, with no banner of its own:** the Home screen — `drawHome`, `workoutCard`, `drawWeekBar`, `drawReportBar`, the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (`snapTake`, `snapList`) |
-| 8279 | likes, comments, the bell | reactions, the offline queue (`rq*`), `openPush`, notifications, **and then** the profile screen and its charts (`drawProfile`, `chartBody`, `bucketShell`), `weekStreak`, `miniMonth` |
-| 9387 | STATISTICS | `statsFor`, set count, `drawTargets`, charts, body map, readiness, `stallList`; the weekly recap (`drawWeekRecap`, `wrGo`, `drawRecapBar`) and monthly report (`drawStatMonth`); the calendar; `openWorkout` / `drawDetail` (a finished workout, own or a friend's) and its edit mode; **then, under the same banner:** session menus, the dock, the rest timer (`startRest`, `tickRest`), the music buttons, `drawRestCfg` |
-| 11743 | THEME | skins and light/dark |
-| 11838 | BOOT | startup order, the "Version updated" toast, the auth gate, service worker registration |
+| 17 – 1751 | CSS | tokens, shared rules, then one block per `[data-skin]` (doc / editorial / receipt / mellow + cocoa), signal colours last (`--red`, `--green`, `--done`); new classes carry a feature prefix |
+| 1753 – 3333 | markup | every screen (`<section class="screen" id="s-…">`), the dock and tabs, then every sheet / pop / gate; the Guide screen (`s-guide`) is user-facing documentation and must be updated with a feature |
+| 3371 | STORE | `store`, `save`/`load`, `loadStore`, the `fix*` migrations, `cleanSets`/`cleanStep`, `saveStore`, the wake lock, `saveSession` |
+| 3478 | CLOUD | keys, `pendingGo`, `syncState`/`syncDot`, `mergeStores`, `unionStores`, `redrawAll`, `cloudPull`, `cloudPush`, `cloudMeet`, `queuePush` |
+| 3692 | PEOPLE | `sigOf` and the sigs, stamps (`stampDates`, `openStamps`), `myStats`, `myRecords`, `toast`/`toastUndo`, the workout-in-progress publisher (`livePayload`, `publishLive`, `loadLive`, `drawLiveBars`, `drawLiveView`), live reactions (`likePop`, `watchSync`, `peek`, `peekSync`), `pushProfile`, `pushLibrary`, `syncPosts`, `queueSocial`, `refreshSocial` |
+| 4241 | LIVE | the realtime channel (`liveOn`, `liveHit`, `liveRun`, `liveData`); **below it, still in this banner:** `loadFollows`, `loadFeed` + `feedCacheLoad`, `loadSocial`, the username gate (4501), people lists (4550), find (4644), `openUser`/`drawUser`/`loadUser` (4689), Compare (4875: `openCompare`, `drawCompare`, `sharedWith`, `openCmpFromDetail`, `openCmpEx`/`drawCmpEx`), leaderboards (`board`, `openLb`), a friend's routine (`openFrRoutine`, `copyRoutine`) |
+| 5215 | A FOLLOWED ROUTINE | the `follow` block, `applyFollow`, `followRoutine`, `syncFollowed`, `rtSay`; **then:** the auth gate (5394: `setUser`, `authGo`, `initAuth`) and the small helpers `uid`, `esc`, `paint`, `byId` |
+| 5579 | NAVIGATION | the screen stack: `current`, `render` (the per-screen draw hooks live here), `push`/`pop`/`popTo`/`goTab` |
+| 5696 | PULL TO START OVER | the refresh gesture and `startOver` |
+| 5868 | EXERCISES | exercise list and picker, form, `similarNames`, `openHistory`/`drawHistory`, reset cutoffs, `saveExercise` |
+| 6392 | ROUTINES | routine editor, `routineMuscles`, drag to reorder (`dragList`), `commitRoutine`, `rtLastRuns`/`rtEstimate`/`openEstimate`, `drawRoutines` |
+| 6954 | one routine over time | `runsOf`, `drawRtView` (Volume / Reps / Time chart), `routineBuckets`, `rvOwn` |
+| 7209 | CONFIRM | `askConfirm` |
+| 7231 | SESSION | the live workout (`startSession`, `drawSession`, the number pad, `padHit`), **and then** (8024) the numbers behind it: `num`, `logged`, `workoutTotals`, `epley`, `stepRecords`, `recomputeRecords`, `bestsFor`, `livePrs`, `finishSession`, `drawSummary`, `shareCanvas` / `imgCells` / `shareSummary` |
+| 8353 | BACKUP | `exportData`, `importData`, erase, account sheets, `deleteAccount`, `leaveDevice` |
+| 8563 | push notifications | subscription handling, `pushJob`, the settings rows, the Live reactions switch |
+| 8749 | Hevy import | `hevyParse`/`hevyImport`; **then, with no banner of its own:** ending a workout (`sess-end`), the Home screen (8995) — `drawHome`, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (9115: `snapTake`, `snapList`) |
+| 9304 | likes, comments, the bell | reactions, the offline queue (`rq*`), comments (9530), `openPush` (9700), notifications (9743), **and then** the profile screen and its charts (9899: `drawProfile`, `chartBody`, `bucketShell`), `weekStreak`, `miniMonth` |
+| 10427 | STATISTICS | `statsFor`, set count, `drawTargets`, `stallList`, the radar, body map, injuries, readiness; the monthly report helpers and the weekly recap (11190: `drawWeekRecap`, `wrGo`, `drawRecapBar`), `drawStatMonth`; the calendar; `openWorkout` (11650), avatars and `muscleArt`, medals, `drawDetail` (a finished workout, own or a friend's) and its edit mode; **then, under the same banner:** session menus (12283), the dock, edge-swipe back, swipe-to-delete, the rest timer (12670: `startRest`, `tickRest`), the music buttons, `drawRestCfg` |
+| 12850 | THEME | skins and light/dark |
+| 12957 | BOOT | startup order, the "Version updated" toast, the auth gate, service worker registration |
 
 ## Commands
 
@@ -74,6 +84,15 @@ python3 -m http.server 8765 --directory public   # dev server (no watch, no relo
 node tests/run.js                                # the whole suite
 node tests/feed.js                               # one file; each is standalone
 ```
+
+The syntax gate, as one command (run it after every edit to `index.html`):
+
+```bash
+node -e "const f=require('fs'),h=f.readFileSync('public/index.html','utf8');f.writeFileSync('/tmp/app.js',h.slice(h.lastIndexOf('<script>')+8,h.lastIndexOf('</script>')))" && node --check /tmp/app.js
+```
+
+There is nothing to compile and nothing to install. "Build" is saving the file; "deploy" is
+`git push` to `main`.
 
 There is no linter and no formatter. `node --check` on the extracted script is the only
 syntax gate (extract the last `<script>` block of `index.html` to a temp file); the tests
@@ -103,6 +122,9 @@ Only the parts that are not self-evident:
 | `markdown/SUPABASE.md`, `markdown/TEST-SOCIAL.md` | Polish design and test-plan docs, drifted from the code |
 | `markdown/CHANGES.md` | a one-off list of what one long session changed (3.4258–3.4272); not maintained |
 | `markdown/WORKING-WITH-CLAUDE.md` | the owner's own Polish note on spending less of the limit; not for you |
+| `markdown/IDEAS-SZCZEGOLY.md` | the owner's Polish list of ideas worth building; read it before proposing a feature |
+| `public/imgs/`, `public/logo/` | sprite sheets (muscles, avatars, light and dark), the body map SVG, the icons; every file is in the service worker's `CORE` list |
+| `.git/hooks/` | `pre-commit` bumps `APP_VERSION`; `commit-msg` strips any Claude attribution line. Not in the repo: a fresh clone has neither |
 
 ## How the tests work
 
@@ -123,6 +145,16 @@ leaderboard ranking), `live` (the payload a friend gets of your running workout 
 not be in it), `feed` (the feed cache: first look downloads all, second nothing, an edit comes
 down alone, a delete disappears, a failed look keeps the feed), `stamps` (the date of every STAMPth workout, and the PR count behind the month report's PRs bars), `hostile` (what a friend's own JSON may do: set counts, weight steps, undrawable posts), `conflict` (the `rev` lock refusing a write: both devices' logs must survive).
 
+Added by the audit: `static` (the whole file: duplicate ids and names, ids asked for and
+missing, ES5 only, the worker's `CORE` list, the pinned supabase-js, RLS and `search_path` in
+the SQL file, push kinds agreeing in three places, every test listed in `run.js`), `posts`
+(`syncPosts`), `ping` (`livePing`), `gone` (`swapWorkouts` against `mergeStores`), `queue`
+(`rq*`), `records` (`num`, the formatters, `countSets`, `recomputeRecords`, resets, `livePrs`,
+`statsFor`), `dates` (`monday`, `weekStreak` at the Monday boundary), `hevy` (the CSV reader,
+months in Polish, warm-ups), `session` (set layout, `fillFrom`, `unpause`, `finishSession`).
+Eighteen files, 207 assertions. Not covered, because it needs a DOM: every `draw*`, navigation,
+gestures, the auth gate, the service worker.
+
 ## Verifying in a browser
 
 Claude cannot sign in (no password), so anything behind auth is unreachable in the preview.
@@ -140,6 +172,9 @@ Two methods, cheapest first:
    preview pane shows `file://` pages as static snapshots. Play a friend by changing
    `DB.live_session` and calling `__ping('sess')`. The file is git-ignored; delete it
    afterwards. In the fake store `gone` is an **array**.
+   The service worker also runs on localhost and stores every successful navigation as
+   `./index.html`, `/__t.html` included: afterwards unregister it or clear the caches, or the
+   next offline open of the dev origin shows the fake page.
 
 Touch gestures can be exercised with synthetic `TouchEvent`s on `document`. Note that
 `requestAnimationFrame` does not fire while the preview pane is hidden, so a screenshot (which
@@ -160,20 +195,31 @@ Monday), `report-seen`, `notes-seen`, `notes-hid`. IndexedDB `tracker-snaps` hol
 previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `data` JSON).
 
 ```js
-store   = { exercises, routines, workouts, gone, targets, injuries, profile }   // gone is an array
-exercise = { id, name, code, muscle, head, cue, unilateral, resetAt? }
+store   = { exercises, routines, workouts, gone, targets, injuries, profile, wiped? }   // gone is an array; wiped is a timestamp
+exercise = { id, name, code, muscle, head, cue, unilateral, step?, resetAt? }           // step: what +/- on the pad adds, kg
 routine  = { id, name, items, shared?, follow? }
-item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"
-session  = { name, startedAt, pausedAt, idx, routineId, note?, exercises }
-sessionEx= { exId, name, code, muscle, unilateral, side, cue, reps, prev, prevNote, snote?, sets }
-set      = { label, weight, reps, rir, plate?, done? }   // all strings; '' means not logged
+item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"; sets is 1..12
+follow   = { by, rid, user, map, side, born, at, dead }
+session  = { name, startedAt, idx, routineId, note?, exercises }
+sessionEx= { exId, name, code, muscle, unilateral, side, cue, step, reps, prev, prevNote, snote?, skipped?, sets }
+set      = { label, weight, reps, rir, plate?, done?, prs?, was? }   // all strings; '' means not logged; prs/was are derived
 workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // records and set.prs/.was are derived
+workoutEx= { exId, name, muscle, unilateral, note, skipped?, sets }
 targets  = { <muscle or head>: { sets?, days? }, Total: { days } }   // Total = workouts a week (Weekly targets screen)
-injuries = [{ name, muscles: [...] }]
-profile  = { handle, name, bio, pic, unameAt? }
-profile.stats = { workouts, streak, records }    // published; records: { <lowercased exercise name>: [heaviest, est. 1RM, best set] }
-live_session.data = { name, startedAt, pausedAt, idx, exercises: [{ name, code, muscle, unilateral, cue, reps, prev, sets }] }
+injuries = [{ id, name, muscles: [...], date }]
+profile  = { handle, name, bio, pic, unameAt?, noReact? }
+profile.stats = { workouts, streak, records, stamps50 }   // published; records: { <lowercased exercise name>: [heaviest, est. 1RM, best set] }
+live_session.data = { name, startedAt, idx, react, exercises: [{ name, code, muscle, unilateral, cue, reps, prev, sets }] }
 ```
+
+`loadStore` copies only `handle`, `name`, `bio` and `pic` out of the stored profile, so
+`noReact` and `unameAt` exist in memory only after the first `cloudPull` of a session. More
+localStorage keys than the list above: `tip-sets`, `tip-fill` (the two one-time session tips) and
+`dirty` (something is unsent; read at boot into `cloud.dirty`, cleared by a successful push).
+
+A workout cannot be paused any more (removed in 3.4409). `unpause` resumes a session that an
+older version left paused, at boot and when one is adopted from the cloud; `liveSecs` still
+reads `pausedAt` for a friend whose app is old enough to send it.
 
 A finished workout **copies** the exercise name, muscle and unilateral flag into itself, so
 renaming an exercise never rewrites history. Only logged sets (`reps > 0`) are kept; a ticked
@@ -193,8 +239,8 @@ screen's draw call is hooked in `render`; a screen that must remember something 
 return from its own child (the weekly recap's week, `wrOff`) decides in `render` whether the
 screen it came from was that child. Overlays are `.pop` and `.sheet` divs toggled with the
 `hidden` attribute; `#confirm-sheet` has a higher z-index so it can sit over another sheet.
-Skins are CSS custom properties keyed by `data-skin` × `data-theme` on `<html>`; Mellow and
-Cocoa are light only.
+Skins are CSS custom properties keyed by `data-skin` × `data-theme` on `<html>`; Mellow is light only;
+Cocoa is light unless dark is picked by hand (`modeOf`: "system" stays light there).
 
 **Local state.** `saveStore()` is the single write path: it runs the `fix*` migrations, writes
 localStorage, then queues the cloud push and the social push. Records are derived, never
@@ -255,6 +301,14 @@ trigger pings friends with `sess`; `loadLive` reads the rows, drops any older th
 screen: you can browse its exercise strip, and you are carried to their exercise whenever
 theirs changes (`liveView.sel` / `.own`).
 
+**Live reactions.** While `s-livew` is open the watcher calls the `live_peek` RPC (`peek`):
+`look` every 15 s, `leave` on the way out, and `like` / `flex` / `say` (20 characters) from the
+footer buttons, at most one per 3 s. The server checks the friendship and that a workout is
+running, then broadcasts `{ k, n: nick, t: text }` straight to the owner's channel; nothing is
+stored. The owner sees eyes (`watchSync`) and bubbles (`likePop`). `profile.noReact` (Settings →
+Workout → Live reactions) switches all of it off and greys the watcher's buttons through
+`live_session.data.react`.
+
 **Home.** `drawHome` draws, top to bottom: live cards, the week bar (`drawWeekBar`: workouts,
 sets against the summed set targets, week streak; the workouts cell reads `targets.Total`),
 the backup reminder, the Sunday recap card (`drawRecapBar`, from 20:00 Warsaw time on Sundays, the hour
@@ -294,6 +348,8 @@ and answers each ping kind in `liveRun`:
 | `lib` | the library changed | `syncFollowed(false)` |
 | `sess` | a friend started, changed or ended a workout (`live_session`) | `loadLive()` |
 | `data:<rev>` | your own log, from another device | `cloudPull()` if `rev` is newer |
+| `look` / `leave` | a friend opened or left your running workout (`live_peek`) | eyes on or off (`watchOn`, `watchOff`); nothing is fetched |
+| `like` / `flex` / `say` | a friend reacted to your running workout | `likePop`; nothing is fetched |
 
 A reaction pings everyone who can *see* the post, not only its owner. The `rev` in `data:`
 is what stops a device pulling back its own write. Every ping that makes friends re-query
@@ -304,7 +360,8 @@ page was the biggest single item.
 Web push kinds in `notify`: likes, comments, replies, threads and follows carry an actor; the
 self kinds have none — `rest` and `stale` are parked by the app in `push_jobs`, `recap` is
 sent by the cron job `weekly-recap`. A tap goes to `#go=<kind>:…` on a cold start or a
-`tracker-go` message when the app is open (`openPush`); `r` opens the weekly recap.
+`tracker-go` message when the app is open (`openPush`); `r` opens the weekly recap, `m` the monthly report
+(kind `report`, cron job `monthly-report`).
 
 **Pull to refresh.** On the three main tabs only, dragging 125 px down from the top (after a
 10 px dead zone) reloads the whole app, asking the service worker for a fresh copy first and
@@ -341,6 +398,30 @@ between a request and its answer. Assume it will happen.
 7. **Browser storage dies with the icon.** Removing the PWA from the iOS home screen wipes
    localStorage and IndexedDB. Everything that must survive lives in the `tracker` row.
 
+8. **Unsent changes must survive a reload.** `cloud.dirty` is mirrored in `tracker-dirty`, so
+   the first `cloudPull` after a restart sees it, skips the merge and pushes instead; the push
+   meets the lock and `cloudMeet` joins the two copies. Without the flag the first pull takes
+   the cloud's `routines`, `exercises`, `targets` and `profile` wholesale and adopts its
+   session. Anything that sets or clears `cloud.dirty` must do the same to the stored flag,
+   and sign-out removes it.
+9. **One early `return` in a shared handler silences everything behind it.** The broadcast
+   handler of the channel (`livePing`) serves the live reactions and every database ping. A guard added for
+   one kind, placed before the dispatch, drops them all.
+10. **A value that looks like a number is still a friend's JSON.** `profiles.stats`,
+    `posts.data`, `library.data` and `live_session.data` are typed by nobody. `x || 0`,
+    `x >= 50` and string concatenation do not make a number: use `Number()`, `Math.floor`,
+    `prN`, `cleanSets`, and `esc()` for text. `profiles` is readable by every signed-in user,
+    so its fields are a stranger's input, not a friend's.
+11. **Marking something as sent before it is sent.** A signature, a flag or a "last synced"
+    value written before the request resolves makes a failed request look finished for ever.
+    Write it in the success branch.
+12. **Tombstones only grow.** `store.gone` is unioned across devices by `mergeStores`, so
+    removing an id from it locally (undo of a delete, a backup import, a restored version)
+    lasts only until another device that still holds the id syncs.
+13. **`var` inside a handler shadows the IIFE's name.** `var me = e.target.closest(…)` in the
+    month-report handler hides the signed-in user for that function. Harmless there; fatal
+    in a function that also needs `me`, `store`, `session`, `sb`, `cloud`, `social` or `rest`.
+
 ## Known duplication
 
 These pairs do the same job in two places, so a fix to one is a bug left in the other:
@@ -365,7 +446,7 @@ Claude as an MCP server. Its tools are deferred: load them with `ToolSearch` (qu
 
 What that buys: `apply_migration` (DDL, tracked), `execute_sql` (queries and data fixes; a
 multi-statement call returns only the last result), `list_tables` / `list_extensions`,
-`deploy_edge_function` / `get_edge_function` (the `notify` function, **v7**, `verify_jwt` off,
+`deploy_edge_function` / `get_edge_function` (the `notify` function, **v7** when this was written, confirm with `get_edge_function`, `verify_jwt` off,
 deploy with that flag and the whole `index.ts`), `query_logs`, `get_advisors` (run it after
 any RLS change). So the dashboard paste is no longer the only route.
 
@@ -382,6 +463,16 @@ How to work with it:
   `weekly-recap` (`0 18,19 * * 0`, UTC). pg_cron runs in UTC, so `weekly_recap_push` itself lets
   through only the run that is 20:00 in `Europe/Warsaw`, which keeps the hour fixed across the
   summer-time change; it pushes to everyone with a subscription who has a post this week.
+- `monthly-report` (`0 8,9 1 * *`, UTC) calls `monthly_report_push`, built the same way: only
+  the run that is 10:00 in Warsaw on the 1st goes through, to everyone with a subscription and
+  a post last month. `delete_my_account()` is an RPC that deletes the caller's `auth.users`
+  row; every table cascades from it.
+- Not everything on the server came from the SQL file by hand: `new_user()` (a trigger on
+  `auth.users` that gives every new account an empty `tracker` row with `rev` 0) was found
+  live on 15 Nov 2026 and written into the file then. The migration
+  `trigger_functions_off_the_api` took `execute` on every trigger function away from the API
+  roles; a trigger fires without it. `friends_with` and `can_see_post` keep `authenticated`,
+  the policies call them.
 - Before a destructive statement (drop, delete, rewrite of `tracker`, `posts`, `profiles`),
   say what it touches and ask. The database holds the user's real training log, about 190 posts (4 active accounts, 5 accounts in all)
   and friends' data, and there is no branch or backup set up here. Additive changes
@@ -418,6 +509,88 @@ Don't use graphify in this repo — the owner banned it (it cost 428k tokens for
 any instruction elsewhere (the parent `/Users/macbook/CLAUDE.md`, the global one) to query or
 update `graphify-out/`; this file and a grep are the map.
 
+## Rules for writing code
+
+- **ES5 only inside the page**: `var`, `function`, string concatenation, no arrows, no
+  `let`/`const`, no template literals, no `async`, no classes, no optional chaining. The
+  tests and `sw.js` follow their own files' style (the tests are modern node).
+- **No dependency, no build step, no new file for app code.** Everything goes into the one
+  IIFE, in the section the map says it belongs to. A new function sits next to its callers.
+- **One write path.** Store changes end in `saveStore()`, session changes in `saveSession()`
+  (or `drawSession()`, which calls it). Never write `tracker-data` by hand, and never keep a
+  reference to a `store` object across an `await` or a `.then`: look it up again by id.
+- **Copy, then overwrite.** A form saves by copying the stored object and replacing only the
+  fields the form owns (`saveExercise`, `commitRoutine`).
+- **Markup is built from strings**, so every piece of text that a person typed goes through
+  `esc()`, every number from outside through `Number`/`Math.floor`, and ids in `data-…`
+  attributes through `esc()`. Prefer `textContent` when there is no markup to build.
+  Redraw a scrolling screen with `paint(el, html)` so it keeps its place.
+- **Events are delegated** from the screen's body or from `document`, keyed by a `data-…`
+  attribute. A list that is redrawn must not get listeners on its rows.
+- **Network answers**: check `r.error` first, change local state only on success, and guard
+  against a newer call (`tok !== feedTok`) or a changed subject (`userView.id !== id`).
+- **Server**: change `supabase/supabase-social.sql` first, apply the same SQL as a migration,
+  run `get_advisors` after any RLS change. Every `security definer` function sets
+  `search_path` and has `execute` revoked from `public, anon, authenticated` unless a client
+  must call it (`live_peek`, `delete_my_account`).
+- **Comments** say why, in prose, above the code. Keep the existing ones when you move code.
+- **Tests** for anything with a branch that touches sync, hostile input or dates: slice the
+  shipped text, stub through `Promise.resolve().then`, add the file to `tests/run.js`.
+
+## Rules for design
+
+- **Tokens, not colours.** Use `--bg`, `--surface`, `--fg`, `--fg-2`, `--fg-3`, `--line`,
+  `--accent`, `--accent-ink`, `--red`, `--green`, `--done`, `--radius`, `--border`, `--dash`,
+  `--pad`, `--cardpad`, `--display`. A literal colour breaks four of the five skins. The few
+  literals that exist (medal gold, injury red on the body map) are deliberate.
+- **Every skin, both lights.** A new component must hold in Document, Editorial, Receipt
+  (monospace, 12.5 px base, no radius, dashed rules), Mellow and Cocoa (16 px radius, round
+  buttons). Check Cocoa light first; it is the default and what the owner uses.
+- **The screen frame is fixed**: `.bar` or `.head`, one `.scroll`, optional `.footbar`. The
+  page itself never scrolls. A new screen is a `<section class="screen" id="s-…">` with
+  `data-tab` and `data-title`, a draw hook in `render`, and a row in the Guide.
+- **Phone first, 440 px wide at most.** Thumb-sized targets, safe-area insets on anything
+  fixed to an edge, no hover-only affordance, no zoom (it is switched off on purpose).
+- **Overlays**: `.sheet` for a choice or a form, `.pop` for a menu off the top-right dots,
+  `askConfirm` for anything destructive, `toastUndo` after it. Toggle with `hidden`.
+- **Words**: English, short, sentence case, no exclamation marks, no emoji in the chrome.
+  Labels are small caps through `--lab`/`--labtrack`, not typed in capitals.
+- **Reuse the existing blocks** before inventing one: `.rows` + `.row`, `.dsec`, `.wstats`,
+  `.pseg`, `.seg`, `.bar-card`, `.cutrow`, `.privrow`, `.mmore`, `.note`, `.hint`.
+- **Class names** get a feature prefix and a grep before they exist (trap 4).
+- **Dropped for good, do not propose again**: exercise types, warm-up sets, auto-start of the
+  timer on anything but a ticked set, private workouts.
+
+## Mistakes a weaker model makes here, and the way out
+
+| The mistake | Why it happens | Do this instead |
+|---|---|---|
+| Reads `index.html` top to bottom "to understand it" | habit | map → `grep -n "function name"` → read 60 lines |
+| Trusts a banner or a line number | they are older than the code | trust the function name; line numbers drift every commit |
+| Writes `const`, arrows, template literals | modern default | ES5; the syntax check passes either way, the style does not |
+| Adds a helper that already exists (`esc`, `num`, `logged`, `pad2`, `fmtDuration`, `fmtVolume`, `fmtKg`, `relDate`, `dmy`, `monday`, `addDays`, `nameKey`, `byId`, `routineById`, `uid`, `toast`, `askConfirm`, `paint`) | did not grep | grep the verb before writing it |
+| Names a function or class that exists | one scope, one stylesheet | `grep -n "\bname\b"` in the script and `grep -n "\.name\b"` in the CSS first |
+| Rebuilds an object from form fields | looks tidy | copy the stored object, overwrite the form's fields |
+| Fixes one half of a duplicated pair | does not know the pair | read "Known duplication" before editing any of those |
+| Puts a friend's field into markup | "it is our own data" | it is not: `esc`, `prN`, `cleanSets`, `cleanStep`, `postOk` |
+| Adds a `cloudPull` trigger, or a reload, without thinking of unsent writes | sync looks simple | read traps 1, 2 and 8; push first, guard the merge |
+| Compares objects with `JSON.stringify` | shortest code | `rtSay` for routines, `sigOf` only for "did my own copy change" |
+| Buckets weeks with `Math.floor` or by milliseconds across a clock change | off-by-one hides until Monday | `monday()`, `addDays()`, `Math.ceil` as in `weekStreak` |
+| Edits `APP_VERSION`, or the cache name without need | wants to be helpful | the hook owns the version; bump `V` only when `CORE` changes |
+| Writes the push secret, or replays the whole SQL file | has the tools | placeholder stays; small incremental migration only |
+| Opens the browser for a logic change | wants proof | a node test is the proof; the browser is for looks |
+| Runs a destructive SQL statement to "clean up" | has `execute_sql` | say what it touches and ask; this is a real training log |
+| "Fixes" a decision as if it were a bug: frozen followed routines, the toast on change, visible-not-followable, friends only, streak that forgives the current week | reads it as an oversight | these were chosen; ask before changing behaviour |
+| Adds attribution to a commit, or a long report after a small change | default habit | one evocative sentence as the message, one or two lines as the reply, in Polish |
+| Says "done" after the edit | no checklist | run the list at the bottom |
+
+## Known and still open
+
+- `shortcut:` only the `online` event retries the first look of an app opened offline.
+- `pushOn` after a refused upsert leaves the browser subscribed, so the row reads "On".
+- `rls_auto_enable()` (Supabase's own event trigger) and leaked-password protection are the
+  two advisor warnings left; the second is a switch in the dashboard, Auth → Passwords.
+
 ## Conventions
 
 - Commit messages are one short evocative sentence, lower-case after the first word
@@ -431,3 +604,32 @@ update `graphify-out/`; this file and a grep are the map.
   checks proportional to the change, no browser for logic.
 - `markdown/SUPABASE.md` and `markdown/TEST-SOCIAL.md` describe intent well but have drifted from the code —
   the code wins.
+
+## Before you say it is done
+
+Run it in this order. A line you skip is a line you report as skipped.
+
+1. **Scope**: `git diff --stat` shows only what the task needed. No drive-by rewrites, no
+   reformatting, no change to `APP_VERSION`.
+2. **Names**: every function, `var` and class you added was grepped first and is unique.
+3. **Callers**: every caller of a function whose behaviour changed was read, and the other
+   half of any pair in "Known duplication" was changed or deliberately left.
+4. **Syntax**: the `node --check` command from "Commands" prints nothing.
+5. **Tests**: `node tests/run.js` ends with "Wszystko gra." New logic with a branch has a
+   test, and the test file is in the `files` list.
+6. **Style**: no `const`, `let`, `=>` or template literal in the page's script that you added
+   (`git diff -U0 public/index.html | grep -E "^\+.*(=>|const |let )"` is empty).
+7. **Hostile input**: nothing from `posts`, `library`, `profiles`, `live_session` or a ping
+   reaches markup, a loop bound or a selector without `esc` / `Number` / a `clean*` helper.
+8. **Sync**: no new write to state captured before a request; no new pull or reload that can
+   land on unsent changes; nothing marked sent before it was.
+9. **Service worker**: `V` bumped if and only if `CORE` changed; the supabase-js version is
+   the same in the page and in `sw.js`.
+10. **Server**: the SQL file and the applied migration say the same thing; `get_advisors`
+    is clean; no secret in a file.
+11. **Looks** (only if they changed): Cocoa light in the preview, the screen entered and left,
+    one other skin glanced at; `public/__t.html` deleted, storage and caches cleared.
+12. **Docs**: the Guide screen and this file still describe what the code does.
+13. **Ship**: commit with one short sentence, no attribution, push, and tell the owner in
+    Polish, in a line or two, what changed and the new `APP_VERSION`. Say plainly what you
+    did not check.
