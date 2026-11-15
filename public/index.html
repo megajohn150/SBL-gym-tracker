@@ -1147,7 +1147,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .pseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 /* bars or a line, and where the records fell */
 .phead-r{display:flex;align-items:center;gap:10px;flex:none}
-.pyends{display:flex;justify-content:space-between;margin:.7rem 0 .2rem;font-size:11px;font-weight:600;color:var(--fg-3)}
+.pgut{margin-left:34px;margin-right:34px}
+/* the two end values sit in the gutters, level with where the data starts and where it is now;
+   they may spill into the page padding */
+.pbars .pyv{position:absolute;flex:none;background:none;border-radius:0;min-height:0;opacity:1;
+  font-style:normal;font-size:10px;font-weight:600;line-height:1;color:var(--fg-3);white-space:nowrap;transform:translateY(50%)}
+.pyl{right:100%;margin-right:6px}
+.pyr{left:100%;margin-left:6px}
 .pshare{flex:none;line-height:0;color:var(--fg-3);padding:4px}
 .pstyle{display:flex;border:var(--border);border-radius:calc(var(--radius) - 3px);overflow:hidden}
 .pstyle button{padding:5px 8px;line-height:0;color:var(--fg-3)}
@@ -2205,9 +2211,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
             <button class="pshare" data-chartshare="p" aria-label="Share chart"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>
           </span>
         </div>
-        <div class="pyends" id="p-yends"></div>
-        <div class="pbars" id="p-bars"></div>
-        <div class="pxlab" id="p-xlab"></div>
+        <div class="pbars pgut" id="p-bars"></div>
+        <div class="pxlab pgut" id="p-xlab"></div>
         <div class="pseg" id="p-metrics">
           <button data-metric="duration" aria-pressed="false">Duration</button>
           <button data-metric="volume" aria-pressed="false">Volume</button>
@@ -3392,7 +3397,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4419';
+  var APP_VERSION = '3.4420';
 
   /* =========================================================
      STORE
@@ -6299,11 +6304,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '</i></span>' +
       '<span class="phead-r">' + styleToggle(xStyle) +
         '<button class="prange" id="xh-range">' + xp.short + '</button>' + shareBtn('x') + '</span></div>' +
-      '<div class="pyends">' + yEnds(buckets, function (v) { return xLabel(v).join(' ').trim(); }) + '</div>' +
       chartBody(buckets, xStyle, xp, function (b) {
         var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
         return String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
-      }) +
+      }, function (v) { return xLabel(v).join(' ').trim(); }) +
       '<div class="pseg">' +
         '<button data-xmetric="weight" aria-pressed="' + (xMetric === 'weight') + '">Heaviest</button>' +
         '<button data-xmetric="orm" aria-pressed="' + (xMetric === 'orm') + '">Est. 1RM</button>' +
@@ -7151,10 +7155,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '</i></span>' +
       '<span class="phead-r">' + styleToggle(xStyle) +
         '<button class="prange" id="rv-range">' + xp.short + '</button>' + shareBtn('rv') + '</span></div>' +
-      '<div class="pyends">' + yEnds(buckets, function (v) { return rvLabel(v).join(' ').trim(); }) + '</div>' +
       chartBody(buckets, xStyle, xp, function (b) {
         return String(rvLabel(b.v).join(' ')).trim() + '  \u00b7  ' + b.lab;
-      }) +
+      }, function (v) { return rvLabel(v).join(' ').trim(); }) +
       '<div class="pseg">' +
         '<button data-rvmetric="vol" aria-pressed="' + (rvMetric === 'vol') + '">Volume</button>' +
         '<button data-rvmetric="reps" aria-pressed="' + (rvMetric === 'reps') + '">Reps</button>' +
@@ -8501,7 +8504,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var when = xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month';
     var H = 900, sc = chartScale(buckets, style), n = buckets.length;
     shareCanvas('chart-' + new Date().toISOString().slice(0, 10) + '.png', 1080, H, function (g, c, txt, face, disp, W) {
-      var pad = IMG_PAD, x0 = pad, x1 = W - pad, y0 = 520, y1 = H - 150, ph = y1 - y0, slot = (x1 - x0) / n;
+      var pad = IMG_PAD, x0 = pad + 80, x1 = W - pad - 80, y0 = 490, y1 = H - 150, ph = y1 - y0, slot = (x1 - x0) / n;
       txt('SBL TRACKER', pad, 120, 30, 700, c('--fg-3'));
       txt(title, pad, 215, 80, 800, c('--fg'), 'left', disp);
       txt(sub + '  \u00b7  ' + xp.short, pad, 268, 32, 400, c('--fg-2'));
@@ -8509,11 +8512,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       var bw = g.measureText(big).width;
       txt(big, pad, 400, 96, 700, c('--fg'), 'left', disp);
       txt(when, pad + bw + 22, 400, 34, 400, c('--fg-3'));
-      var ends = chartEnds(buckets);
-      if (ends) {
-        if (!ends[2]) txt(fmt(ends[0]), x0, y0 - 64, 28, 700, c('--fg-3'), 'left');
-        txt(fmt(ends[1]), x1, y0 - 64, 28, 700, c('--fg-3'), 'right');
-      }
       g.strokeStyle = c('--line'); g.lineWidth = 2;
       g.beginPath(); g.moveTo(x0, y1); g.lineTo(x1, y1); g.stroke();
       var yOf = function (v) { return y1 - chartH(sc, v) / 100 * ph; };
@@ -8527,6 +8525,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           if (on) g.lineTo(px, yOf(b.v)); else { g.moveTo(px, yOf(b.v)); on = true; }
         });
         g.stroke();
+      }
+      // the two end values stand beside the plot, level with the first and the last point
+      var ends = chartEnds(buckets);
+      if (ends) {
+        if (!ends[2]) txt(fmt(ends[0]), x0 - 16, yOf(ends[0]) + 9, 26, 700, c('--fg-3'), 'right');
+        txt(fmt(ends[1]), x1 + 16, yOf(ends[1]) + 9, 26, 700, c('--fg-3'), 'left');
       }
       buckets.forEach(function (b, i) {
         var cx = x0 + (i + 0.5) * slot, ty = null, tick = xTick(b, i, n, sc.step, xp);
@@ -10270,15 +10274,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     buckets.forEach(function (b, i) { if (b.v > 0) { if (a < 0) a = i; z = i; } });
     return a < 0 ? null : [buckets[a].v, buckets[z].v, a === z];
   }
-  // the two numbers over the chart, left and right; `fmt` writes a value the way the chart's own
-  // header does
-  function yEnds(buckets, fmt) {
+  // The two end values, to sit in the gutters beside the plot: the left one level with the first
+  // logged value, the right one level with the last. `fmt` writes a value the way the chart's
+  // own header does. They belong inside the box whose height they are measured against.
+  function yEnds(buckets, sc, fmt) {
     var e = chartEnds(buckets);
     if (!e) return '';
-    return '<span>' + (e[2] ? '' : esc(fmt(e[0]))) + '</span><span>' + esc(fmt(e[1])) + '</span>';
+    var at = function (v) { return 'style="bottom:' + chartH(sc, v).toFixed(2) + '%"'; };
+    return (e[2] ? '' : '<em class="pyv pyl" ' + at(e[0]) + '>' + esc(fmt(e[0])) + '</em>') +
+      '<em class="pyv pyr" ' + at(e[1]) + '>' + esc(fmt(e[1])) + '</em>';
   }
 
-  function chartBody(buckets, style, xp, tipOf) {
+  function chartBody(buckets, style, xp, tipOf, fmt) {
     var sc = chartScale(buckets, style), xmax = sc.xmax, step = sc.step, n = buckets.length;
     var at = function (i) { return (i + 0.5) / n * 100; };
     var hOf = function (v) { return chartH(sc, v); };
@@ -10294,19 +10301,19 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         (b.pr ? '<span class="pflag" style="' + pos + '">' + CUP_SM + '</span>' : '');
     }).join('');
 
-    return '<div class="pbars' + (style === 'line' ? ' aline' : '') + '">' +
+    return '<div class="pbars pgut' + (style === 'line' ? ' aline' : '') + '">' +
       (style === 'line' && pts
         ? '<svg class="pline" viewBox="0 0 100 100" preserveAspectRatio="none">' +
           '<polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="2" ' +
           'stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'
         : '') +
-      '<span class="pmark">' + marks + '</span>' +
+      '<span class="pmark">' + marks + yEnds(buckets, sc, fmt) + '</span>' +
       buckets.map(function (b) {
         return '<button class="pbar" data-tip="' + esc(tipOf(b)) + '"' +
           (b.prW ? ' data-prw="' + esc(b.prW) + '"' : '') + '>' +
           '<i style="height:' + Math.max(2, Math.round(b.v / xmax * 100)) + '%"></i></button>';
       }).join('') + '</div>' +
-      '<div class="pxlab">' + buckets.map(function (b, i) {
+      '<div class="pxlab pgut">' + buckets.map(function (b, i) {
         return '<span>' + xTick(b, i, n, step, xp) + '</span>';
       }).join('') + '</div>';
   }
@@ -10400,9 +10407,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('p-metric-when').textContent =
       p.unit === 'day' ? 'today' : p.unit === 'week' ? 'this week' : 'this month';
     $('p-range').textContent = p.short;
-    $('p-yends').innerHTML = yEnds(buckets, function (v) { return metricLabel(v).join(' ').trim(); });
 
-    $('p-bars').innerHTML = buckets.map(function (x) {
+    $('p-bars').innerHTML = '<span class="pmark">' + yEnds(buckets, chartScale(buckets, 'bars'),
+      function (v) { return metricLabel(v).join(' ').trim(); }) + '</span>' + buckets.map(function (x) {
       return '<button class="pbar" data-tip="' +
         esc(String(metricLabel(x.v).join(' ')).trim() + '  \u00b7  ' + x.lab) + '">' +
         '<i style="height:' + Math.max(2, Math.round(x.v / max * 100)) + '%"></i></button>';
