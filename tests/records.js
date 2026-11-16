@@ -52,6 +52,7 @@ delete store.exercises[0].resetAt;
 store.workouts.push(W('w4', 20, [set(500, 5)], { skipped: true }));
 api.recompute();
 t.is('a skipped exercise sets no record', [by('w4').records, api.bestsFor('a').weight], [0, 110]);
+t.is('each best carries the day it was set', [api.bestsFor('a').wd, api.bestsFor('a').vd], [by('w2').date, by('w3').date]);
 store.workouts.pop();
 
 const live = { exId: 'a', sets: [Object.assign(set(120, 5), { done: false }), Object.assign(set(120, 5), { done: true })] };

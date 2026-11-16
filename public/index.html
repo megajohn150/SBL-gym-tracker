@@ -730,6 +730,10 @@ body.in-session .tabs{display:none}
   display:block;margin-top:3px;font-style:normal;font-size:9px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--fg-3);font-weight:600;
 }
+.xrdate{
+  display:block;margin-bottom:4px;text-decoration:none;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--fg-3);font-weight:600;white-space:nowrap;
+}
 .wex{padding-top:.5rem}
 .wex li{display:flex;justify-content:space-between;gap:1rem;padding:.26rem 0;font-size:.76rem;color:var(--fg-2)}
 .wex em{font-style:normal;color:var(--fg-3);white-space:nowrap}
@@ -3566,7 +3570,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4467';
+  var APP_VERSION = '3.4468';
 
   /* =========================================================
      STORE
@@ -6468,6 +6472,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     return rows;
   }
 
+  // the small day above a record; a blank line keeps the three columns level when there is none
+  function recDate(val, iso) {
+    return '<u class="xrdate">' + (val && iso ? dmy(new Date(iso)) : '&nbsp;') + '</u>';
+  }
+
   // the exercise's own page opens each session; the peek from a workout in progress only looks
   function histHtml(rows, go) {
     return rows.length
@@ -6500,9 +6509,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     var recs = '<div class="dsec" style="border-top:none;margin-top:0">Records</div>' +
       '<div class="wstats3" style="margin:0 var(--pad)">' +
-      '<div><b>' + (best.weight ? fmtVolume(best.weight) : '&ndash;') + '</b><i>Heaviest</i></div>' +
-      '<div><b>' + (best.orm ? Math.round(best.orm) + ' kg' : '&ndash;') + '</b><i>Est. 1RM</i></div>' +
-      '<div><b>' + (best.vol ? fmtVolume(best.vol) : '&ndash;') + '</b><i>Best set</i></div>' +
+      '<div>' + recDate(best.weight, best.wd) + '<b>' + (best.weight ? fmtVolume(best.weight) : '&ndash;') + '</b><i>Heaviest</i></div>' +
+      '<div>' + recDate(best.orm, best.od) + '<b>' + (best.orm ? Math.round(best.orm) + ' kg' : '&ndash;') + '</b><i>Est. 1RM</i></div>' +
+      '<div>' + recDate(best.vol, best.vd) + '<b>' + (best.vol ? fmtVolume(best.vol) : '&ndash;') + '</b><i>Best set</i></div>' +
       '</div>';
     var lbBtn = sb && me ? '<div style="padding:1.2rem var(--pad) 0"><button class="dashbtn" data-xlb="' +
       esc(nameKey(x.name)) + '" style="width:100%">Friends leaderboard</button></div>' : '';
@@ -8850,9 +8859,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
-          best.weight = Math.max(best.weight, kg);
-          best.orm = Math.max(best.orm, epley(kg, effReps(st)));
-          best.vol = Math.max(best.vol, kg * reps);
+          // wd/od/vd: the day each record was set; on a tie the earlier day keeps it
+          var o = epley(kg, effReps(st)), v = kg * reps;
+          if (kg > best.weight || (kg === best.weight && w.date < best.wd)) { best.weight = kg; best.wd = w.date; }
+          if (o > best.orm || (o === best.orm && w.date < best.od)) { best.orm = o; best.od = w.date; }
+          if (v > best.vol || (v === best.vol && w.date < best.vd)) { best.vol = v; best.vd = w.date; }
         });
       });
     });
