@@ -1276,7 +1276,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 /* the ring fills the cell's width, so its gap to the top and both sides is the one padding */
 .wkbar.dshbar > div{padding:8px}
 .dshring{display:block;width:100%;height:auto;margin:0 0 8px;transform:rotate(-90deg)}
-.dshring circle{fill:none;stroke:var(--line);stroke-width:3}
+.dshring circle{fill:none;stroke:var(--line);stroke-width:5.5}
 .dshring .fill{stroke:var(--fg);stroke-linecap:round}
 .dshtoday{margin:.4rem var(--pad) 0;padding:var(--cardpad);background:var(--surface);border:var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
 .dshtoday h2{font-family:var(--display);font-size:1.6rem;font-weight:700;margin-top:.15rem}
@@ -1939,9 +1939,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       </div>
 
       <div class="wkbar dshbar" style="margin-top:.8rem">
-        <div><svg class="dshring" width="48" height="48" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16.5" pathLength="100"/><circle class="fill" cx="18" cy="18" r="16.5" pathLength="100" stroke-dasharray="50 100"/></svg><b>2 <small>/ 4</small></b><i>This week</i></div>
-        <div><svg class="dshring" width="48" height="48" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16.5" pathLength="100"/><circle class="fill" cx="18" cy="18" r="16.5" pathLength="100" stroke-dasharray="40 100"/></svg><b>31 <small>/ 77</small></b><i>Sets</i></div>
-        <div><svg class="dshring" width="48" height="48" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16.5" pathLength="100"/><circle class="fill" cx="18" cy="18" r="16.5" pathLength="100" stroke-dasharray="100 100"/></svg><b>18</b><i>Week streak</i></div>
+        <div><svg class="dshring" width="48" height="48" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.25" pathLength="100"/><circle class="fill" cx="18" cy="18" r="15.25" pathLength="100" stroke-dasharray="50 100"/></svg><b>2 <small>/ 4</small></b><i>This week</i></div>
+        <div><svg class="dshring" width="48" height="48" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.25" pathLength="100"/><circle class="fill" cx="18" cy="18" r="15.25" pathLength="100" stroke-dasharray="40 100"/></svg><b>31 <small>/ 77</small></b><i>Sets</i></div>
+        <div><svg class="dshring" width="48" height="48" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.25" pathLength="100"/><circle class="fill" cx="18" cy="18" r="15.25" pathLength="100" stroke-dasharray="100 100"/></svg><b>18</b><i>Week streak</i></div>
       </div>
 
       <div class="dsec">Plan</div>
@@ -3693,7 +3693,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4483';
+  var APP_VERSION = '3.4484';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
