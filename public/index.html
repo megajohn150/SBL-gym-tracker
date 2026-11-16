@@ -1931,7 +1931,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       </div>
     </div>
     <div class="scroll">
-      <p class="hint" style="padding-top:0">Design preview. The numbers below are samples.</p>
+      <div class="bar-card livebar"><span class="avatar" style="width:52px;height:52px;font-size:20px">F</span>
+        <span class="lvtxt"><span class="lab"><b>frajerskiszczurek</b> has a workout in progress</span><span class="nm">Evening workout</span></span>
+        <span class="time">0:26:02</span></div>
+      <div class="reportbar">
+        <button class="go"><b>Your week is wrapped</b><span>9 Nov &ndash; 15 Nov &middot; see how it went</span></button>
+        <button class="x" aria-label="Dismiss">&times;</button>
+      </div>
+      <p class="hint" style="padding-top:1rem">Design preview. The numbers below are samples.</p>
 
       <div class="dshtoday">
         <p class="eyebrow">Today &middot; Wednesday</p>
@@ -1988,9 +1995,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <div class="row"><span class="lab"><span class="nm">Push</span><span class="meta">6 days ago</span></span><span class="val">Due</span><span class="chev">&rsaquo;</span></div>
       </div>
 
-      <div class="reportbar" style="margin-top:1.6rem">
-        <button class="go"><b>Weekly recap is ready</b><span>See how the week went</span></button>
-      </div>
       <div style="height:1.5rem"></div>
     </div>
   </section>
@@ -3693,7 +3697,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4487';
+  var APP_VERSION = '3.4488';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
