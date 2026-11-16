@@ -9,7 +9,7 @@ const merge = new Function(planClean() + slice('  function mergeStores(local, re
   '; return { mergeStores: mergeStores, unionStores: unionStores };')();
 function make(store, runs) {
   return new Function('store', 'routineById', 'runsOf', dates + code +
-    '; return { planShort: planShort, planName: planName, cleanPlan: cleanPlan, planAt: planAt, planNext: planNext, lastRun: lastRun, planCell: planCell, planDaysOf: planDaysOf };')(
+    '; return { planShort: planShort, cleanPlan: cleanPlan, planAt: planAt, planNext: planNext, lastRun: lastRun, planCell: planCell, planDaysOf: planDaysOf };')(
     store, (id) => store.routines.filter((r) => r.id === id)[0], runs || (() => []));
 }
 
@@ -27,11 +27,8 @@ t.is('next up looks ahead from today', (() => { const n = a.planNext(WED); retur
 t.is('and wraps round the weekend to Monday', (() => { const n = a.planNext(new Date(2026, 10, 21, 12)); return [n.r.id, n.ahead]; })(), ['pull', 2]);
 t.is('from Sunday, Monday is tomorrow', a.planNext(new Date(2026, 10, 22, 12)).ahead, 1);
 t.is('a plan of rest days has no next', make({ routines: R, plan: ['', '', '', '', '', '', ''] }).planNext(WED), null);
-t.is('a short name is left alone', [a.planName('Push'), a.planName('Posterior'), a.planName('Full body A!!!')], ['Push', 'Posterior', 'Full body A!!!']);
-t.is('a long one is cut at a whole word', [a.planName('Anterior upper body and arms'), a.planName('Upper body push day'), a.planName('Supercalifragilistic')], ['Anterior upper\u2026', 'Upper body\u2026', 'Supercalifrag\u2026']);
 t.is('a short name wins, else the first three letters of the name', [a.planShort({ short: 'PU', name: 'Push' }), a.planShort({ name: 'Full body A' }), a.planShort({ short: '  ', name: 'Pull' })], ['PU', 'Ful', 'Pul']);
 t.is('a short name is cut to three whatever was stored', [a.planShort({ short: 'ABCDEF', name: 'x' }), a.planShort({ short: 12345, name: 'x' }), a.planShort(null)], ['ABC', '123', '']);
-t.is('nothing is a blank name', [a.planName(''), a.planName(null)], ['', '']);
 t.is('the days of one routine, for its row', [a.planDaysOf('pull'), a.planDaysOf('legs'), a.planDaysOf('x')], ['Mon', 'Fri', '']);
 
 t.is('the last run is the newest one', make({ routines: R }, () => [{ date: '2026-11-02T10:00:00' }, { date: '2026-11-09T10:00:00' }, { date: '2026-11-05T10:00:00' }]).lastRun(R[0]).date, '2026-11-09T10:00:00');
