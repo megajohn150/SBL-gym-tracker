@@ -1284,6 +1284,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshday i{font-style:normal;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
 .dshday b{font-size:1rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 2px;overflow:hidden;white-space:nowrap}
 #s-dash .wkbar{margin-top:.8rem}
+#s-dash .mmore{text-align:center}
 .dshlink{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit}
 button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .dshc.done.now{color:var(--bg);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--fg)}
@@ -2877,7 +2878,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
       <li><b>Plan.</b> Seven days, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. Each cell shows a short name of up to three characters: change it in the box beside a routine when you tap a day (or in the routine's editor); without one the plan uses the first three letters. It syncs with your account.</li>
       <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
-      <li><b>Sets this week:</b> the muscles furthest from their weekly set goal, with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
+      <li><b>Sets this week:</b> the three muscles furthest from their weekly set goal (See more shows the rest), with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
       <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
       <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
@@ -3670,7 +3671,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4502';
+  var APP_VERSION = '3.4503';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10259,6 +10260,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     return '<div class="dsec row2"><span>Plan</span><span>Tap a day to change it</span></div><div class="dshweek">' + cells + '</div>';
   }
 
+  var dashSetsOpen = false;     // "See more" under Sets this week
   function dashSets() {
     var now = new Date(), from = monday(now), r = statsFor(from, addDays(from, 7)), rows = [];
     Object.keys(store.targets).forEach(function (k) {
@@ -10271,10 +10273,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var left = 7 - planIdx(now);
     return '<div class="dsec row2"><span>Sets this week</span><button class="dshlink" data-push="stat-sets">' +
       left + (left === 1 ? ' day left' : ' days left') + ' &rsaquo;</button></div><div class="split">' +
-      rows.slice(0, 5).map(function (x) {
+      rows.slice(0, dashSetsOpen ? rows.length : 3).map(function (x) {
         return '<div class="splitrow"><span class="m">' + esc(x.k) + '</span><div class="splitline"><div class="meter"><i style="width:' +
           Math.min(100, Math.round(x.v / x.g * 100)) + '%"></i></div><span class="p">' + x.v + '/' + x.g + '</span></div></div>';
-      }).join('') + '</div>';
+      }).join('') + '</div>' +
+      (rows.length > 3 ? '<button class="mmore" data-dash="setsmore">' + (dashSetsOpen ? 'Show less' : 'See ' + (rows.length - 3) + ' more') + '</button>' : '');
   }
 
   function dashCal() {
@@ -10383,6 +10386,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var k = go.dataset.dash;
     if (k === 'pick') openPlanSheet('start', 0);
     else if (k === 'resume') push('session');
+    else if (k === 'setsmore') { dashSetsOpen = !dashSetsOpen; paint($('dash-sets'), dashSets()); }
     else if (k === 'workout') goTab('workout');
   });
 
