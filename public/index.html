@@ -3593,7 +3593,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4476';
+  var APP_VERSION = '3.4477';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -13139,14 +13139,24 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // A long press on one of your own cards opens this same menu without entering the workout:
   // pressW is the card's workout while that menu is up (null when it came from the detail screen).
   var pressW = null, wcTimer = null, wcHeld = false, wcAt = null;
-  function detailMenu(w) {
+  var DETAIL_WRAP = 'top:calc(env(safe-area-inset-top) + 56px)';   // under the dots, as the markup has it
+  function detailMenu(w, at) {
     pressW = w || null;
     $('detail-menu-items').innerHTML = detailEdit
       ? '<button data-dact="cancel">Discard changes</button>'
       : '<button data-dact="edit">Edit workout</button>' +
         '<button data-dact="routine">Save as routine</button>' +
         '<button data-dact="delete" class="danger">Delete workout</button>';
+    var wrap = document.querySelector('#detail-pop .pop-wrap');
+    wrap.style.cssText = DETAIL_WRAP;
     $('detail-pop').hidden = false;
+    if (!at) return;
+    // from a long press the menu hangs off the finger, as if the dots were there: its top right
+    // corner at the touch, pulled back inside the screen
+    wrap.style.cssText = 'width:min(240px,calc(100vw - 16px));transform:none;max-width:none';
+    var m = $('detail-menu-items');
+    wrap.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 8, at.x - m.offsetWidth)) + 'px';
+    wrap.style.top = Math.max(8, Math.min(window.innerHeight - m.offsetHeight - 8, at.y)) + 'px';
   }
   function closeDetailPop() { $('detail-pop').hidden = true; }
   document.querySelector('[data-detail-close]').addEventListener('click', function () { pressW = null; closeDetailPop(); });
@@ -13162,7 +13172,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       wcHeld = true;
       setTimeout(function () { wcHeld = false; }, 600);        // the lift of the finger must not open the workout
       if (navigator.vibrate) navigator.vibrate(12);
-      detailMenu(w);
+      detailMenu(w, wcAt);
     }, 500);
   });
   document.addEventListener('pointermove', function (e) {
