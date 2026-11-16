@@ -2820,7 +2820,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>A workout.</b> Hold one of your cards to get the &#8942; menu below without opening it. Tap a card to open it: totals with the change versus your last run of that routine, muscle split, every set (tap a medal for the old record; a plate icon means plates were used). &#8942;: <b>Edit workout</b> (name, start, duration, notes, weights, reps, RIR, plates, add/remove/reorder sets and exercises; Save or x at the bottom), <b>Save as routine</b>, Delete (Undo offered).</li>
       <li><b>Like and comment.</b> Thumb to like (hold it to see who liked). Bubble opens comments: write, Reply, Delete your own. Likes and comments made offline are sent later.</li>
       <li><b>Bell.</b> Likes, comments, replies, threads you joined, new followers. Tap one to open it, x or Read all to clear.</li>
-      <li><b>Update.</b> Drag down from the top of Home, Workout, Profile or Settings to reload the newest version ("Version updated" appears after, with a What's new button that lists what changed since the version this phone had before).</li>
+      <li><b>Update.</b> Drag down from the top of Home, Workout, Profile or Settings to reload the newest version ("Version updated" appears after, with a What's new button that lists every change you have not opened yet; the list is kept until you open it).</li>
     </ul>
 
     <div class="dsec">Profile</div>
@@ -3593,7 +3593,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4478';
+  var APP_VERSION = '3.4479';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -3614,6 +3614,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     $('chg-sheet').hidden = false;
   }
   function chgOf(v) { return CHANGELOG.filter(function (c) { return c[0] === v; }); }
+  // What is unread: the lines after `base`, the last version whose list the owner opened (tracker-chg),
+  // up to this one. Lines keyed to a later version (a commit not bumped yet) are left out.
+  function chgNews(base) {
+    return CHANGELOG.filter(function (c) { return Number(c[0]) > Number(base) && Number(c[0]) <= Number(APP_VERSION); });
+  }
+  // At boot: `seen` is the version this device ran last (tracker-ver, moved on every start), `read` is
+  // tracker-chg. A device from before that key existed starts from `seen`; a fresh one has nothing unread.
+  // The toast shows once per new version (seen moves on), but lists everything not yet opened.
+  function chgStart(seen, read) {
+    var base = read || seen || APP_VERSION, news = chgNews(base);
+    return { base: base, news: news, toast: !!seen && seen !== APP_VERSION, list: news.length > 0 };
+  }
 
   /* =========================================================
      STORE
@@ -14156,12 +14168,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
   render(current());
   // a new version took over on this reload: say so, so Settings need not be opened to find out
-  var seenVer = load('ver');
-  if (seenVer && seenVer !== APP_VERSION) {
-    // the lines newer than what this device ran; with none, the toast stays a plain message
-    var news = CHANGELOG.filter(function (c) { return Number(c[0]) > Number(seenVer) && Number(c[0]) <= Number(APP_VERSION); });
-    if (news.length) {
-      toast('Version updated: ' + APP_VERSION, 9000, function () { chgOpen(news); }, "What's new");
+  var seenVer = load('ver'), cs = chgStart(seenVer, load('chg'));
+  if (!load('chg')) save('chg', cs.base);
+  if (cs.toast) {
+    // with nothing unread the toast stays a plain message; opening the list marks it all read
+    if (cs.list) {
+      toast('Version updated: ' + APP_VERSION, 9000, function () {
+        chgOpen(cs.news);
+        save('chg', APP_VERSION);
+      }, "What's new");
     } else toast('Version updated: ' + APP_VERSION, 3000);
   }
   save('ver', APP_VERSION);

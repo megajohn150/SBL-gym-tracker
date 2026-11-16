@@ -158,7 +158,7 @@ workout, deleting exercises). Added since: `chart` (the shared scale, the labels
 the page's own dots agreeing with it), `a2hs` (when the install card shows), `import` (garbage
 JSON files, `cleanWorkouts`, `cleanExercises` and `mergeImport`), `packs` (the starter packs: the data against the app's own forms,
 both import orders, the name and routine-number rules, nothing existing rewritten).
-Twenty-two files, 326 assertions. Not covered, because it needs a DOM: every `draw*`, navigation,
+Twenty-three files. Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
@@ -192,7 +192,7 @@ for .25 s after navigation, so an immediate screenshot looks washed out.
 `save(k, v)` / `load(k)` prefix every key with `tracker-`. The keys in use: `data` (the
 store), `session` (written directly as `tracker-session`), `skin`, `mode`, `xstyle`, `rest`,
 `rest-run`, `restcfg`, `music` (links stay on the device, never synced), `ver` (the last
-version this device ran, for the "Version updated" toast), `reopen` (the tab a pull-to-refresh
+version this device ran, so the "Version updated" toast shows once per version), `chg` (the last version whose change list was opened; the list shows what is newer than it, so skipped toasts are not lost), `reopen` (the tab a pull-to-refresh
 asked for), `uid` (the last account here; also names the owner of snapshots at boot),
 `react-q` (queued likes and comments), `sigs-<user_id>` (what has already gone up),
 `feed-<user_id>` (the cached feed, below), `feedf` (the Home filter), `bk-cfg` / `bk-last` /
@@ -656,8 +656,8 @@ update `graphify-out/`; this file and a grep are the map.
   tidying that no user needs to read). The list is at the top of `public/index.html`, under
   APP_VERSION; key the line by the version that commit will become, i.e. the current `APP_VERSION`
   plus one patch (the hook bumps it). Plain English, one short line. The "Version updated" toast
-  opens the lines newer than `tracker-ver` (`chg-sheet`); the version number in Settings opens the
-  current version's own line, if it has one. `tests/static.js` checks the order.
+  opens every line newer than `tracker-chg` (`chg-sheet`, `chgStart`), and opening it moves `tracker-chg` on; the version number in Settings opens the
+  current version's own line, if it has one. `tests/static.js` checks the order, `tests/changelog.js` the unread rules.
 - Comments explain *why*, in prose, and sit above the code they justify. Em dashes are real
   characters in comments; `\u` escapes belong only in JS string literals.
 - Spend the least usage that still fully does the job: short replies after a small change,
