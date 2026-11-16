@@ -1278,12 +1278,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshmeta{font-size:.78rem;color:var(--fg-3);margin-top:.2rem}
 .dshalt{display:block;margin:.7rem auto 0;font-size:.8rem;color:var(--fg-3);text-decoration:underline}
 /* seven days in two rows (four, then three), so a cell is wide enough for a routine's name */
-.dshweek{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin:0 var(--pad)}
-.dshday:nth-child(-n+4){grid-column:span 3}
-.dshday:nth-child(n+5){grid-column:span 4}
+/* option 1: one row of seven, three-character names */
+.dshweek{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 var(--pad)}
 .dshday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;min-width:0;font:inherit;color:inherit;border:var(--border);border-radius:calc(var(--radius) - 4px);background:var(--surface);text-align:center}
 .dshday i{font-style:normal;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
-.dshday b{font-size:.78rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dshday b{font-size:1rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 2px;overflow:hidden;white-space:nowrap}
+/* option 2: full names in cells that scroll sideways */
+.dshscroll{display:flex;gap:6px;overflow-x:auto;padding:0 var(--pad);scrollbar-width:none}
+.dshscroll::-webkit-scrollbar{display:none}
+.dshday.wide{flex:none;width:96px;padding:8px 6px}
+.dshday.wide b{font-size:.85rem;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;height:2.4em}
 #s-dash .wkbar{margin-top:.8rem}
 .dshlink{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit}
 button.dshc{font:inherit;font-size:.8rem;font-weight:600}
@@ -2212,6 +2216,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         </button>
       </div>
     </div>
+    <div class="field" style="padding-top:.8rem">
+      <label for="rt-short">Short name</label>
+      <input type="text" id="rt-short" maxlength="3" placeholder="PUS" autocomplete="off" spellcheck="false">
+      <p class="hint" style="padding:.4rem 0 0">Up to three characters, for the week plan on Home. Left empty, the plan uses the first three letters of the name.</p>
+    </div>
 
     <div class="group">
       <h2>Exercises</h2>
@@ -2866,7 +2875,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Home</div>
     <ul class="gdl">
       <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
-      <li><b>Plan.</b> Seven cells, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. It syncs with your account.</li>
+      <li><b>Plan.</b> Seven days, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. A routine can have a short name of up to three characters (in its editor) for the narrow row; without one the plan uses the first three letters. It syncs with your account.</li>
       <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
       <li><b>Sets this week:</b> the muscles furthest from their weekly set goal, with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
@@ -3661,7 +3670,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4497';
+  var APP_VERSION = '3.4498';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -7191,7 +7200,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   /* --- an edited routine carries the same unsaved-changes bar as a workout --- */
   var rtDirty = false, rtBase = '';
 
-  function rtSig() { return sigOf([$('rt-name').value.trim(), draft.items]); }
+  function rtSig() { return sigOf([$('rt-name').value.trim(), $('rt-short').value.trim(), draft.items]); }
 
   function rtTouch() {
     rtDirty = !!draft.id && rtSig() !== rtBase;
@@ -7201,6 +7210,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function newRoutine() {
     musOpen = false;
     draft = { id: null, name: '', items: [] };
+    $('rt-short').value = '';
     rtDirty = false; rtBase = '';
     $('rt-delete').hidden = true;
     $('rt-share').hidden = true;
@@ -7226,6 +7236,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('rt-share').hidden = false;
     $('rt-share').textContent = r.shared ? 'Disable following' : 'Enable following';
     $('rt-name').value = r.name;
+    $('rt-short').value = r.short || '';
     rtBase = rtSig();
     rtDirty = false;
     push('routine-form');
@@ -7239,6 +7250,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     rtTouch();
   }
   $('rt-name').addEventListener('input', function () { draft.name = $('rt-name').value; syncRtForm(); });
+  $('rt-short').addEventListener('input', rtTouch);
 
   function drawRoutineForm() {
     var wrap = $('rt-picked');
@@ -7527,6 +7539,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (was) Object.keys(was).forEach(function (k) { r[k] = was[k]; });
     r.id = draft.id || uid();
     r.name = $('rt-name').value.trim();
+    // empty means the plan falls back to the first letters of the name, so no empty key is kept
+    if ($('rt-short').value.trim()) r.short = $('rt-short').value.trim().slice(0, 3); else delete r.short;
     r.items = draft.items.slice();
     var found = false;
     for (var i = 0; i < store.routines.length; i++) {
@@ -7558,6 +7572,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       })
     };
     $('rt-name').value = r.name;
+    $('rt-short').value = r.short || '';
     rtBase = rtSig();
     drawRoutineForm();
   }
@@ -10171,6 +10186,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     runsOf(r).forEach(function (w) { if (!best || new Date(w.date) > new Date(best.date)) best = w; });
     return best;
   }
+  // three characters for a plan cell: the routine's own short name, else the first letters of its name
+  // (a followed routine's JSON is a friend's, so the length is cut here too)
+  function planShort(r) {
+    var x = String(r && r.short || '').trim().slice(0, 3);
+    return x || String(r && r.name || '').replace(/\s+/g, '').slice(0, 3);
+  }
   // a routine's name for a cell of the plan: whole words up to fourteen characters, then an ellipsis
   function planName(n) {
     n = String(n || '');
@@ -10234,17 +10255,25 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       '<button class="dshalt" data-dash="empty">Start an empty workout</button>');
   }
 
+  // two ways to draw the week, one under the other while the choice is open:
+  // 'short' is one row of seven with three-character names, 'wide' a row of full names that scrolls sideways
   function dashPlan() {
     if (!store.routines.length) return '';
-    var now = new Date(), mon = monday(now), worked = {}, cells = '';
+    var now = new Date(), mon = monday(now), worked = {};
     store.workouts.forEach(function (w) { worked[dayKey(new Date(w.date))] = 1; });
-    for (var i = 0; i < 7; i++) {
-      var r = planAt(i), today = i === planIdx(now), done = worked[dayKey(addDays(mon, i))];
-      cells += '<button class="dshday' + (done ? ' done' : '') + (today ? ' now' : '') + (r ? '' : ' rest') +
-        '" data-plan-day="' + i + '"><i>' + PLAN_DAYS[i] + '</i><b>' + (r ? esc(planName(r.name)) : '&ndash;') + '</b><span>' +
-        (done ? '&#10003;' : today ? 'Today' : r ? '&nbsp;' : 'Rest') + '</span></button>';
+    function cells(kind) {
+      var out = '';
+      for (var i = 0; i < 7; i++) {
+        var r = planAt(i), today = i === planIdx(now), done = worked[dayKey(addDays(mon, i))];
+        out += '<button class="dshday' + (kind === 'wide' ? ' wide' : '') + (done ? ' done' : '') + (today ? ' now' : '') + (r ? '' : ' rest') +
+          '" data-plan-day="' + i + '"><i>' + PLAN_DAYS[i] + '</i><b>' + (r ? esc(kind === 'wide' ? r.name : planShort(r)) : '&ndash;') + '</b><span>' +
+          (done ? '&#10003;' : today ? 'Today' : r ? '&nbsp;' : 'Rest') + '</span></button>';
+      }
+      return out;
     }
-    return '<div class="dsec row2"><span>Plan</span><span>Tap a day to change it</span></div><div class="dshweek">' + cells + '</div>';
+    return '<div class="dsec row2"><span>Plan</span><span>Tap a day to change it</span></div>' +
+      '<p class="hint" style="padding:0 var(--pad) .5rem">Option 1: short names</p><div class="dshweek">' + cells('short') + '</div>' +
+      '<p class="hint" style="padding:1rem var(--pad) .5rem">Option 2: full names, swipe sideways</p><div class="dshscroll" id="dash-scroll">' + cells('wide') + '</div>';
   }
 
   function dashSets() {
@@ -10307,6 +10336,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function drawDash() {
     paint($('dash-today'), dashToday());
     paint($('dash-plan'), dashPlan());
+    var sc = $('dash-scroll'), tc = sc && sc.querySelector('.now');
+    if (tc) sc.scrollLeft = Math.max(0, tc.offsetLeft - 16);
     paint($('dash-sets'), dashSets());
     paint($('dash-cal'), dashCal());
     paint($('dash-rts'), dashRoutines());

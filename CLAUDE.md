@@ -203,7 +203,7 @@ previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `d
 ```js
 store   = { exercises, routines, workouts, gone, targets, plan?, injuries, profile, wiped? }   // gone is an array; wiped is a timestamp
 exercise = { id, name, code, muscle, head, cue, unilateral, step?, resetAt? }           // step: what +/- on the pad adds, kg
-routine  = { id, name, items, shared?, follow? }
+routine  = { id, name, items, short?, shared?, follow? }   // short: up to 3 characters for the week plan; absent = first three letters of name
 item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"; sets is 1..12
 follow   = { by, rid, user, map, side, born, at, dead }
 session  = { name, startedAt, idx, routineId, note?, exercises }
