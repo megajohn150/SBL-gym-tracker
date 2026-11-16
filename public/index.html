@@ -990,8 +990,11 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   left:50%;transform:translateX(-50%);
   width:calc(100% - 2 * var(--pad));max-width:calc(440px - 2 * var(--pad));
   display:flex;justify-content:flex-end;
+  /* only the menu itself takes taps; the empty stretch beside it belongs to the backdrop that closes the pop */
+  pointer-events:none;
 }
 .pop-menu{
+  pointer-events:auto;
   width:min(240px,100%);background:var(--surface);border:var(--border);
   border-radius:var(--radius);box-shadow:0 10px 30px -12px rgba(0,0,0,.6);overflow:hidden;
 }
@@ -3590,13 +3593,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4475';
+  var APP_VERSION = '3.4476';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4476', 'Hold one of your workout cards to open its menu without opening the workout'],
     ['3.4472', 'The version number in Settings opens what that version changed'],
     ['3.4470', 'A change log: tap the "Version updated" message to see what is new'],
     ['3.4469', 'Tap the date above a record to see how many days ago it was set'],
