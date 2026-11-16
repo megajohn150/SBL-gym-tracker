@@ -1,7 +1,7 @@
 /* Co się dzieje ze zmianą zapisaną tutaj, kiedy odpowiedź na pobranie
    danych jest jeszcze w drodze. node tests/pull.js */
-const { slice, suite } = require('./lib');
-const block = slice('  function mergeStores(local, remote)',
+const { slice, suite, planClean } = require('./lib');
+const block = planClean() + slice('  function mergeStores(local, remote)',
                     '  // The log and the running session move');
 const t = suite('pull');
 

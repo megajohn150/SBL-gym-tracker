@@ -19,6 +19,10 @@ function slice(from, to) {
   return src.slice(a, b);
 }
 
+// cleanPlan, as shipped: mergeStores, unionStores and mergeImport call it, and the blocks the tests
+// slice out of the page do not hold it
+function planClean() { return slice('  function cleanPlan(', '  // the routine planned for a weekday'); }
+
 function suite(name) {
   const ok = [];
   const bad = [];
@@ -39,4 +43,4 @@ function suite(name) {
   };
 }
 
-module.exports = { FILE, slice, suite };
+module.exports = { FILE, slice, suite, planClean };

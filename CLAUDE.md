@@ -72,7 +72,7 @@ more than their title says, listed here by what is actually inside.
 | 7231 | SESSION | the live workout (`startSession`, `drawSession`, the number pad, `padHit`), its header row (`sessStats`, `drawSessTotals`, and behind the volume and trophy cells `sessVolHtml`, `sessPrHtml`), **and then** (8024) the numbers behind it: `num`, `logged`, `workoutTotals`, `epley`, `stepRecords`, `recomputeRecords`, `bestsFor`, `livePrs`, `finishSession`, `drawSummary`, `shareCanvas` / `imgCells` / `shareSummary` / `shareChart` |
 | 8353 | BACKUP | `exportData` / `exportCsv`, `importData` (with `cleanWorkouts`, `cleanExercises`, `mergeImport` and its three-way sheet `impc-sheet`), erase, account sheets, `deleteAccount`, `leaveDevice` |
 | 8563 | push notifications | subscription handling, `pushJob`, the settings rows, the Live reactions switch |
-| 8749 | Hevy import | `hevyParse`/`hevyImport`, `hevyCsv` (the CSV export, its reverse); **then, with no banner of its own:** ending a workout (`sess-end`), the Home screen (8995) — `drawHome`, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the install card (`drawA2hs`, `needsA2hs`), the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (9115: `snapTake`, `snapList`) |
+| 8749 | Hevy import | `hevyParse`/`hevyImport`, `hevyCsv` (the CSV export, its reverse); **then, with no banner of its own:** ending a workout (`sess-end`), the Home and Feed screens (8995) — `drawHome`, `drawDash` and the `dash*` / `plan*` helpers, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the install card (`drawA2hs`, `needsA2hs`), the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (9115: `snapTake`, `snapList`) |
 | 9304 | likes, comments, the bell | reactions, the offline queue (`rq*`), comments (9530), `openPush` (9700), notifications (9743), **and then** the profile screen and its charts (9899: `drawProfile`, `chartBody` with its shared scale `chartScale` / `chartH` / `xTick` and the end values `chartEnds` / `yEnds`, `bucketShell`), `weekStreak`, `miniMonth` |
 | 10427 | STATISTICS | `statsFor`, `weekBoard`, set count, `drawTargets`, `stallList`, the radar, body map, injuries, readiness; the monthly report helpers and the weekly recap (11190: `drawWeekRecap`, `wrGo`, `drawRecapBar`), `drawStatMonth`; the calendar; `openWorkout` (11650), avatars and `muscleArt`, medals, `drawDetail` (a finished workout, own or a friend's) and its edit mode, where tapping a set number shows last time (`detailPv`); **then, under the same banner:** session menus (12283), the dock, edge-swipe back, swipe-to-delete, the rest timer (12670: `startRest`, `tickRest`), the music buttons, `drawRestCfg` |
 | 12850 | THEME | skins and light/dark |
@@ -158,7 +158,7 @@ workout, deleting exercises). Added since: `chart` (the shared scale, the labels
 the page's own dots agreeing with it), `a2hs` (when the install card shows), `import` (garbage
 JSON files, `cleanWorkouts`, `cleanExercises` and `mergeImport`), `packs` (the starter packs: the data against the app's own forms,
 both import orders, the name and routine-number rules, nothing existing rewritten).
-Twenty-three files. Not covered, because it needs a DOM: every `draw*`, navigation,
+Twenty-four files (`plan` covers the plan: what a day shows, what is next, calendar marks, the merge). Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
@@ -195,13 +195,13 @@ store), `session` (written directly as `tracker-session`), `skin`, `mode`, `xsty
 version this device ran, so the "Version updated" toast shows once per version), `chg` (the last version whose change list was opened; the list shows what is newer than it, so skipped toasts are not lost), `reopen` (the tab a pull-to-refresh
 asked for), `uid` (the last account here; also names the owner of snapshots at boot),
 `react-q` (queued likes and comments), `sigs-<user_id>` (what has already gone up),
-`feed-<user_id>` (the cached feed, below), `feedf` (the Home filter), `bk-cfg` / `bk-last` /
+`feed-<user_id>` (the cached feed, below), `feedf` (the Feed filter), `bk-cfg` / `bk-last` /
 `bk-base` / `bk-snooze` (backup reminder), `wr-seen` (the recap card, keyed by the week's
 Monday), `report-seen`, `notes-seen`, `notes-hid`. IndexedDB `tracker-snaps` holds the
 previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `data` JSON).
 
 ```js
-store   = { exercises, routines, workouts, gone, targets, injuries, profile, wiped? }   // gone is an array; wiped is a timestamp
+store   = { exercises, routines, workouts, gone, targets, plan?, injuries, profile, wiped? }   // gone is an array; wiped is a timestamp
 exercise = { id, name, code, muscle, head, cue, unilateral, step?, resetAt? }           // step: what +/- on the pad adds, kg
 routine  = { id, name, items, shared?, follow? }
 item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"; sets is 1..12
@@ -212,6 +212,7 @@ set      = { label, weight, reps, rir, plate?, done?, prs?, was? }   // all stri
 workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // records and set.prs/.was are derived
 workoutEx= { exId, name, muscle, unilateral, note, skipped?, sets }
 targets  = { <muscle or head>: { sets?, days? }, Total: { days } }   // Total = workouts a week (Weekly targets screen)
+plan     = [ routineId | '', x7 ]                  // Monday first; '' = rest day; absent until a day is set
 injuries = [{ id, name, muscles: [...], date }]
 profile  = { handle, name, bio, pic, unameAt?, noReact? }
 profile.stats = { workouts, streak, records, stamps50 }   // published; records: { <lowercased exercise name>: [heaviest, est. 1RM, best set] }
@@ -327,16 +328,26 @@ stored. The owner sees eyes (`watchSync`) and bubbles (`likePop`). `profile.noRe
 Workout → Live reactions) switches all of it off and greys the watcher's buttons through
 `live_session.data.react`.
 
-**Home.** `drawHome` draws, top to bottom: live cards, the week bar (`drawWeekBar`: workouts,
-sets against the summed set targets, week streak; the workouts cell reads `targets.Total`),
-the install card (`drawA2hs`: only an iPhone or iPad Safari tab, not the installed app; closing it
-lasts until the page is opened again, on purpose, and nothing is stored), the backup reminder, the Sunday recap card (`drawRecapBar`, from 20:00 Warsaw time on Sundays, the hour
-of the push; the `WR_SHOWCASE` flag, now false, forces it on every day), the previous month's report card, the All / Me / Friends filter
-(`feedFilter`, shown only when `social.feed` has friends' sessions) and the feed. The feed
-and the profile's workout list draw thirty cards (`HOME_PAGE`, `PROF_PAGE`) and add thirty per
-"Load more"; this only trims what is drawn, so records, stats and Compare, which read the
-data, are unaffected. When Home runs out of sessions it already holds, the same button pulls
-friends' older ones with `loadFeed(true)`.
+**Home and Feed.** Four tabs: Home (`s-dash`, the one the app opens on), Feed (`s-home`), Workout, Profile.
+`drawHome()` is still the one entry that redraws both (about thirty callers), and it ends in `drawDash()`.
+**Feed** holds only the All / Me / Friends filter (`feedFilter`, shown only when `social.feed` has friends'
+sessions) and the cards (`workoutCard`), thirty at a time (`HOME_PAGE`, `PROF_PAGE`) with "Load more"; this only
+trims what is drawn, so records, stats and Compare, which read the data, are unaffected. When Feed runs out of
+sessions it already holds, the same button pulls friends' older ones with `loadFeed(true)`. **Home** holds, top
+to bottom: the header (magnifier, bell), live cards, the install card (`drawA2hs`: only an iPhone or iPad Safari tab,
+not the installed app; closing it lasts until the page is opened again, on purpose), the backup reminder, the Sunday
+recap card (`drawRecapBar`, from 20:00 Warsaw time on Sundays; `WR_SHOWCASE`, now false, forces it every day), the
+month's report card, then `drawDash`: Today (`dashToday`), the week bar (`drawWeekBar`: workouts, sets against the
+summed set targets, week streak; reads `targets.Total`), Plan (`dashPlan`), Sets this week (`dashSets`: the muscles
+furthest from their `targets`), the month (`dashCal`) and the four routines that waited longest (`dashRoutines`).
+All of those hang off element ids (`live-bars`, `wk-bar`, `report-bar`…) that moved from Feed to Home unchanged.
+**The plan** is `store.plan`: seven routine ids, Monday first, `''` a rest day, undefined when there is none. It
+travels with the rest of the store (`mergeStores`: the cloud copy wins, `unionStores`: this device wins, export,
+import merge only fills an empty one, restore); `cleanPlan` is the one gate. A routine that was deleted simply
+reads as a rest day (`planAt`). A tap on a plan day, or Pick another routine, opens `plan-sheet` (`openPlanSheet`:
+mode `set` gives a weekday its routine, mode `start` starts one now). A running workout replaces the Today card
+with "Back to workout". `planCell` marks calendar days; it only looks for a missed planned day in the current
+week, because the plan has no history. `tests/plan.js` covers all of it.
 
 **Weekly recap and shared images.** `drawWeekRecap` is the monthly report for a week:
 `wrOff` weeks back (arrows or swipe, clamped to the first workout and to this week), reset to
@@ -413,11 +424,11 @@ sent by the cron job `weekly-recap`. A tap goes to `#go=<kind>:…` on a cold st
 `tracker-go` message when the app is open (`openPush`); `r` opens the weekly recap, `m` the monthly report
 (kind `report`, cron job `monthly-report`).
 
-**Pull to refresh.** On the three main tabs only, dragging 125 px down from the top (after a
+**Pull to refresh.** On the four main tabs only, dragging 125 px down from the top (after a
 10 px dead zone) reloads the whole app, asking the service worker for a fresh copy first and
 reopening the tab it was pulled from. It is the intended way onto a new version without
 killing the PWA; boot then compares `tracker-ver` with `APP_VERSION` and toasts
-"Version updated" for 3 s.
+"Version updated" (see the change log).
 
 ## Traps this codebase has already fallen into
 

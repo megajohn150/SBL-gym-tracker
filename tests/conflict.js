@@ -1,9 +1,9 @@
 /* Two devices write at once: the lock refuses the second one. Its copy and the
    other's must be joined before it goes up, not laid over it. node tests/conflict.js */
-const { slice, suite } = require('./lib');
+const { slice, suite, planClean } = require('./lib');
 const t = suite('conflict');
 
-const unionCode = slice('  function mergeStores(local, remote)', '  function redrawAll()');
+const unionCode = planClean() + slice('  function mergeStores(local, remote)', '  function redrawAll()');
 const pushCode = slice('  function cloudPush(force)', '  // one write per burst');
 
 const me = { id: 'me' };

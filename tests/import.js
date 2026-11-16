@@ -1,9 +1,9 @@
 /* A backup file that is empty, the wrong shape, cut short or hand-edited must not reach the log
    as it is: bad workouts are left out and counted, the rest is made safe. node tests/import.js */
-const { slice, suite } = require('./lib');
+const { slice, suite, planClean } = require('./lib');
 const t = suite('import');
 
-const code = slice('  function cleanWorkouts(', '  function importDone(') + slice('  function postOk(', '  function workoutCard(');
+const code = planClean() + slice('  function cleanWorkouts(', '  function importDone(') + slice('  function postOk(', '  function workoutCard(');
 let n = 0;
 const nameKey = (s) => String(s).trim().toLowerCase();
 const migrate = (r) => r;

@@ -1278,9 +1278,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshmeta{font-size:.78rem;color:var(--fg-3);margin-top:.2rem}
 .dshalt{display:block;margin:.7rem auto 0;font-size:.8rem;color:var(--fg-3);text-decoration:underline}
 .dshweek{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 var(--pad)}
-.dshday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border:var(--border);border-radius:calc(var(--radius) - 4px);background:var(--surface);text-align:center}
+.dshday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;min-width:0;font:inherit;color:inherit;border:var(--border);border-radius:calc(var(--radius) - 4px);background:var(--surface);text-align:center}
 .dshday i{font-style:normal;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
-.dshday b{font-size:.78rem;font-weight:700}
+.dshday b{font-size:.78rem;font-weight:700;max-width:100%;padding:0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#s-dash .wkbar{margin-top:.8rem}
+.dshlink{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit}
+button.dshc{font:inherit;font-size:.8rem;font-weight:600}
+.dshc.done.now{color:var(--bg);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--fg)}
 .dshday span{font-size:.58rem;color:var(--fg-3);font-weight:600}
 .dshday.done span{color:var(--green)}
 .dshday.now{border-color:var(--fg)}
@@ -1327,8 +1331,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .feedf button{padding:6px 2px}
 .feedf + .feed{padding-top:10px}
 /* Home's own header keeps less air under it, so the cards under it start higher */
-#s-home .head{padding-bottom:.5rem}
-#s-home .reportbar{margin-top:.6rem}
+#s-home .head,#s-dash .head{padding-bottom:.5rem}
+#s-home .reportbar,#s-dash .reportbar{margin-top:.6rem}
 /* the cloud has not got the latest changes: a dot after the Profile tab */
 .tabs button.unsynced::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--red);vertical-align:middle}
 /* someone else's routine, read only */
@@ -1920,91 +1924,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 <main>
 
   <!-- ===================== HOME ===================== -->
-  <!-- Dashboard: a design preview only. Everything on it is made-up sample text; nothing is wired. -->
-  <section class="screen" id="s-dash" data-tab="dash" data-title="Home">
+  <!-- ===================== HOME ===================== -->
+  <section class="screen on" id="s-dash" data-tab="dash" data-title="Home">
     <div class="head">
       <div class="phead">
         <span>
           <p class="eyebrow">Your week</p>
           <h1 class="title">Home</h1>
-        </span>
-      </div>
-    </div>
-    <div class="scroll">
-      <div class="bar-card livebar"><span class="avatar" style="width:52px;height:52px;font-size:20px">F</span>
-        <span class="lvtxt"><span class="lab"><b>frajerskiszczurek</b> has a workout in progress</span><span class="nm">Evening workout</span></span>
-        <span class="time">0:26:02</span></div>
-      <div class="reportbar">
-        <button class="go"><b>Your week is wrapped</b><span>9 Nov &ndash; 15 Nov &middot; see how it went</span></button>
-        <button class="x" aria-label="Dismiss">&times;</button>
-      </div>
-      <p class="hint" style="padding-top:1rem">Design preview. The numbers below are samples.</p>
-
-      <div class="dshtoday">
-        <p class="eyebrow">Today &middot; Wednesday</p>
-        <h2>Push</h2>
-        <p class="dshmeta">6 exercises &middot; about 58 min &middot; last done 6 days ago</p>
-        <button class="btn btn-primary" style="width:100%;margin-top:.9rem">Start Push</button>
-        <button class="dshalt">Pick another routine</button>
-      </div>
-
-      <p class="hint" style="padding-top:1rem">The same card on a rest day:</p>
-      <div class="dshtoday" style="margin-top:.4rem">
-        <p class="eyebrow">Today &middot; Thursday</p>
-        <h2>Rest day</h2>
-        <p class="dshmeta">Back and biceps are recovered. Next up: Pull on Friday.</p>
-        <button class="btn btn-ghost" style="width:100%;margin-top:.9rem">Train anyway</button>
-        <button class="dshalt">Start an empty workout</button>
-      </div>
-
-      <div class="wkbar" style="margin-top:.8rem">
-        <div><b>2 <small>/ 4</small></b><i>This week</i></div>
-        <div><b>31 <small>/ 77</small></b><i>Sets</i></div>
-        <div><b>18</b><i>Week streak</i></div>
-      </div>
-
-      <div class="dsec">Plan</div>
-      <div class="dshweek">
-        <div class="dshday done"><i>Mon</i><b>Pull</b><span>&#10003;</span></div>
-        <div class="dshday done"><i>Tue</i><b>Legs</b><span>&#10003;</span></div>
-        <div class="dshday now"><i>Wed</i><b>Push</b><span>Today</span></div>
-        <div class="dshday rest"><i>Thu</i><b>&ndash;</b><span>Rest</span></div>
-        <div class="dshday"><i>Fri</i><b>Pull</b><span>&nbsp;</span></div>
-        <div class="dshday"><i>Sat</i><b>Legs</b><span>&nbsp;</span></div>
-        <div class="dshday rest"><i>Sun</i><b>&ndash;</b><span>Rest</span></div>
-      </div>
-
-      <div class="dsec row2"><span>Sets this week</span><span>3 days left</span></div>
-      <div class="split">
-        <div class="splitrow"><span class="m">Back</span><div class="splitline"><div class="meter"><i style="width:50%"></i></div><span class="p">6/12</span></div></div>
-        <div class="splitrow"><span class="m">Chest</span><div class="splitline"><div class="meter"><i style="width:83%"></i></div><span class="p">10/12</span></div></div>
-        <div class="splitrow"><span class="m">Quads</span><div class="splitline"><div class="meter"><i style="width:25%"></i></div><span class="p">4/16</span></div></div>
-      </div>
-
-      <div class="dsec row2"><span>November</span><span>11 of 12 planned done</span></div>
-      <div class="dshcal">
-        <i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i>
-        <span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc">1</span><span class="dshc done">2</span><span class="dshc done">3</span><span class="dshc done">4</span><span class="dshc">5</span><span class="dshc done">6</span><span class="dshc done">7</span><span class="dshc">8</span><span class="dshc done">9</span><span class="dshc done">10</span><span class="dshc miss">11</span><span class="dshc">12</span><span class="dshc done">13</span><span class="dshc done">14</span><span class="dshc">15</span><span class="dshc done">16</span><span class="dshc done">17</span><span class="dshc now">18</span><span class="dshc">19</span><span class="dshc plan">20</span><span class="dshc plan">21</span><span class="dshc">22</span><span class="dshc plan">23</span><span class="dshc plan">24</span><span class="dshc plan">25</span><span class="dshc">26</span><span class="dshc plan">27</span><span class="dshc plan">28</span><span class="dshc">29</span><span class="dshc plan">30</span>
-      </div>
-      <p class="hint dshlegend"><span class="dshc done">&nbsp;</span> done <span class="dshc plan">&nbsp;</span> planned <span class="dshc miss">&nbsp;</span> missed</p>
-
-      <div class="dsec">Routines</div>
-      <div class="rows" style="margin:0 var(--pad)">
-        <div class="row"><span class="lab"><span class="nm">Legs</span><span class="meta">Yesterday</span></span><span class="chev">&rsaquo;</span></div>
-        <div class="row"><span class="lab"><span class="nm">Pull</span><span class="meta">2 days ago</span></span><span class="chev">&rsaquo;</span></div>
-        <div class="row"><span class="lab"><span class="nm">Push</span><span class="meta">6 days ago</span></span><span class="val">Due</span><span class="chev">&rsaquo;</span></div>
-      </div>
-
-      <div style="height:1.5rem"></div>
-    </div>
-  </section>
-
-  <section class="screen on" id="s-home" data-tab="home" data-title="Feed">
-    <div class="head">
-      <div class="phead">
-        <span>
-          <p class="eyebrow">Your log</p>
-          <h1 class="title">Feed</h1>
         </span>
         <span class="picons">
           <button class="iconbtn" data-push="find" aria-label="Find people"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="m16 16 4.4 4.4"/></svg></button>
@@ -2014,7 +1940,6 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     </div>
     <div class="scroll">
     <div id="live-bars"></div>
-    <div class="wkbar" id="wk-bar" hidden></div>
     <div class="reportbar" id="a2hs-bar" hidden>
       <div class="go"><b>Add the app to your home screen</b><span>Tap Share, then Add to Home Screen. Push notifications only work there. The app keeps its own settings, so sign in again in it.</span></div>
       <button class="x" id="a2hs-x" aria-label="Dismiss">&times;</button>
@@ -2027,14 +1952,34 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <button class="go" id="wr-go"></button>
       <button class="x" id="wr-x" aria-label="Dismiss">&times;</button>
     </div>
+    <div class="reportbar" id="report-bar" hidden>
+      <button class="go" id="report-go"></button>
+      <button class="x" id="report-x" aria-label="Dismiss">&times;</button>
+    </div>
+    <div id="dash-today"></div>
+    <div class="wkbar" id="wk-bar" hidden></div>
+    <div id="dash-plan"></div>
+    <div id="dash-sets"></div>
+    <div id="dash-cal"></div>
+    <div id="dash-rts"></div>
+    <div style="height:1.5rem"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-home" data-tab="home" data-title="Feed">
+    <div class="head">
+      <div class="phead">
+        <span>
+          <p class="eyebrow">Your log</p>
+          <h1 class="title">Feed</h1>
+        </span>
+      </div>
+    </div>
+    <div class="scroll">
     <div class="pseg feedf" id="feed-filter" hidden>
       <button data-ff="all" aria-pressed="true">All</button>
       <button data-ff="me" aria-pressed="false">Me</button>
       <button data-ff="friends" aria-pressed="false">Friends</button>
-    </div>
-    <div class="reportbar" id="report-bar" hidden>
-      <button class="go" id="report-go"></button>
-      <button class="x" id="report-x" aria-label="Dismiss">&times;</button>
     </div>
     <div class="feed" id="home-list" hidden></div>
     <div class="empty" id="home-empty">
@@ -2870,7 +2815,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <ul class="gdl">
       <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
-      <li><b>Four tabs.</b> Home: your week at a glance (a preview for now). Feed: your log and your friends'. Workout: your routines. Profile: charts, stats, friends, settings. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button> <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button> <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
+      <li><b>Four tabs.</b> Home: today's routine, your plan and the week. Feed: your workouts and your friends'. Workout: your routines. Profile: charts, stats, friends, settings. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button> <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button> <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
       <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
       <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;. The import button at the top of the Workout tab brings in a starter pack (SBL or Bro Lifter): all of its exercises, and the routines you tick. An exercise you already have by name is not added twice; a routine that is already there is skipped, and one with the same name but other exercises comes in as "Name 2". <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go. <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
@@ -2878,7 +2823,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
     <div class="dsec">Gestures</div>
     <ul class="gdl">
-      <li><b>Pull down.</b> On Feed, Workout or Profile, drag the page down from the top and let go: the app reloads and picks up a new version, without closing it.</li>
+      <li><b>Pull down.</b> On Home, Feed, Workout or Profile, drag the page down from the top and let go: the app reloads and picks up a new version, without closing it.</li>
       <li><b>Swipe back.</b> Start at the very left edge of the screen and swipe right to go back.</li>
       <li><b>Hold the sun / moon.</b> On Profile a tap switches light and dark; holding it steps through the other themes (Cocoa is only changed in Themes).</li>
       <li><b>Tap a bar.</b> On a chart a tap on a bar shows its value; a bar with a PR opens that workout from the bubble.</li>
@@ -2915,15 +2860,24 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li>Delete an exercise from its edit screen; it leaves your routines too, past workouts keep it, and Undo is offered.</li>
     </ul>
 
+    <div class="dsec">Home</div>
+    <ul class="gdl">
+      <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
+      <li><b>Plan.</b> Seven cells, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. It syncs with your account.</li>
+      <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
+      <li><b>Sets this week:</b> the muscles furthest from their weekly set goal, with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
+      <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
+      <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
+      <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
+      <li><b>Magnifier and bell.</b> The magnifier finds people. The bell lists likes, comments, replies, threads you joined and new followers; tap one to open it, x or Read all to clear. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
+    </ul>
+
     <div class="dsec">Feed</div>
     <ul class="gdl">
-      <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
-      <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live), a backup reminder, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
-      <li><b>Feed:</b> your workouts and your friends'; All / Me / Friends appears once friends have trained. 30 cards at a time, Load more for the rest. Magnifier finds people; bell shows notifications. <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
+      <li><b>Feed:</b> your workouts and your friends'; All / Me / Friends appears once friends have trained. 30 cards at a time, Load more for the rest. <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button></li>
       <li><b>A workout.</b> Hold one of your cards to get the &#8942; menu below without opening it. Tap a card to open it: totals with the change versus your last run of that routine, muscle split, every set (tap a medal for the old record; a plate icon means plates were used). &#8942;: <b>Edit workout</b> (name, start, duration, notes, weights, reps, RIR, plates, add/remove/reorder sets and exercises; Save or x at the bottom), <b>Save as routine</b>, Delete (Undo offered).</li>
       <li><b>Like and comment.</b> Thumb to like (hold it to see who liked). Bubble opens comments: write, Reply, Delete your own. Likes and comments made offline are sent later.</li>
-      <li><b>Bell.</b> Likes, comments, replies, threads you joined, new followers. Tap one to open it, x or Read all to clear.</li>
-      <li><b>Update.</b> Drag down from the top of Feed, Workout, Profile or Settings to reload the newest version ("Version updated" appears after, with a What's new button that lists every change you have not opened yet; the list is kept until you open it).</li>
+      <li><b>Update.</b> Drag down from the top of Home, Feed, Workout, Profile or Settings to reload the newest version ("Version updated" appears after, with a What's new button that lists every change you have not opened yet; the list is kept until you open it).</li>
     </ul>
 
     <div class="dsec">Profile</div>
@@ -2957,10 +2911,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     <div class="dsec">Settings</div>
     <ul class="gdl">
       <li><b>Account:</b> Mail and Change password (a new address takes over once its link is opened), sync status, Sign out (this phone keeps no copy), Delete account (removes the account itself, so the email and nick are free again). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
-      <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on the Feed asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report. <button class="gdgo" data-push="notifset" aria-label="Open Notifications">&rsaquo;</button></li>
+      <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report. <button class="gdgo" data-push="notifset" aria-label="Open Notifications">&rsaquo;</button></li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only. <button class="gdgo" data-push="music" aria-label="Open Music">&rsaquo;</button></li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral. <button class="gdgo" data-push="resttimer" aria-label="Open Rest timer">&rsaquo;</button></li>
-      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON file is either merged, which adds what is missing and keeps what is here, or replaces everything on the device; it says how many workouts it skipped because they could not be read); Backup reminder (a card on the Feed after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
+      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup) / Import backup (asks JSON or Hevy; a JSON file is either merged, which adds what is missing and keeps what is here, or replaces everything on the device; it says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device. <button class="gdgo" data-push="themes" aria-label="Open Themes">&rsaquo;</button></li>
       <li><b>Version:</b> the number at the bottom of Settings opens what that version changed (when it has a note); the Guide button beside it opens this guide.</li>
     </ul>
@@ -3150,8 +3104,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 </div>
 
 <nav class="tabs">
-  <button data-tab="dash">Home</button>
-  <button data-tab="home" aria-current="true">Feed</button>
+  <button data-tab="dash" aria-current="true">Home</button>
+  <button data-tab="home">Feed</button>
   <button data-tab="workout">Workout</button>
   <button data-tab="profile">Profile</button>
 </nav>
@@ -3559,6 +3513,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet" id="plan-sheet" hidden>
+  <div class="sheet-bg" data-plan-close></div>
+  <div class="sheet-card">
+    <h3 id="plan-title">Plan</h3>
+    <div class="pop-menu" id="plan-list" style="width:100%;box-shadow:none;max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
 <div class="sheet" id="est-sheet" hidden>
   <div class="sheet-bg" data-est-close></div>
   <div class="sheet-card">
@@ -3640,7 +3601,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   <div class="sheet-bg" data-bk-close></div>
   <div class="sheet-card">
     <h3>Backup reminder</h3>
-    <label class="privrow"><span>Remind me<i>A note on the Feed once the last backup is older than this</i></span>
+    <label class="privrow"><span>Remind me<i>A note on Home once the last backup is older than this</i></span>
       <input type="checkbox" id="bk-on"></label>
     <div class="field" id="bk-days-row" style="padding:0 0 1rem"><label for="bk-days">Days between backups</label>
       <input type="text" id="bk-days" inputmode="numeric" maxlength="3" autocomplete="off"></div>
@@ -3697,7 +3658,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4489';
+  var APP_VERSION = '3.4490';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -3750,6 +3711,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       if (Array.isArray(raw.workouts)) store.workouts = raw.workouts;
       if (Array.isArray(raw.gone)) store.gone = raw.gone;
       if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
+      if (cleanPlan(raw.plan)) store.plan = cleanPlan(raw.plan);
       if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
       if (raw.wiped) store.wiped = raw.wiped;
       // workouts saved before exercises were linked by id
@@ -3922,6 +3884,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       routines: (remote.routines && remote.routines.length) || remote.wiped ? remote.routines || [] : local.routines,
       workouts: workouts,
       targets: remote.targets || local.targets || {},
+      plan: cleanPlan(remote.plan) || cleanPlan(local.plan),
       injuries: remote.injuries || local.injuries || [],
       gone: Object.keys(gone),
       wiped: Math.max(remote.wiped || 0, local.wiped || 0) || undefined
@@ -3945,6 +3908,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     [remote.targets, local.targets].forEach(function (t) {
       Object.keys(t || {}).forEach(function (k) { m.targets[k] = t[k]; });
     });
+    m.plan = cleanPlan(local.plan) || cleanPlan(remote.plan);
     m.profile = local.profile || remote.profile;
     return m;
   }
@@ -6058,7 +6022,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   /* =========================================================
      NAVIGATION — one stack, back label from the screen below
      ========================================================= */
-  var stack = ['s-home'];
+  var stack = ['s-dash'];
 
   function current() { return stack[stack.length - 1]; }
 
@@ -6092,7 +6056,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     }
     if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
     if (id !== 's-exercises') exDel = null;
-    if (id === 's-home') refreshSocial();
+    if (id === 's-home' || id === 's-dash') refreshSocial();
+    if (id === 's-dash') drawDash();
     if (id === 's-stats') {
       var lastm = new Date();
       lastm = new Date(lastm.getFullYear(), lastm.getMonth() - 1, 1);
@@ -6186,7 +6151,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   function pullable() {
     if (document.querySelector('.pop:not([hidden]), .sheet:not([hidden])')) return false;   // a layer covers the screen
-    return (stack.length === 1 && /^s-(home|workout|profile)$/.test(current())) || current() === 's-settings';
+    return (stack.length === 1 && /^s-(dash|home|workout|profile)$/.test(current())) || current() === 's-settings';
   }
 
   // The ring follows the finger at a little over half speed and then gets
@@ -6260,7 +6225,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   // that went out a minute ago is the one that opens
   function startOver() {
     var on = document.querySelector('.screen.on');
-    save('reopen', current() === 's-settings' ? 'settings' : (on && on.dataset.tab) || 'home');
+    save('reopen', current() === 's-settings' ? 'settings' : (on && on.dataset.tab) || 'dash');
     var go = function () { location.reload(); };
     setTimeout(go, 2500);                  // a dead network must not strand you here
     // Whatever is still waiting to go up goes first. A reload kills a request in
@@ -8165,11 +8130,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     push('session');
   }
 
-  $('rt-empty-start').addEventListener('click', function () {
+  function startEmpty() {
     session = { name: 'Workout', startedAt: Date.now(), idx: 0, routineId: null, exercises: [] };
     touchStale();
     push('session');
-  });
+  }
+  $('rt-empty-start').addEventListener('click', startEmpty);
 
   /* --- changing the line-up mid-workout --- */
   function addToSession(exId) {
@@ -9300,7 +9266,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       app: 'gym-tracker', version: 1, exportedAt: new Date().toISOString(),
       profile: store.profile, exercises: store.exercises,
       routines: store.routines, workouts: store.workouts, targets: store.targets,
-      injuries: store.injuries
+      plan: store.plan, injuries: store.injuries
     };
     downloadFile(JSON.stringify(payload, null, 2), 'application/json', '.json');
     save('bk-last', new Date().toISOString());
@@ -9427,6 +9393,8 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (raw.targets && typeof raw.targets === 'object' && !Array.isArray(raw.targets)) {
       Object.keys(raw.targets).forEach(function (k) { if (!(k in st.targets)) st.targets[k] = raw.targets[k]; });
     }
+    // a plan only comes along when there is none here; its routines are the file's, already pointed at ours by id
+    if (!st.plan && cleanPlan(raw.plan)) st.plan = cleanPlan(raw.plan);
     if (Array.isArray(raw.injuries)) {
       var inj = {};
       st.injuries.forEach(function (x) { inj[x.id] = 1; });
@@ -9482,6 +9450,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     store.routines = (Array.isArray(raw.routines) ? raw.routines : []).map(migrate);
     swapWorkouts(p.clean.list);
     if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
+    store.plan = cleanPlan(raw.plan);
     if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
     if (raw.profile) {
       ['handle', 'name', 'bio'].forEach(function (k) {
@@ -10171,6 +10140,212 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       '<div><b>' + weekStreak(store.workouts) + '</b><i>Week streak</i></div>';
   }
 
+  /* --- Home: today's routine, the plan, the week's sets, the month, the routines --- */
+  // store.plan: seven routine ids, Monday first; '' is a rest day. No plan yet is undefined.
+  var PLAN_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  function planIdx(d) { return (d.getDay() + 6) % 7; }
+  function cleanPlan(p) {
+    if (!Array.isArray(p) || p.length !== 7) return undefined;
+    return p.map(function (x) { return typeof x === 'string' ? x : ''; });
+  }
+  // the routine planned for a weekday (0 = Monday): null for a rest day, no plan, or a routine since deleted
+  function planAt(i) {
+    var id = store.plan && store.plan[i];
+    return (id && routineById(id)) || null;
+  }
+  // the next day after `from` with a routine planned: { r, ahead } (days from `from`), or null
+  function planNext(from) {
+    for (var n = 1; n <= 7; n++) {
+      var r = planAt(planIdx(addDays(from, n)));
+      if (r) return { r: r, ahead: n };
+    }
+    return null;
+  }
+  function lastRun(r) {
+    var best = null;
+    runsOf(r).forEach(function (w) { if (!best || new Date(w.date) > new Date(best.date)) best = w; });
+    return best;
+  }
+  // how a calendar day is drawn: done (a workout that day), now (today), miss (planned earlier this
+  // week and not done), plan (planned and still ahead); shortcut: a missed day is only looked for in
+  // this week, since the plan has no history of its own, so changing it would rewrite older months
+  function planCell(d, now, worked) {
+    var day = new Date(d.getFullYear(), d.getMonth(), d.getDate()), t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var cls = worked ? 'done' : '';
+    if (day.getTime() === t.getTime()) return cls + ' now';
+    if (worked || !planAt(planIdx(day))) return cls;
+    if (day > t) return 'plan';
+    return day >= monday(t) ? 'miss' : '';
+  }
+  // Mon..Sun of one planned routine, for the Routines list: "Mon, Fri"
+  function planDaysOf(id) {
+    var out = [];
+    (store.plan || []).forEach(function (x, i) { if (x === id) out.push(PLAN_DAYS[i]); });
+    return out.join(', ');
+  }
+
+  /* --- Home draws --- */
+  var planSt = { mode: 'set', day: 0 };
+
+  function dashToday() {
+    var now = new Date(), i = planIdx(now), r = planAt(i), nm = DAYS[now.getDay()];
+    var did = store.workouts.some(function (w) { return dayKey(new Date(w.date)) === dayKey(now); });
+    var eye = '<p class="eyebrow">Today &middot; ' + nm + '</p>';
+    var card = function (inner) { return '<div class="dshtoday">' + eye + inner + '</div>'; };
+    var big = 'style="width:100%;margin-top:.9rem"';
+    if (session) {
+      return '<div class="dshtoday"><p class="eyebrow">Workout in progress</p><h2>' + esc(session.name) + '</h2>' +
+        '<button class="btn btn-primary" ' + big + ' data-dash="resume">Back to workout</button></div>';
+    }
+    if (!store.routines.length) {
+      return card('<h2>No routines yet</h2><p class="dshmeta">Build one, then give each day of the week a routine.</p>' +
+        '<button class="btn btn-primary" ' + big + ' data-push="routine-form">Build a routine</button>');
+    }
+    if (!store.plan) {
+      return card('<h2>Plan your week</h2><p class="dshmeta">Tap a day below to give it a routine. Today\'s waits here, a tap from starting.</p>' +
+        '<button class="btn btn-primary" ' + big + ' data-plan-day="' + i + '">Plan today</button>' +
+        '<button class="dshalt" data-dash="pick">Start a routine now</button>');
+    }
+    if (r && !did) {
+      var n = r.items.length, runs = rtLastRuns(r), last = lastRun(r), meta = n + (n === 1 ? ' exercise' : ' exercises');
+      if (runs.length) meta += ' &middot; about ' + Math.max(1, Math.round(runs.reduce(function (x, w) { return x + w.seconds; }, 0) / runs.length / 60)) + ' min';
+      meta += ' &middot; ' + (last ? 'last done ' + relDate(last.date).toLowerCase() : 'not done yet');
+      return card('<h2>' + esc(r.name) + '</h2><p class="dshmeta">' + meta + '</p>' +
+        '<button class="btn btn-primary" ' + big + ' data-start="' + esc(r.id) + '">Start ' + esc(r.name) + '</button>' +
+        '<button class="dshalt" data-dash="pick">Pick another routine</button>');
+    }
+    var nx = planNext(now);
+    var next = nx ? 'Next up: ' + esc(nx.r.name) + (nx.ahead === 1 ? ' tomorrow.' : ' on ' + DAYS[addDays(now, nx.ahead).getDay()] + '.') : 'Nothing else is planned.';
+    return card('<h2>' + (did ? 'Done for today' : 'Rest day') + '</h2><p class="dshmeta">' + next + '</p>' +
+      '<button class="btn btn-ghost" ' + big + ' data-dash="pick">' + (did ? 'Start another workout' : 'Train anyway') + '</button>' +
+      '<button class="dshalt" data-dash="empty">Start an empty workout</button>');
+  }
+
+  function dashPlan() {
+    if (!store.routines.length) return '';
+    var now = new Date(), mon = monday(now), worked = {}, cells = '';
+    store.workouts.forEach(function (w) { worked[dayKey(new Date(w.date))] = 1; });
+    for (var i = 0; i < 7; i++) {
+      var r = planAt(i), today = i === planIdx(now), done = worked[dayKey(addDays(mon, i))];
+      cells += '<button class="dshday' + (done ? ' done' : '') + (today ? ' now' : '') + (r ? '' : ' rest') +
+        '" data-plan-day="' + i + '"><i>' + PLAN_DAYS[i] + '</i><b>' + (r ? esc(r.name) : '&ndash;') + '</b><span>' +
+        (done ? '&#10003;' : today ? 'Today' : r ? '&nbsp;' : 'Rest') + '</span></button>';
+    }
+    return '<div class="dsec row2"><span>Plan</span><span>Tap a day to change it</span></div><div class="dshweek">' + cells + '</div>';
+  }
+
+  function dashSets() {
+    var now = new Date(), from = monday(now), r = statsFor(from, addDays(from, 7)), rows = [];
+    Object.keys(store.targets).forEach(function (k) {
+      var g = Number((store.targets[k] || {}).sets) || 0;
+      if (k === 'Total' || !g) return;
+      rows.push({ k: k, v: r.by[k] != null ? r.by[k] : (r.heads[k] || 0), g: g });
+    });
+    if (!rows.length) return '';
+    rows.sort(function (a, b) { return a.v / a.g - b.v / b.g; });       // furthest behind first
+    var left = 7 - planIdx(now);
+    return '<div class="dsec row2"><span>Sets this week</span><button class="dshlink" data-push="stat-sets">' +
+      left + (left === 1 ? ' day left' : ' days left') + ' &rsaquo;</button></div><div class="split">' +
+      rows.slice(0, 5).map(function (x) {
+        return '<div class="splitrow"><span class="m">' + esc(x.k) + '</span><div class="splitline"><div class="meter"><i style="width:' +
+          Math.min(100, Math.round(x.v / x.g * 100)) + '%"></i></div><span class="p">' + x.v + '/' + x.g + '</span></div></div>';
+      }).join('') + '</div>';
+  }
+
+  function dashCal() {
+    var now = new Date(), y = now.getFullYear(), m = now.getMonth(), days = new Date(y, m + 1, 0).getDate();
+    var lead = (new Date(y, m, 1).getDay() + 6) % 7, byDay = {}, count = 0, cells = '', d;
+    store.workouts.forEach(function (w) {
+      var x = new Date(w.date);
+      if (x.getFullYear() !== y || x.getMonth() !== m) return;
+      count++;
+      if (!byDay[x.getDate()] || x > new Date(byDay[x.getDate()].date)) byDay[x.getDate()] = w;
+    });
+    for (d = 0; d < lead; d++) cells += '<span class="dshc pad"></span>';
+    for (d = 1; d <= days; d++) {
+      var cls = 'dshc ' + planCell(new Date(y, m, d), now, !!byDay[d]);
+      cells += byDay[d] ? '<button class="' + cls + '" data-w="' + esc(byDay[d].id) + '">' + d + '</button>'
+        : '<span class="' + cls + '">' + d + '</span>';
+    }
+    var legend = '<span class="dshc done">&nbsp;</span> done' +
+      (store.plan ? ' <span class="dshc plan">&nbsp;</span> planned <span class="dshc miss">&nbsp;</span> missed' : '');
+    return '<div class="dsec row2"><span>' + now.toLocaleString('en', { month: 'long' }) + '</span>' +
+      '<button class="dshlink" data-push="calendar">' + count + (count === 1 ? ' workout' : ' workouts') + ' &rsaquo;</button></div>' +
+      '<div class="dshcal"><i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i>' + cells + '</div>' +
+      '<p class="hint dshlegend">' + legend + '</p>';
+  }
+
+  function dashRoutines() {
+    if (!store.routines.length) return '';
+    var rows = store.routines.map(function (r) { return { r: r, last: lastRun(r) }; });
+    rows.sort(function (a, b) {                                          // longest since the last run first, never done last
+      if (!a.last || !b.last) return a.last ? -1 : b.last ? 1 : 0;
+      return new Date(a.last.date) - new Date(b.last.date);
+    });
+    return '<div class="dsec row2"><span>Routines</span><button class="dshlink" data-dash="workout">All &rsaquo;</button></div>' +
+      '<div class="rows" style="margin:0 var(--pad)">' + rows.slice(0, 4).map(function (x) {
+        var on = planDaysOf(x.r.id);
+        return '<button class="row" data-rt="' + esc(x.r.id) + '"><span class="lab"><span class="nm">' + esc(x.r.name) +
+          '</span><span class="meta">' + (x.last ? relDate(x.last.date) : 'Not done yet') + '</span></span>' +
+          (on ? '<span class="val">' + on + '</span>' : '') + '<span class="chev">&rsaquo;</span></button>';
+      }).join('') + '</div>';
+  }
+
+  function drawDash() {
+    paint($('dash-today'), dashToday());
+    paint($('dash-plan'), dashPlan());
+    paint($('dash-sets'), dashSets());
+    paint($('dash-cal'), dashCal());
+    paint($('dash-rts'), dashRoutines());
+  }
+
+  // one sheet, two jobs: give a weekday its routine, or pick one to start right now
+  function openPlanSheet(mode, day) {
+    planSt = { mode: mode, day: day };
+    var cur = mode === 'set' && store.plan ? store.plan[day] : null;
+    $('plan-title').textContent = mode === 'set' ? DAYS[(day + 1) % 7] : 'Start a routine';
+    $('plan-list').innerHTML = store.routines.map(function (r) {
+      return '<button data-plan-pick="' + esc(r.id) + '" aria-pressed="' + (cur === r.id) + '">' + esc(r.name) + '</button>';
+    }).join('') + (mode === 'set'
+      ? '<button data-plan-pick="" aria-pressed="' + (cur === '' || (cur == null && !!store.plan)) + '">Rest day</button>'
+      : '<button data-plan-pick="@empty">Empty workout</button>');
+    $('plan-sheet').hidden = false;
+  }
+  $('plan-list').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-plan-pick]');
+    if (!b) return;
+    var id = b.dataset.planPick;
+    $('plan-sheet').hidden = true;
+    if (planSt.mode === 'start') {
+      var r = routineById(id);
+      if (id === '@empty') startEmpty();
+      else if (r) startSession(r);
+      return;
+    }
+    store.plan = (store.plan || ['', '', '', '', '', '', '']).slice();
+    store.plan[planSt.day] = id;
+    saveStore();
+    drawHome();
+  });
+
+  $('s-dash').addEventListener('click', function (e) {
+    var day = e.target.closest('[data-plan-day]');
+    if (day) { openPlanSheet('set', Number(day.dataset.planDay)); return; }
+    var st = e.target.closest('[data-start]');
+    if (st) { var r = routineById(st.dataset.start); if (r) startSession(r); return; }
+    var wk = e.target.closest('[data-w]');
+    if (wk) { openWorkout(wk.dataset.w); return; }
+    var rt = e.target.closest('[data-rt]');
+    if (rt) { openRtView(rt.dataset.rt); return; }
+    var go = e.target.closest('[data-dash]');
+    if (!go) return;
+    var k = go.dataset.dash;
+    if (k === 'pick') openPlanSheet('start', 0);
+    else if (k === 'empty') startEmpty();
+    else if (k === 'resume') push('session');
+    else if (k === 'workout') goTab('workout');
+  });
+
   /* --- backup reminder: a note on Home when the last export is older than N days --- */
   var bk = { on: true, days: 30 };
   try {
@@ -10329,7 +10504,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
           snapTake(true, function () {
             store = {
               exercises: raw.exercises || [], routines: (raw.routines || []).map(migrate),
-              workouts: store.workouts, gone: store.gone, targets: raw.targets || {},
+              workouts: store.workouts, gone: store.gone, targets: raw.targets || {}, plan: cleanPlan(raw.plan),
               injuries: raw.injuries || [], profile: raw.profile || store.profile
             };
             swapWorkouts(raw.workouts || []);
@@ -10351,6 +10526,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     drawBackupBar();
     drawRecapBar();
     drawWeekBar();
+    drawDash();
     var total = store.workouts.length;
     var rows = store.workouts.map(function (w, i) { return { w: w, n: total - i, who: null }; });
 
@@ -10530,7 +10706,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       return ensureNames(names).then(function () {
         if (goClear) { clearNotesFor(goClear); goClear = null; }
         drawBell();
-        if (current() === 's-home') drawHome();
+        if (current() === 's-home' || current() === 's-dash') drawHome();
         if (current() === 's-comments') drawComments();
         if (current() === 's-user') drawUser();
         // not while it is being edited: the redraw would take the typing with it
@@ -13029,6 +13205,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (e.target.closest('[data-rec-close]')) $('rec-sheet').hidden = true;
     if (e.target.closest('[data-vol-close]')) $('vol-sheet').hidden = true;
     if (e.target.closest('[data-chg-close]')) $('chg-sheet').hidden = true;
+    if (e.target.closest('[data-plan-close]')) $('plan-sheet').hidden = true;
     if (e.target.closest('[data-chg-cur]')) chgOpen(chgOf(APP_VERSION));
     // a card of either list is a door to that exercise on the session screen, to change what was logged
     var vx = e.target.closest('[data-vex]');

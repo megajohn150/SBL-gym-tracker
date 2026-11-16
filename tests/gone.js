@@ -1,10 +1,10 @@
 /* Deleted ids are remembered by every device and the list only grows. Whatever brings a
    workout back (a backup file, a previous version) has to survive the next device that
    still remembers it as deleted. node tests/gone.js */
-const { slice, suite } = require('./lib');
+const { slice, suite, planClean } = require('./lib');
 const t = suite('gone');
 const swap = slice('  function swapWorkouts(list)', '  function importData(text)');
-const merge = new Function(slice('  function mergeStores(local, remote)', '  function redrawAll()') +
+const merge = new Function(planClean() + slice('  function mergeStores(local, remote)', '  function redrawAll()') +
   '; return { mergeStores: mergeStores, unionStores: unionStores };')();
 
 let n = 0;
