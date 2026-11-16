@@ -147,7 +147,10 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 /* a settings group folded into one row. The body animates by growing a 0fr grid row,
    which, unlike height:auto, can be transitioned; visibility keeps closed buttons untappable.
    The header is a small caps label so it cannot be mistaken for a field inside. */
-#app-version b{color:var(--fg);font-weight:700;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+#app-version{display:flex;justify-content:space-between;align-items:baseline}
+#app-version b{color:var(--fg);font-weight:700}
+#app-version b[data-chg-cur]{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+#app-version button{font:inherit;color:var(--fg-3);text-decoration:underline}
 .fold-h{
   display:flex;align-items:center;gap:12px;width:100%;text-align:left;
   padding:13px var(--cardpad);
@@ -1336,6 +1339,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%);
   transition:opacity .22s ease,transform .32s cubic-bezier(.2,.9,.3,1.25),visibility 0s;
 }
+.toast.tap{white-space:nowrap}
 .toast.wide{display:flex;align-items:center;gap:14px;padding:10px 10px 10px 16px;white-space:nowrap}
 .toast.wide button{
   font:inherit;color:inherit;opacity:.75;text-decoration:underline;
@@ -3580,16 +3584,24 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4470';
+  var APP_VERSION = '3.4471';
 
-  // What each version changed, newest first, in the words the owner reads. Every commit adds a line
-  // under the version that commit will become (the hook bumps APP_VERSION by one); the "Version
-  // updated" toast opens the lines newer than the version this device ran before.
+  // What a version changed, newest first, in the words the owner reads. A line is written only when
+  // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
+  // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
+  // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
     ['3.4470', 'A change log: tap the "Version updated" message to see what is new'],
     ['3.4469', 'Tap the date above a record to see how many days ago it was set'],
     ['3.4468', 'Each record on an exercise page shows the day it was set']
   ];
+  function chgOpen(list) {
+    $('chg-list').innerHTML = list.map(function (c) {
+      return '<div class="chgrow"><i>' + esc(c[0]) + '</i><span>' + esc(c[1]) + '</span></div>';
+    }).join('');
+    $('chg-sheet').hidden = false;
+  }
+  function chgOf(v) { return CHANGELOG.filter(function (c) { return c[0] === v; }); }
 
   /* =========================================================
      STORE
@@ -4058,6 +4070,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     toastTap = tap || null;
     el.textContent = msg;
     el.classList.remove('wide');
+    el.classList.toggle('tap', !!tap);
     el.classList.add('on');
     clearTimeout(toastT);
     toastT = setTimeout(function () { el.classList.remove('on'); }, ms || 1800);
@@ -4071,6 +4084,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     toastTap = null;
     el.innerHTML = '<span>' + esc(msg) + '</span><button id="undo-go">Undo</button>';
     el.classList.add('wide');
+    el.classList.remove('tap');
     el.classList.add('on');
     clearTimeout(toastT);
     toastT = setTimeout(function () { el.classList.remove('on'); undoFn = null; }, 8000);
@@ -12887,6 +12901,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     if (e.target.closest('[data-rec-close]')) $('rec-sheet').hidden = true;
     if (e.target.closest('[data-vol-close]')) $('vol-sheet').hidden = true;
     if (e.target.closest('[data-chg-close]')) $('chg-sheet').hidden = true;
+    if (e.target.closest('[data-chg-cur]')) chgOpen(chgOf(APP_VERSION));
     // a card of either list is a door to that exercise on the session screen, to change what was logged
     var vx = e.target.closest('[data-vex]');
     if (vx && session && session.exercises[Number(vx.dataset.vex)]) {
@@ -14080,12 +14095,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     // the lines newer than what this device ran; with none, the toast stays a plain message
     var news = CHANGELOG.filter(function (c) { return Number(c[0]) > Number(seenVer) && Number(c[0]) <= Number(APP_VERSION); });
     if (news.length) {
-      toast('Version updated: ' + APP_VERSION + ' \u203a', 5000, function () {
-        $('chg-list').innerHTML = news.map(function (c) {
-          return '<div class="chgrow"><i>' + esc(c[0]) + '</i><span>' + esc(c[1]) + '</span></div>';
-        }).join('');
-        $('chg-sheet').hidden = false;
-      });
+      toast('Version updated: ' + APP_VERSION + ' \u203a', 5000, function () { chgOpen(news); });
     } else toast('Version updated: ' + APP_VERSION, 3000);
   }
   save('ver', APP_VERSION);
@@ -14106,7 +14116,9 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   });
   mo.observe(document.getElementById('s-exercises'), { attributes: true, attributeFilter: ['class'] });
 
-  $('app-version').innerHTML = 'Current version: <b data-push="guide">' + APP_VERSION + '</b>';
+  // the number opens what this version changed, when a line was written for it
+  $('app-version').innerHTML = '<span>Current version: <b' + (chgOf(APP_VERSION).length ? ' data-chg-cur' : '') + '>' +
+    APP_VERSION + '</b></span><button data-push="guide">Guide</button>';
 
   snapTake();
 
