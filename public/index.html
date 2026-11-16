@@ -2918,7 +2918,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <ul class="gdl">
       <li>Find people by username and follow. When you follow each other you are <b>friends</b>: you see each other's workouts, routines, week chart, streak, and live workouts. Strangers see only name, bio and counts. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
       <li><b>Friends leaderboard:</b> the button at the end of the Friends list ranks you and every friend since Monday by workouts, with sets and volume under each name. Medals go to the top three. It is counted from the sessions your feed already holds.</li>
-      <li><b>Compare</b> (on a friend's profile): the last 30 days side by side (muscle radar, workout count, time, volume) and the lifts you both have, by name. Open one for 1RM, heaviest and best set, plus a leaderboard. Lifts you share in a friend's workout open the same screen.</li>
+      <li><b>Compare</b> (on a friend's profile): a period of your choice (30 days to start with, up to lifetime) side by side (muscle radar, workout count, time, volume) and the lifts you both have, by name. Open one for 1RM, heaviest and best set, plus a leaderboard. Lifts you share in a friend's workout open the same screen.</li>
     </ul>
 
     <div class="dsec">Settings</div>
@@ -3671,7 +3671,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4508';
+  var APP_VERSION = '3.4509';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -5329,25 +5329,39 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       });
   }
 
-  function openCompare() {
-    if (!userView || !sb) return;
-    var now = new Date(), from = addDays(now, -30);
-    var c = cmp = { id: userView.id, p: userView.p || {}, all: false,
-                    mine: statsFor(from, now) };
-    push('compare');
-    drawCompare();
-    // what they logged shows as posts, so the month is counted the way their profile does
-    Promise.all([
-      loadCmpFriends(),
-      sb.from('posts').select('date,data').eq('user_id', c.id).gte('date', from.toISOString())
-    ]).then(function (r) {
-      if (cmp !== c) return;
-      if (r[1].error) { c.err = true; drawCompare(); return; }
-      c.fr = r[0];
-      if (c.fr[c.id]) c.p = c.fr[c.id];
-      c.theirs = statsFor(from, now, (r[1].data || []).filter(function (row) {
+  // the period of the comparison; Lifetime has no start date, so it also asks for every post of theirs
+  function cmpFrom(c) {
+    var d = CMP_RANGES.filter(function (r) { return r.id === c.range; })[0].days;
+    return d ? addDays(new Date(), -d) : new Date(0);
+  }
+
+  // what they logged shows as posts, so the period is counted the way their profile does
+  function cmpLoad(c) {
+    var rng = c.range, from = cmpFrom(c), now = new Date();
+    var q = sb.from('posts').select('date,data').eq('user_id', c.id);
+    if (rng !== 'all') q = q.gte('date', from.toISOString());
+    c.err = false;
+    c.theirs = null;
+    c.mine = statsFor(from, now);
+    return q.then(function (r) {
+      if (cmp !== c || c.range !== rng) return;      // another friend or another period was picked meanwhile
+      if (r.error) { c.err = true; return; }
+      c.theirs = statsFor(from, now, (r.data || []).filter(function (row) {
         return postOk(row.data);
       }).map(function (row) { var w = row.data; w.date = row.date; return w; }));
+    });
+  }
+
+  function openCompare() {
+    if (!userView || !sb) return;
+    var c = cmp = { id: userView.id, p: userView.p || {}, all: false, range: '30d' };
+    c.load = cmpLoad(c);
+    push('compare');
+    drawCompare();
+    Promise.all([loadCmpFriends(), c.load]).then(function (r) {
+      if (cmp !== c) return;
+      c.fr = r[0];
+      if (c.fr[c.id]) c.p = c.fr[c.id];
       lbFr = c.fr;
       drawCompare();
     });
@@ -5397,10 +5411,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function drawCompare() {
     var c = cmp;
     if (!c) return;
-    var head = cmpHead(c.p, '');
+    var def = CMP_RANGES.filter(function (r) { return r.id === c.range; })[0];
+    var head = '<button class="strange" data-cmrange>' + def.name + '</button>' + cmpHead(c.p, '');
     if (!c.theirs) {
       paint($('cmp-body'), head + '<div class="note" style="padding:1rem var(--pad)">' +
-        (c.err ? 'Could not load their month.' : 'Loading…') + '</div>');
+        (c.err ? 'Could not load their workouts.' : 'Loading…') + '</div>');
       return;
     }
     var a = c.mine, b = c.theirs, list = commonEx();
@@ -5409,7 +5424,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     paint($('cmp-body'), head +
       '<div class="dsec">Muscle split</div>' +
       radar(byGroup(a.by), byGroup(b.by), esc(social.username || 'You'), esc(c.p.username || '')) +
-      '<div class="dsec">Stats · last 30 days</div>' +
+      '<div class="dsec">Stats · ' + def.name.toLowerCase() + '</div>' +
       cmpBars('Workout count', a.workouts, b.workouts, String, c.p) +
       cmpBars('Workout time', a.seconds, b.seconds, fmtDuration, c.p) +
       cmpBars('Total volume', a.volume, b.volume, vol, c.p) +
@@ -5517,6 +5532,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   $('cmp-body').addEventListener('click', function (e) {
     var x = e.target.closest('[data-cx]');
     if (x) { openCmpEx(x.dataset.cx); return; }
+    if (e.target.closest('[data-cmrange]')) { openRangeMenu(CMP_RANGES, cmp.range, 'cmp'); return; }
     if (e.target.closest('[data-cmore]')) { cmp.all = true; drawCompare(); }
   });
   $('cmpx-body').addEventListener('click', function (e) {
@@ -12194,7 +12210,17 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     { id: '6m', name: 'Last 6 months', days: 180 },
     { id: '1y', name: 'Last year', days: 365 }
   ];
+  var CMP_RANGES = ST_RANGES.concat([{ id: 'all', name: 'Lifetime', days: 0 }]);
   var stRange = '30d';
+  var strangeFor = 'chart';           // which screen the shared period menu answers to
+
+  function openRangeMenu(list, now, owner) {
+    strangeFor = owner;
+    $('strange-menu').innerHTML = list.map(function (r) {
+      return '<button data-sr="' + r.id + '" aria-pressed="' + (r.id === now) + '">' + r.name + '</button>';
+    }).join('');
+    $('strange-sheet').hidden = false;
+  }
 
   function stRangeDef() {
     return ST_RANGES.filter(function (r) { return r.id === stRange; })[0];
@@ -12270,13 +12296,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           gap(cur.sets, prev.sets) + '</span></div>' +
       '</div>';
 
-    $('st-range').addEventListener('click', function () {
-      $('strange-menu').innerHTML = ST_RANGES.map(function (r) {
-        return '<button data-sr="' + r.id + '" aria-pressed="' + (r.id === stRange) + '">' +
-          r.name + '</button>';
-      }).join('');
-      $('strange-sheet').hidden = false;
-    });
+    $('st-range').addEventListener('click', function () { openRangeMenu(ST_RANGES, stRange, 'chart'); });
   }
 
   document.querySelector('[data-strange-close]').addEventListener('click', function () {
@@ -12285,8 +12305,16 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   $('strange-menu').addEventListener('click', function (e) {
     var b = e.target.closest('[data-sr]');
     if (!b) return;
-    stRange = b.dataset.sr;
     $('strange-sheet').hidden = true;
+    if (strangeFor === 'cmp') {
+      var c = cmp;
+      if (!c || c.range === b.dataset.sr) return;
+      c.range = b.dataset.sr;
+      cmpLoad(c).then(function () { if (cmp === c) drawCompare(); });
+      drawCompare();
+      return;
+    }
+    stRange = b.dataset.sr;
     drawStatChart();
   });
 
