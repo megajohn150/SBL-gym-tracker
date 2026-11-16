@@ -1277,15 +1277,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshtoday h2{font-family:var(--display);font-size:1.6rem;font-weight:700;margin-top:.15rem}
 .dshmeta{font-size:.78rem;color:var(--fg-3);margin-top:.2rem}
 .dshalt{display:block;margin:.7rem auto 0;font-size:.8rem;color:var(--fg-3);text-decoration:underline}
-.dshweek{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 var(--pad)}
+/* seven days in two rows (four, then three), so a cell is wide enough for a routine's name */
+.dshweek{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;margin:0 var(--pad)}
+.dshday:nth-child(-n+4){grid-column:span 3}
+.dshday:nth-child(n+5){grid-column:span 4}
 .dshday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;min-width:0;font:inherit;color:inherit;border:var(--border);border-radius:calc(var(--radius) - 4px);background:var(--surface);text-align:center}
-.dshday i{font-style:normal;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
-.dshday b{font-size:.56rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 1px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dshday i{font-style:normal;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
+.dshday b{font-size:.78rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 #s-dash .wkbar{margin-top:.8rem}
 .dshlink{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit}
 button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .dshc.done.now{color:var(--bg);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--fg)}
-.dshday span{font-size:.58rem;color:var(--fg-3);font-weight:600}
+.dshday span{font-size:.62rem;color:var(--fg-3);font-weight:600}
 .dshday.done span{color:var(--green)}
 .dshday.now{border-color:var(--fg)}
 .dshday.rest b{color:var(--fg-3)}
@@ -3658,7 +3661,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4496';
+  var APP_VERSION = '3.4497';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
