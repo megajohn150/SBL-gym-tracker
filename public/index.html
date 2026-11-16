@@ -1286,9 +1286,17 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshday.now{border-color:var(--fg)}
 .dshday.rest b{color:var(--fg-3)}
 #s-dash .splitrow .p{min-width:5ch}
-.dshchips{display:flex;flex-wrap:wrap;gap:6px;padding:0 var(--pad)}
-.dshchip{padding:6px 12px;border:var(--border);border-radius:999px;font-size:.78rem;font-weight:600;color:var(--fg-3)}
-.dshchip.fresh{color:var(--fg);border-color:var(--fg)}
+.dshcal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px 4px;padding:0 var(--pad);text-align:center}
+.dshcal i{font-style:normal;font-size:.6rem;letter-spacing:.12em;color:var(--fg-3);font-weight:700}
+.dshc{display:grid;place-items:center;aspect-ratio:1;max-width:38px;width:100%;margin:0 auto;border-radius:50%;font-size:.8rem;font-weight:600;color:var(--fg-2);border:1.5px solid transparent}
+.dshc.done{background:var(--fg);color:var(--bg)}
+.dshc.plan{border:1.5px dashed var(--fg-3)}
+.dshc.miss{border:1.5px solid var(--line);color:var(--fg-3);text-decoration:line-through}
+.dshc.now{border:1.5px solid var(--fg);color:var(--fg);font-weight:800}
+.dshc.pad{visibility:hidden}
+.dshlegend{display:flex;align-items:center;gap:6px;padding-top:.9rem}
+.dshlegend .dshc{width:14px;height:14px;aspect-ratio:auto;margin:0 0 0 6px;flex:none;text-decoration:none}
+.dshlegend .dshc:first-child{margin-left:0}
 .dashbtn{
   padding:14px var(--cardpad);text-align:center;font-size:.9rem;font-weight:600;
   background:var(--surface);border:var(--border);border-radius:var(--radius);
@@ -1966,30 +1974,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
         <div class="splitrow"><span class="m">Quads</span><div class="splitline"><div class="meter"><i style="width:25%"></i></div><span class="p">4/16</span></div></div>
       </div>
 
-      <div class="dsec">Ready to train</div>
-      <div class="dshchips">
-        <span class="dshchip fresh">Back</span><span class="dshchip fresh">Biceps</span><span class="dshchip fresh">Quads</span>
-        <span class="dshchip">Chest</span><span class="dshchip">Triceps</span><span class="dshchip">Shoulders</span>
+      <div class="dsec row2"><span>November</span><span>11 of 12 planned done</span></div>
+      <div class="dshcal">
+        <i>M</i><i>T</i><i>W</i><i>T</i><i>F</i><i>S</i><i>S</i>
+        <span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc pad"></span><span class="dshc">1</span><span class="dshc done">2</span><span class="dshc done">3</span><span class="dshc done">4</span><span class="dshc">5</span><span class="dshc done">6</span><span class="dshc done">7</span><span class="dshc">8</span><span class="dshc done">9</span><span class="dshc done">10</span><span class="dshc miss">11</span><span class="dshc">12</span><span class="dshc done">13</span><span class="dshc done">14</span><span class="dshc">15</span><span class="dshc done">16</span><span class="dshc done">17</span><span class="dshc now">18</span><span class="dshc">19</span><span class="dshc plan">20</span><span class="dshc plan">21</span><span class="dshc">22</span><span class="dshc plan">23</span><span class="dshc plan">24</span><span class="dshc plan">25</span><span class="dshc">26</span><span class="dshc plan">27</span><span class="dshc plan">28</span><span class="dshc">29</span><span class="dshc plan">30</span>
       </div>
-      <p class="hint">Pull fits best today: back and biceps have rested for 4 days.</p>
+      <p class="hint dshlegend"><span class="dshc done">&nbsp;</span> done <span class="dshc plan">&nbsp;</span> planned <span class="dshc miss">&nbsp;</span> missed</p>
 
       <div class="dsec">Routines</div>
       <div class="rows" style="margin:0 var(--pad)">
         <div class="row"><span class="lab"><span class="nm">Legs</span><span class="meta">Yesterday</span></span><span class="chev">&rsaquo;</span></div>
         <div class="row"><span class="lab"><span class="nm">Pull</span><span class="meta">2 days ago</span></span><span class="chev">&rsaquo;</span></div>
         <div class="row"><span class="lab"><span class="nm">Push</span><span class="meta">6 days ago</span></span><span class="val">Due</span><span class="chev">&rsaquo;</span></div>
-      </div>
-
-      <div class="dsec">Stuck lifts</div>
-      <div class="rows" style="margin:0 var(--pad)">
-        <div class="row"><span class="lab"><span class="nm">Overhead press</span><span class="meta">No record for 6 weeks</span></span><span class="chev">&rsaquo;</span></div>
-        <div class="row"><span class="lab"><span class="nm">Barbell row</span><span class="meta">No record for 4 weeks</span></span><span class="chev">&rsaquo;</span></div>
-      </div>
-
-      <div class="dsec">Recent records</div>
-      <div class="rows" style="margin:0 var(--pad)">
-        <div class="row"><span class="lab"><span class="nm">Lat pulldown</span><span class="meta">Heaviest &middot; 2 days ago</span></span><span class="val">72.5 kg</span></div>
-        <div class="row"><span class="lab"><span class="nm">Bench press</span><span class="meta">Est. 1RM &middot; 5 days ago</span></span><span class="val">104 kg</span></div>
       </div>
 
       <div class="reportbar" style="margin-top:1.6rem">
@@ -3697,7 +3693,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4486';
+  var APP_VERSION = '3.4487';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
