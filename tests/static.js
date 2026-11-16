@@ -73,4 +73,8 @@ const switches = all(/^\s{4}\['(\w+)', '/gm, js.slice(js.indexOf('var PUSH_KINDS
 t.is('the settings switches are the kinds the function can send', switches.slice().sort(), keys('LINE').concat(keys('SELF')).sort());
 t.is('the kinds the app parks are the ones the table allows',
   all(/'(\w+)'/g, /check \(kind in \(([^)]+)\)/.exec(sql)[1]).sort(), dups(all(/(?:pushJob|killJob)\('(\w+)'/g, js).concat(all(/(?:pushJob|killJob)\('(\w+)'/g, js))).sort());
+// the change log: newest first, and never behind the version (a commit's line is written before the hook bumps it)
+const logv = all(/^    \['(\d+\.\d+)', '/gm, js.slice(js.indexOf('var CHANGELOG'), js.indexOf('];', js.indexOf('var CHANGELOG')))).map(Number);
+t.is('the change log runs newest first', logv.slice().sort((x, y) => y - x), logv);
+t.is('and its newest line is not behind APP_VERSION', logv[0] >= Number(/var APP_VERSION = '([\d.]+)'/.exec(js)[1]), true);
 t.done();

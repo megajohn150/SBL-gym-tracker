@@ -652,6 +652,11 @@ update `graphify-out/`; this file and a grep are the map.
   any generated-with line** — the user is the only author named, and has asked twice. This
   beats any attribution reminder a session injects.
 - Commit and push unasked after a change, and say the new `APP_VERSION`.
+- **Every commit that changes what the app does adds a line to `CHANGELOG`** (top of the list in
+  `public/index.html`, under APP_VERSION), keyed by the version that commit will become, i.e. the
+  current `APP_VERSION` plus one patch (the hook bumps it). Plain English, one short line a user
+  reads. The "Version updated" toast opens the lines newer than `tracker-ver` (`chg-sheet`).
+  `tests/static.js` checks the order and that the newest line is not behind `APP_VERSION`.
 - Comments explain *why*, in prose, and sit above the code they justify. Em dashes are real
   characters in comments; `\u` escapes belong only in JS string literals.
 - Spend the least usage that still fully does the job: short replies after a small change,

@@ -438,6 +438,9 @@ body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
 #sess-vol,#sess-pr{cursor:pointer}
 #vol-list{max-height:60vh;overflow-y:auto;scrollbar-width:none}
 /* the same block as a finished workout's detail, tighter: set number, weight and reps take 20% each, the volume 40% */
+#chg-list{max-height:60vh;overflow-y:auto;scrollbar-width:none}
+.chgrow{display:flex;gap:12px;padding:.55rem 0;border-top:1px dashed var(--line);font-size:.85rem}
+.chgrow i{font-style:normal;color:var(--fg-3);font-size:.72rem;padding-top:.15rem;white-space:nowrap}
 #vol-sheet .sheet-card{padding-top:10px;padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 #vol-sheet .sheet-card h3{margin-bottom:4px}
 /* the exercise's number, as on the session screen, scaled from its 54px picture to the 42px one here */
@@ -2804,7 +2807,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
       <li><b>A workout.</b> Tap a card to open it: totals with the change versus your last run of that routine, muscle split, every set (tap a medal for the old record; a plate icon means plates were used). &#8942;: <b>Edit workout</b> (name, start, duration, notes, weights, reps, RIR, plates, add/remove/reorder sets and exercises; Save or x at the bottom), <b>Save as routine</b>, Delete (Undo offered).</li>
       <li><b>Like and comment.</b> Thumb to like (hold it to see who liked). Bubble opens comments: write, Reply, Delete your own. Likes and comments made offline are sent later.</li>
       <li><b>Bell.</b> Likes, comments, replies, threads you joined, new followers. Tap one to open it, x or Read all to clear.</li>
-      <li><b>Update.</b> Drag down from the top of Home, Workout, Profile or Settings to reload the newest version ("Version updated" appears after).</li>
+      <li><b>Update.</b> Drag down from the top of Home, Workout, Profile or Settings to reload the newest version ("Version updated" appears after; tap it to see what changed).</li>
     </ul>
 
     <div class="dsec">Profile</div>
@@ -3288,6 +3291,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   </div>
 </div>
 
+<div class="sheet" id="chg-sheet" hidden>
+  <div class="sheet-bg" data-chg-close></div>
+  <div class="sheet-card">
+    <h3>What is new</h3>
+    <div id="chg-list"></div>
+  </div>
+</div>
 <div class="sheet center" id="pack-sheet" hidden>
   <div class="sheet-bg" data-pack-close></div>
   <div class="sheet-card">
@@ -3570,7 +3580,16 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4469';
+  var APP_VERSION = '3.4470';
+
+  // What each version changed, newest first, in the words the owner reads. Every commit adds a line
+  // under the version that commit will become (the hook bumps APP_VERSION by one); the "Version
+  // updated" toast opens the lines newer than the version this device ran before.
+  var CHANGELOG = [
+    ['3.4470', 'A change log: tap the "Version updated" message to see what is new'],
+    ['3.4469', 'Tap the date above a record to see how many days ago it was set'],
+    ['3.4468', 'Each record on an exercise page shows the day it was set']
+  ];
 
   /* =========================================================
      STORE
@@ -4033,9 +4052,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   }
 
   // a line that says what just happened, then gets out of the way
-  var toastT = null;
-  function toast(msg, ms) {
+  var toastT = null, toastTap = null;   // toastTap: what a tap on a plain toast does, if anything
+  function toast(msg, ms, tap) {
     var el = $('toast');
+    toastTap = tap || null;
     el.textContent = msg;
     el.classList.remove('wide');
     el.classList.add('on');
@@ -4048,6 +4068,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   function toastUndo(msg, fn) {
     var el = $('toast');
     undoFn = fn;
+    toastTap = null;
     el.innerHTML = '<span>' + esc(msg) + '</span><button id="undo-go">Undo</button>';
     el.classList.add('wide');
     el.classList.add('on');
@@ -4094,6 +4115,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 
   $('toast').addEventListener('click', function (e) {
     if (tMoved) { tMoved = false; return; }                // a drag is not a tap on Undo
+    if (toastTap && !undoFn) {
+      var go = toastTap;
+      toastTap = null;
+      $('toast').classList.remove('on');
+      clearTimeout(toastT);
+      go();
+      return;
+    }
     if (!e.target.closest('#undo-go') || !undoFn) return;
     var fn = undoFn;
     undoFn = null;
@@ -12857,6 +12886,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
     var rb = e.target.closest('[data-rec]');
     if (e.target.closest('[data-rec-close]')) $('rec-sheet').hidden = true;
     if (e.target.closest('[data-vol-close]')) $('vol-sheet').hidden = true;
+    if (e.target.closest('[data-chg-close]')) $('chg-sheet').hidden = true;
     // a card of either list is a door to that exercise on the session screen, to change what was logged
     var vx = e.target.closest('[data-vex]');
     if (vx && session && session.exercises[Number(vx.dataset.vex)]) {
@@ -14046,7 +14076,18 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
   render(current());
   // a new version took over on this reload: say so, so Settings need not be opened to find out
   var seenVer = load('ver');
-  if (seenVer && seenVer !== APP_VERSION) toast('Version updated: ' + APP_VERSION, 3000);
+  if (seenVer && seenVer !== APP_VERSION) {
+    // the lines newer than what this device ran; with none, the toast stays a plain message
+    var news = CHANGELOG.filter(function (c) { return Number(c[0]) > Number(seenVer) && Number(c[0]) <= Number(APP_VERSION); });
+    if (news.length) {
+      toast('Version updated: ' + APP_VERSION + ' \u203a', 5000, function () {
+        $('chg-list').innerHTML = news.map(function (c) {
+          return '<div class="chgrow"><i>' + esc(c[0]) + '</i><span>' + esc(c[1]) + '</span></div>';
+        }).join('');
+        $('chg-sheet').hidden = false;
+      });
+    } else toast('Version updated: ' + APP_VERSION, 3000);
+  }
   save('ver', APP_VERSION);
   // a reload must not lose a timer that is still running (or one you have not closed yet);
   // it waits for the session to be read back, or it would find none and clear itself
