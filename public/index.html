@@ -1631,9 +1631,13 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   flex:none;padding:14px var(--pad);border-bottom:var(--dash);
   font-size:.95rem;font-weight:700;text-align:center;
 }
-.wtrow{display:flex;gap:8px;padding:0 var(--pad)}
-.wtrow input{flex:1;min-width:0;padding:11px 12px;font-size:1rem;background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px)}
-.wtrow .btn{flex:none;width:auto;padding:0 22px}
+.wtcard{margin-top:1.4rem}
+.wtcard-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wtpill{padding:5px 12px;font-size:.72rem;font-weight:600;color:var(--fg-3);background:var(--bg);border:var(--border);border-radius:var(--radius)}
+.wtbig{display:flex;align-items:baseline;gap:6px;margin-top:.5rem}
+.wtbig input{width:5ch;padding:0;font-family:var(--display);font-size:2.6rem;font-weight:700;line-height:1.1;color:var(--fg);background:none;border:0;outline:0}
+.wtbig input::placeholder{color:var(--fg-3)}
+.wtbig span{font-size:1rem;color:var(--fg-3)}
 .caldays{
   flex:none;display:grid;grid-template-columns:repeat(7,1fr);padding:9px 6px;
   border-bottom:var(--dash);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
@@ -1973,12 +1977,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div id="dash-sets"></div>
     <div id="dash-cal"></div>
     <div id="dash-rts"></div>
-    <div class="dsec row2"><span>Weight</span><button class="dshlink" data-push="weigh">Calendar &rsaquo;</button></div>
-    <form class="wtrow" id="wt-form">
-      <input type="text" id="wt-in" inputmode="decimal" maxlength="6" placeholder="kg" autocomplete="off" aria-label="Weight in kg">
-      <button class="btn btn-primary" type="submit">Save</button>
-    </form>
-    <p class="hint" id="wt-hint"></p>
+    <div class="dshtoday wtcard">
+      <div class="wtcard-h"><p class="eyebrow">Weight</p><button class="wtpill" data-push="weigh">Calendar &rsaquo;</button></div>
+      <form id="wt-form">
+        <label class="wtbig"><input type="text" id="wt-in" inputmode="decimal" maxlength="6" placeholder="&ndash;" autocomplete="off" aria-label="Weight in kg"><span>kg</span></label>
+        <p class="dshmeta" id="wt-hint"></p>
+        <button class="btn btn-primary" id="wt-go" type="submit" style="margin-top:.9rem"></button>
+      </form>
+    </div>
     <div style="height:1.5rem"></div>
     </div>
   </section>
@@ -2898,7 +2904,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Home</div>
     <ul class="gdl">
       <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
-      <li><b>Weight.</b> At the bottom of Home: type your weight in kg and tap Save, once a day (saving again today replaces it). Calendar opens a month view with the days you weighed in; tap any day to add or change it there, with the change against the weigh-in before it, or remove it. The bars above show the last 30 weigh-ins; tap one for its weight. Only you see it, and it syncs with your account.</li>
+      <li><b>Weight.</b> At the bottom of Home: the Weight card shows today's weight in kg: type it and tap Log (or Update) today's weight, once a day. Calendar opens a month view with the days you weighed in; tap any day to add or change it there, with the change against the weigh-in before it, or remove it. The bars above show the last 30 weigh-ins; tap one for its weight. Only you see it, and it syncs with your account.</li>
       <li><b>Plan.</b> Seven days, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. Each cell shows a short name of up to three characters: change it in the box beside a routine when you tap a day (or in the routine's editor); without one the plan uses the first three letters. It syncs with your account.</li>
       <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
       <li><b>Sets this week:</b> the three muscles furthest from their weekly set goal (See more shows the rest), with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
@@ -3709,7 +3715,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4510';
+  var APP_VERSION = '3.4511';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10495,10 +10501,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     drawDash();
     if ($('s-weigh').classList.contains('on')) drawWeigh();
   }
+  // the box shows today's weight, but never overwrites what is being typed into it
+  var wtShown = '';
   function drawWtHint() {
-    var k = wtKey(new Date()), v = store.weights[k];
-    $('wt-hint').textContent = v ? 'Today ' + v + ' kg · ' + wtLine(k, v)
-      : wtKeys().length ? 'Not logged today' : 'Log your weight once a day.';
+    var k = wtKey(new Date()), v = store.weights[k], last = wtKeys().pop(), inp = $('wt-in');
+    $('wt-hint').textContent = v ? wtLine(k, v)
+      : last ? 'Not logged today · last ' + store.weights[last] + ' kg on ' + wtName(last) : 'Log your weight once a day.';
+    $('wt-go').textContent = v ? 'Update today’s weight' : 'Log today’s weight';
+    if (document.activeElement !== inp && inp.value === wtShown) inp.value = wtShown = v ? String(v) : '';
   }
   function drawWeigh() {
     var keys = wtKeys(), last = keys.slice(-30), now = new Date(), today = wtKey(now), html = '';
@@ -10545,9 +10555,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     e.preventDefault();
     var kg = wtParse($('wt-in').value);
     if (!kg) { toast('Enter a weight in kg'); return; }
-    wtSet(wtKey(new Date()), kg);
-    $('wt-in').value = '';
+    wtShown = $('wt-in').value;
     $('wt-in').blur();
+    wtSet(wtKey(new Date()), kg);
     toast('Saved');
   });
   $('wt-body').addEventListener('click', function (e) {
