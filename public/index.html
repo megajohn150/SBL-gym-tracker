@@ -2880,7 +2880,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
       <li><b>Four tabs.</b> Home: today's routine, your plan and the week. Feed: your workouts and your friends'. Workout: your routines. Profile: charts, stats, friends, settings. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button> <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button> <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
-      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar, greyed out, in front of a box for the weight you add on top. With no weigh-in yet that box is a button that asks for one. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once. At +0 more reps than ever at +0 is a Best set record (its medal shows your weight times those reps); the first +0 set only sets the bar. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
+      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar in front of a box for the weight you add on top. Tap that first box to change it: the new number replaces today's weigh-in, or becomes today's if you had not weighed in. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once. At +0 more reps than ever at +0 is a Best set record (its medal shows your weight times those reps); the first +0 set only sets the bar. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
       <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;. The import button at the top of the Workout tab brings in a starter pack (SBL or Bro Lifter): all of its exercises, and the routines you tick. An exercise you already have by name is not added twice; a routine that is already there is skipped, and one with the same name but other exercises comes in as "Name 2". <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go. <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
     </ul>
@@ -3738,7 +3738,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4516';
+  var APP_VERSION = '3.4517';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -6760,7 +6760,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
             (go ? '</button>' : '</div>') +
             r.e.sets.filter(logged).map(function (st) {
               return '<div class="drow"><span class="no">' + esc(st.label) + medal(st, r.e.name) + '</span>' +
-                '<span class="c">' + esc(st.weight) + '</span>' +
+                '<span class="c">' + (r.e.bodyweight ? '+' + (st.weight === '' ? '0' : esc(st.weight)) : esc(st.weight)) + '</span>' +
                 '<span class="c">' + esc(st.reps) + '</span>' +
                 '<span class="c' + (st.rir === '' ? ' dim' : '') + '">' +
                 (st.rir === '' ? '&ndash;' : esc(st.rir)) + '</span></div>';
@@ -8148,7 +8148,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     return null;
   }
 
-  function setFull(st) { return st.weight !== '' && st.reps !== '' && st.rir !== ''; }
+  // a bodyweight set carries bw, and no added weight is a plain +0, so only a normal set needs its weight filled
+  function setFull(st) { return (st.weight !== '' || st.bw != null) && st.reps !== '' && st.rir !== ''; }
 
   // the whole exercise is behind you only once every set is ticked
   function exDone(e) {
@@ -9094,13 +9095,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
   }
   function bwHead(ex) { return ex.bodyweight ? '<span class="bwh"><i>BW</i><i>+ Weight</i></span>' : 'Weight'; }
-  // the weight cell of a set; a bodyweight one gets the body's weight in front of it. Yours with no
-  // weigh-in yet is a button that asks for one, a friend's is only a number.
+  // the weight cell of a set; a bodyweight one gets the body's weight in front of it. Yours is a button
+  // that opens today's weigh-in (so it can be changed, or given for the first time), a friend's only a number.
   function bwPair(ex, st, inner, mine) {
     if (!ex.bodyweight) return inner;
     var b = bwOf(st);
-    return '<span class="bwpair">' + (b || !mine ? '<span class="cell bwcell">' + (b ? esc(String(b)) : '&ndash;') + '</span>'
-      : '<button class="cell bwcell blank" data-bw-add aria-label="Add your weight">&ndash;</button>') + inner + '</span>';
+    return '<span class="bwpair">' + (mine
+      ? '<button class="cell bwcell' + (b ? '' : ' blank') + '" data-bw-add aria-label="Your weight today">' + (b ? esc(String(b)) : '&ndash;') + '</button>'
+      : '<span class="cell bwcell">' + (b ? esc(String(b)) : '&ndash;') + '</span>') + inner + '</span>';
   }
 
   // Exercises are matched by id; name is only the fallback for old entries.
@@ -10644,12 +10646,13 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('wt-body').innerHTML = html;
   }
   function wtDiffDraw() { $('wt-diff').textContent = wtLine(wtDay, wtParse($('wt-day-in').value)); }
-  function wtOpen(k) {
+  // `pre` fills the box when the day has no weight yet (the session offers the latest one to adjust)
+  function wtOpen(k, pre) {
     wtDay = k;
-    var v = store.weights[k];
+    var v = store.weights[k] || pre;
     $('wt-title').textContent = wtName(k) + ' ' + k.slice(0, 4);
     $('wt-day-in').value = v ? String(v) : '';
-    $('wt-del').hidden = !v;
+    $('wt-del').hidden = !store.weights[k];
     wtDiffDraw();
     $('wt-sheet').hidden = false;
   }
@@ -10663,9 +10666,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     toast('Saved');
   });
   $('wt-in').addEventListener('input', wtFit);
-  // a bodyweight set with no weigh-in yet asks for one, and the answer lands in the Weight calendar
+  // the body weight of a set is today's weigh-in: changing it overwrites today's, or becomes today's if there is none
   $('sess-sets').addEventListener('click', function (e) {
-    if (e.target.closest('[data-bw-add]')) wtOpen(wtKey(new Date()));
+    if (e.target.closest('[data-bw-add]')) wtOpen(wtKey(new Date()), bwNow());
   });
   $('wt-body').addEventListener('click', function (e) {
     var c = e.target.closest('[data-wd]');

@@ -41,4 +41,7 @@ t.is('the newest weigh-in is stamped on bodyweight sets only', [session.exercise
 const none = { exercises: [{ bodyweight: true, sets: [{}] }] };
 make({ weights: {} }, none).stampBw();
 t.is('with no weigh-in the stamp is empty', none.exercises[0].sets[0].bw, '');
+// a +0 set has no weight to fill in: only a normal set needs it before it can be ticked
+const full = new Function(slice('  function setFull(st)', '  // the whole exercise is behind you') + '; return setFull;')();
+t.is('a bodyweight set is full without an added weight, a normal one is not', [full({ weight: '', reps: '8', rir: '1', bw: '74' }), full({ weight: '', reps: '8', rir: '1' }), full({ weight: '', reps: '8', rir: '', bw: '74' })], [true, false, false]);
 t.done();
