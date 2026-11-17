@@ -575,10 +575,12 @@ body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
 /* how far this set is from the last time, in the corner of its own box */
 .cellwrap{position:relative;min-width:0}
 /* a bodyweight set: the body's weight, small and greyed, then the weight added on top */
-.bwpair{display:flex;gap:6px;min-width:0;align-items:center}
+.bwpair{display:flex;gap:6px;min-width:0;align-items:stretch}
 .bwpair .cellwrap,.bwpair > input.cell:not(.bwcell){flex:1}
 .bwpair .bwcell{flex:none;width:56px;padding-left:2px;padding-right:2px;font-size:.88rem}
-span.bwcell,.bwpair .bwcell[readonly]{display:block;color:var(--fg-3);background:none;font-weight:500}
+/* stretch, so the body-weight box is as tall as the box beside it whatever its font size */
+button.bwcell,span.bwcell{display:flex;align-items:center;justify-content:center}
+span.bwcell,.bwpair .bwcell[readonly]{color:var(--fg-3);background:none;font-weight:500}
 .sets-h.bw,.setrow.bw{grid-template-columns:50px 1.7fr 1fr 62px}
 .bwh{display:flex;gap:6px}
 .bwh i{font-style:normal;flex:1}
@@ -3738,7 +3740,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4517';
+  var APP_VERSION = '3.4518';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -8425,7 +8427,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       return '<div class="swipe">' +
         '<div class="swipe-bg"><button data-del="' + i + '">Delete</button></div>' +
         '<div class="setrow' + (ex.bodyweight ? ' bw' : '') + (st.done ? ' done' : '') + '" data-row="' + i + '">' +
-        '<button class="setno' + (fillFrom(ex, i) ? ' hasprev' : '') +
+        '<button class="setno' + (setFull(st) || fillFrom(ex, i) ? ' hasprev' : '') +
           '" data-fill="' + i + '">' + (st.done ? '&#10003;' : 'Set') +
           '<b>' + esc(st.label) + '</b></button>' +
         medal(st, ex.name) +
@@ -8789,6 +8791,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       var old = el.parentNode.querySelector('.delta');
       if (old) old.parentNode.removeChild(old);
       el.parentNode.insertAdjacentHTML('beforeend', delta(v, pv[padTarget.f]));
+      // the number is underlined while a tap on it does something: ticks the set, or fills it
+      el.closest('.setrow').querySelector('.setno').classList.toggle('hasprev', setFull(st) || !!fillFrom(ex, padTarget.i));
     }
     saveSession();
   }
