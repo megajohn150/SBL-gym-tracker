@@ -21,7 +21,10 @@ function slice(from, to) {
 
 // cleanPlan, as shipped: mergeStores, unionStores and mergeImport call it, and the blocks the tests
 // slice out of the page do not hold it
-function planClean() { return slice('  function cleanPlan(', '  // the routine planned for a weekday'); }
+// mergeStores calls both cleaners, so every test that slices it gets them together
+function planClean() {
+  return slice('  function cleanPlan(', '  // the routine planned for a weekday') + slice('  var WT_MIN', '  function wtParse');
+}
 
 function suite(name) {
   const ok = [];

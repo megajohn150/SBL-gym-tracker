@@ -1631,6 +1631,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   flex:none;padding:14px var(--pad);border-bottom:var(--dash);
   font-size:.95rem;font-weight:700;text-align:center;
 }
+.wtrow{display:flex;gap:8px;padding:0 var(--pad)}
+.wtrow input{flex:1;min-width:0;padding:11px 12px;font-size:1rem;background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px)}
+.wtrow .btn{flex:none;width:auto;padding:0 22px}
 .caldays{
   flex:none;display:grid;grid-template-columns:repeat(7,1fr);padding:9px 6px;
   border-bottom:var(--dash);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
@@ -1643,7 +1646,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 }
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr);padding:0 6px}
 /* a fast flick must not drag the whole calendar sideways */
-#cal-body{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+#cal-body,#wt-body{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
 /* the year and multi-year views: the same month, drawn as squares */
 .calyr{
   font-family:var(--display);font-size:1.25rem;font-weight:700;
@@ -1970,6 +1973,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div id="dash-sets"></div>
     <div id="dash-cal"></div>
     <div id="dash-rts"></div>
+    <div class="dsec row2"><span>Weight</span><button class="dshlink" data-push="weigh">Calendar &rsaquo;</button></div>
+    <form class="wtrow" id="wt-form">
+      <input type="text" id="wt-in" inputmode="decimal" maxlength="6" placeholder="kg" autocomplete="off" aria-label="Weight in kg">
+      <button class="btn btn-primary" type="submit">Save</button>
+    </form>
+    <p class="hint" id="wt-hint"></p>
     <div style="height:1.5rem"></div>
     </div>
   </section>
@@ -2436,6 +2445,19 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="scroll" id="cal-body"></div>
   </section>
 
+  <section class="screen" id="s-weigh" data-tab="dash" data-title="Weight">
+    <div class="bar">
+      <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
+      <h1>Weight</h1>
+      <span></span>
+    </div>
+    <div class="pchart" id="wt-chart" style="flex:none"></div>
+    <div class="caldays">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+    </div>
+    <div class="scroll" id="wt-body"></div>
+  </section>
+
 
   <section class="screen" id="s-summary" data-tab="home" data-title="Summary">
     <div class="bar">
@@ -2876,6 +2898,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Home</div>
     <ul class="gdl">
       <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
+      <li><b>Weight.</b> At the bottom of Home: type your weight in kg and tap Save, once a day (saving again today replaces it). Calendar opens a month view with the days you weighed in; tap any day to add or change it there, with the change against the weigh-in before it, or remove it. The bars above show the last 30 weigh-ins; tap one for its weight. Only you see it, and it syncs with your account.</li>
       <li><b>Plan.</b> Seven days, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. Each cell shows a short name of up to three characters: change it in the box beside a routine when you tap a day (or in the routine's editor); without one the plan uses the first three letters. It syncs with your account.</li>
       <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
       <li><b>Sets this week:</b> the three muscles furthest from their weekly set goal (See more shows the rest), with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
@@ -3533,6 +3556,21 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="pop-menu" id="plan-list" style="width:100%;box-shadow:none;max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
+<div class="sheet center" id="wt-sheet" hidden>
+  <div class="sheet-bg" data-wt-close></div>
+  <div class="sheet-card">
+    <h3 id="wt-title">Weight</h3>
+    <div class="field" style="padding:0">
+      <label for="wt-day-in">Weight, kg</label>
+      <input type="text" id="wt-day-in" inputmode="decimal" maxlength="6" autocomplete="off">
+    </div>
+    <p class="hint" id="wt-diff" style="padding:8px 0 0;text-align:center"></p>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-ghost" id="wt-del" style="flex:1">Remove</button>
+      <button class="btn btn-primary" id="wt-save" style="flex:1">Save</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="est-sheet" hidden>
   <div class="sheet-bg" data-est-close></div>
   <div class="sheet-card">
@@ -3671,7 +3709,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4509';
+  var APP_VERSION = '3.4510';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -3711,7 +3749,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
      STORE
      ========================================================= */
   var store = {
-    exercises: [], routines: [], workouts: [], gone: [], targets: {}, injuries: [],
+    exercises: [], routines: [], workouts: [], gone: [], targets: {}, injuries: [], weights: {},
     profile: { handle: 'you', name: 'your name', bio: '', pic: null }
   };
 
@@ -3727,6 +3765,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       if (Array.isArray(raw.gone)) store.gone = raw.gone;
       if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
       if (cleanPlan(raw.plan)) store.plan = cleanPlan(raw.plan);
+      store.weights = cleanWeights(raw.weights);
       if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
       if (raw.wiped) store.wiped = raw.wiped;
       // workouts saved before exercises were linked by id
@@ -3900,6 +3939,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       workouts: workouts,
       targets: remote.targets || local.targets || {},
       plan: cleanPlan(remote.plan) || cleanPlan(local.plan),
+      weights: cleanWeights(remote.weights || local.weights),
       injuries: remote.injuries || local.injuries || [],
       gone: Object.keys(gone),
       wiped: Math.max(remote.wiped || 0, local.wiped || 0) || undefined
@@ -3924,6 +3964,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       Object.keys(t || {}).forEach(function (k) { m.targets[k] = t[k]; });
     });
     m.plan = cleanPlan(local.plan) || cleanPlan(remote.plan);
+    // a day deleted on one device comes back from the other here: shortcut, only the lock clash takes this path
+    m.weights = {};
+    [remote.weights, local.weights].forEach(function (t) {
+      var c = cleanWeights(t);
+      Object.keys(c).forEach(function (k) { m.weights[k] = c[k]; });
+    });
     m.profile = local.profile || remote.profile;
     return m;
   }
@@ -6101,6 +6147,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (id === 's-profile') drawProfile();
     if (id === 's-notes') drawNotes();
     if (id === 's-calendar') drawCalendar();
+    if (id === 's-weigh') drawWeigh();
     if (id === 's-stat-sets') {
       if (!leaving || (leaving.id !== 's-targets' && leaving.id !== 's-detail')) ssOff = 0;   // targets and a workout are detours, not leaving
       drawStatSets();
@@ -6144,6 +6191,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
     // the calendar runs oldest to newest, so it opens on the month you are in
     if (id === 's-calendar') $('cal-body').scrollTop = $('cal-body').scrollHeight;
+    if (id === 's-weigh') $('wt-body').scrollTop = $('wt-body').scrollHeight;
   }
 
   var scrollMem = {}, scrollBack = false;
@@ -9305,7 +9353,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       app: 'gym-tracker', version: 1, exportedAt: new Date().toISOString(),
       profile: store.profile, exercises: store.exercises,
       routines: store.routines, workouts: store.workouts, targets: store.targets,
-      plan: store.plan, injuries: store.injuries
+      plan: store.plan, injuries: store.injuries, weights: store.weights
     };
     downloadFile(JSON.stringify(payload, null, 2), 'application/json', '.json');
     save('bk-last', new Date().toISOString());
@@ -9434,6 +9482,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     }
     // a plan only comes along when there is none here; its routines are the file's, already pointed at ours by id
     if (!st.plan && cleanPlan(raw.plan)) st.plan = cleanPlan(raw.plan);
+    var fw = cleanWeights(raw.weights);
+    Object.keys(fw).forEach(function (k) { if (!(k in st.weights)) st.weights[k] = fw[k]; });
     if (Array.isArray(raw.injuries)) {
       var inj = {};
       st.injuries.forEach(function (x) { inj[x.id] = 1; });
@@ -9490,6 +9540,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     swapWorkouts(p.clean.list);
     if (raw.targets && typeof raw.targets === 'object') store.targets = raw.targets;
     store.plan = cleanPlan(raw.plan);
+    store.weights = cleanWeights(raw.weights);
     if (Array.isArray(raw.injuries)) store.injuries = raw.injuries;
     if (raw.profile) {
       ['handle', 'name', 'bio'].forEach(function (k) {
@@ -10343,6 +10394,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     paint($('dash-sets'), dashSets());
     paint($('dash-cal'), dashCal());
     paint($('dash-rts'), dashRoutines());
+    drawWtHint();
   }
 
   // one sheet, two jobs: give a weekday its routine, or pick one to start right now
@@ -10407,6 +10459,115 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     else if (k === 'setsmore') { dashSetsOpen = !dashSetsOpen; paint($('dash-sets'), dashSets()); }
     else if (k === 'workout') goTab('workout');
   });
+
+  /* --- Weight: one number a day, store.weights = { 'YYYY-MM-DD': kg }, synced with the rest of the store --- */
+  var WT_MIN = 20, WT_MAX = 500, wtDay = '';
+  function wtKey(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function wtName(k) { return Number(k.slice(8)) + ' ' + MONTHS[Number(k.slice(5, 7)) - 1]; }
+  function wtKeys() { return Object.keys(store.weights).sort(); }
+  // whatever the cloud, a file or a snapshot hands over: only real days with a believable weight
+  function cleanWeights(w) {
+    var out = {};
+    if (w && typeof w === 'object' && !Array.isArray(w)) {
+      Object.keys(w).forEach(function (k) {
+        var v = Number(w[k]);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v >= WT_MIN && v <= WT_MAX) out[k] = Math.round(v * 10) / 10;
+      });
+    }
+    return out;
+  }
+  function wtParse(s) {
+    var v = Math.round(parseFloat(String(s).replace(',', '.')) * 10) / 10;
+    return v >= WT_MIN && v <= WT_MAX ? v : 0;
+  }
+  function wtSign(d) { return (d > 0 ? '+' : d < 0 ? '−' : '±') + Math.abs(d).toFixed(1) + ' kg'; }
+  // the change against the weigh-in before day k; without a number typed yet it names that weigh-in
+  function wtLine(k, kg) {
+    var prev = wtKeys().filter(function (x) { return x < k; }).pop();
+    if (!prev) return 'First entry';
+    var was = store.weights[prev];
+    return kg ? wtSign(Math.round((kg - was) * 10) / 10) + ' vs ' + was + ' kg on ' + wtName(prev)
+      : 'Before: ' + was + ' kg on ' + wtName(prev);
+  }
+  function wtSet(k, kg) {
+    if (kg) store.weights[k] = kg; else delete store.weights[k];
+    saveStore();
+    drawDash();
+    if ($('s-weigh').classList.contains('on')) drawWeigh();
+  }
+  function drawWtHint() {
+    var k = wtKey(new Date()), v = store.weights[k];
+    $('wt-hint').textContent = v ? 'Today ' + v + ' kg · ' + wtLine(k, v)
+      : wtKeys().length ? 'Not logged today' : 'Log your weight once a day.';
+  }
+  function drawWeigh() {
+    var keys = wtKeys(), last = keys.slice(-30), now = new Date(), today = wtKey(now), html = '';
+    var vs = last.map(function (k) { return store.weights[k]; });
+    var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    $('wt-chart').hidden = last.length < 2;
+    $('wt-chart').innerHTML = last.length < 2 ? '' :
+      '<div class="pchart-h"><b>' + vs[vs.length - 1] + ' kg</b><i>' +
+      wtSign(Math.round((vs[vs.length - 1] - vs[0]) * 10) / 10) + ' since ' + wtName(last[0]) + '</i></div>' +
+      '<div class="pbars">' + last.map(function (k, i) {
+        // the bars start at the lightest weigh-in, or every one of them would look the same
+        var h = hi > lo ? 30 + (vs[i] - lo) / (hi - lo) * 70 : 60;
+        return '<button class="pbar" data-tip="' + esc(vs[i] + ' kg · ' + wtName(k)) + '"><i style="height:' + h.toFixed(1) + '%"></i></button>';
+      }).join('') + '</div>';
+
+    var y = keys.length ? Number(keys[0].slice(0, 4)) : now.getFullYear();
+    var m = keys.length ? Number(keys[0].slice(5, 7)) - 1 : now.getMonth();
+    while (y < now.getFullYear() || (y === now.getFullYear() && m <= now.getMonth())) {
+      var days = new Date(y, m + 1, 0).getDate(), lead = (new Date(y, m, 1).getDay() + 6) % 7, cells = '', n;
+      for (n = 0; n < lead; n++) cells += '<span class="calcell"></span>';
+      for (n = 1; n <= days; n++) {
+        var k = y + '-' + pad2(m + 1) + '-' + pad2(n), v = store.weights[k];
+        var inner = '<span class="calday' + (v ? ' on' : '') + (k === today ? ' today' : '') + '">' + n + '</span>' +
+          (v ? '<span class="calname">' + v + '</span>' : '');
+        cells += k > today ? '<span class="calcell">' + inner + '</span>'
+          : '<button class="calcell" data-wd="' + k + '">' + inner + '</button>';
+      }
+      html += '<div class="calmonth">' + MONTHS[m] + ' ' + y + '</div><div class="calgrid">' + cells + '</div>';
+      m++; if (m > 11) { m = 0; y++; }
+    }
+    $('wt-body').innerHTML = html;
+  }
+  function wtDiffDraw() { $('wt-diff').textContent = wtLine(wtDay, wtParse($('wt-day-in').value)); }
+  function wtOpen(k) {
+    wtDay = k;
+    var v = store.weights[k];
+    $('wt-title').textContent = wtName(k) + ' ' + k.slice(0, 4);
+    $('wt-day-in').value = v ? String(v) : '';
+    $('wt-del').hidden = !v;
+    wtDiffDraw();
+    $('wt-sheet').hidden = false;
+  }
+  $('wt-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var kg = wtParse($('wt-in').value);
+    if (!kg) { toast('Enter a weight in kg'); return; }
+    wtSet(wtKey(new Date()), kg);
+    $('wt-in').value = '';
+    $('wt-in').blur();
+    toast('Saved');
+  });
+  $('wt-body').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-wd]');
+    if (c) wtOpen(c.dataset.wd);
+  });
+  $('wt-day-in').addEventListener('input', wtDiffDraw);
+  $('wt-save').addEventListener('click', function () {
+    var kg = wtParse($('wt-day-in').value);
+    if (!kg) { toast('Enter a weight in kg'); return; }
+    wtSet(wtDay, kg);
+    $('wt-sheet').hidden = true;
+  });
+  $('wt-del').addEventListener('click', function () {
+    var k = wtDay, was = store.weights[k];
+    wtSet(k, 0);
+    $('wt-sheet').hidden = true;
+    toastUndo('Weight removed', function () { wtSet(k, was); });
+  });
+  document.querySelector('[data-wt-close]').addEventListener('click', function () { $('wt-sheet').hidden = true; });
 
   /* --- backup reminder: a note on Home when the last export is older than N days --- */
   var bk = { on: true, days: 30 };
@@ -10567,7 +10728,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
             store = {
               exercises: raw.exercises || [], routines: (raw.routines || []).map(migrate),
               workouts: store.workouts, gone: store.gone, targets: raw.targets || {}, plan: cleanPlan(raw.plan),
-              injuries: raw.injuries || [], profile: raw.profile || store.profile
+              weights: cleanWeights(raw.weights), injuries: raw.injuries || [], profile: raw.profile || store.profile
             };
             swapWorkouts(raw.workouts || []);
             saveStore();
@@ -11789,6 +11950,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   barTips($('user-body'));
   barTips($('xh-body'));
   barTips($('stmonth-body'));
+  barTips($('wt-chart'));
 
   document.addEventListener('pointerdown', function (e) {
     if (tipBar && !e.target.closest('.pbar') && !e.target.closest('.xrdate') && !e.target.closest('#p-tip')) hideTip();
