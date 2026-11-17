@@ -11,8 +11,8 @@ const line = (store) => new Function('store', 'MONTHS', 'pad2',
   slice('  var WT_MIN', '  function wtSet(') + '; return { wtLine: wtLine, wtParse: wtParse };')(store, MONTHS, pad2);
 
 t.is('only real days with a believable weight survive', merge.cleanWeights({
-  '2026-11-01': 82.46, '2026-11-02': '81', '2026-11-03': 5, '2026-11-04': 900, '11-05': 80, '2026-11-06': null, '2026-11-07': 'x' }),
-{ '2026-11-01': 82.5, '2026-11-02': 81 });
+  '2026-11-01': 82.456, '2026-11-02': '81', '2026-11-03': 5, '2026-11-04': 900, '11-05': 80, '2026-11-06': null, '2026-11-07': 'x' }),
+{ '2026-11-01': 82.46, '2026-11-02': 81 });
 t.is('garbage is no weights', [null, [], 'a', 3].map((x) => merge.cleanWeights(x)), [{}, {}, {}, {}]);
 
 const a = { weights: { '2026-11-01': 82, '2026-11-02': 81.5 }, workouts: [] };
@@ -24,9 +24,9 @@ t.is('a lock clash keeps every day, this device winning', merge.unionStores(a, b
 
 const w = line({ weights: { '2026-11-01': 82, '2026-11-05': 81.5 } });
 t.is('the change is against the weigh-in before, not the one after', [w.wtLine('2026-11-05', 81.5), w.wtLine('2026-11-03', 83)],
-  ['−0.5 kg vs 82 kg on 1 Nov', '+1.0 kg vs 82 kg on 1 Nov']);
+  ['−0.50 kg vs 82 kg on 1 Nov', '+1.00 kg vs 82 kg on 1 Nov']);
 t.is('no weigh-in before is a first entry; nothing typed names the one before', [w.wtLine('2026-11-01', 82), w.wtLine('2026-11-03', 0)],
   ['First entry', 'Before: 82 kg on 1 Nov']);
-t.is('a comma works, a number outside the range does not', [w.wtParse('82,45'), w.wtParse('8'), w.wtParse('abc')], [82.5, 0, 0]);
+t.is('a comma works, a number outside the range does not', [w.wtParse('74,05'), w.wtParse('8'), w.wtParse('abc')], [74.05, 0, 0]);
 
 t.done();

@@ -3715,7 +3715,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4512';
+  var APP_VERSION = '3.4513';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10478,22 +10478,22 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (w && typeof w === 'object' && !Array.isArray(w)) {
       Object.keys(w).forEach(function (k) {
         var v = Number(w[k]);
-        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v >= WT_MIN && v <= WT_MAX) out[k] = Math.round(v * 10) / 10;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v >= WT_MIN && v <= WT_MAX) out[k] = Math.round(v * 100) / 100;
       });
     }
     return out;
   }
   function wtParse(s) {
-    var v = Math.round(parseFloat(String(s).replace(',', '.')) * 10) / 10;
+    var v = Math.round(parseFloat(String(s).replace(',', '.')) * 100) / 100;
     return v >= WT_MIN && v <= WT_MAX ? v : 0;
   }
-  function wtSign(d) { return (d > 0 ? '+' : d < 0 ? '−' : '±') + Math.abs(d).toFixed(1) + ' kg'; }
+  function wtSign(d) { return (d > 0 ? '+' : d < 0 ? '−' : '±') + Math.abs(d).toFixed(2) + ' kg'; }
   // the change against the weigh-in before day k; without a number typed yet it names that weigh-in
   function wtLine(k, kg) {
     var prev = wtKeys().filter(function (x) { return x < k; }).pop();
     if (!prev) return 'First entry';
     var was = store.weights[prev];
-    return kg ? wtSign(Math.round((kg - was) * 10) / 10) + ' vs ' + was + ' kg on ' + wtName(prev)
+    return kg ? wtSign(Math.round((kg - was) * 100) / 100) + ' vs ' + was + ' kg on ' + wtName(prev)
       : 'Before: ' + was + ' kg on ' + wtName(prev);
   }
   function wtSet(k, kg) {
@@ -10504,12 +10504,21 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
   // the box shows today's weight, but never overwrites what is being typed into it
   var wtShown = '';
+  // the box is as wide as what it holds, so "kg" stays right beside the number
+  function wtFit() {
+    var inp = $('wt-in'), w;
+    if (!inp.value) { inp.style.width = '1.2em'; return; }
+    inp.style.width = '0';
+    w = inp.scrollWidth;                       // 0 while Home is hidden: then a guess by the digit
+    inp.style.width = w ? w + 2 + 'px' : inp.value.length * 0.62 + 0.3 + 'em';
+  }
   function drawWtHint() {
     var k = wtKey(new Date()), v = store.weights[k], last = wtKeys().pop(), inp = $('wt-in');
     $('wt-hint').textContent = v ? wtLine(k, v)
       : last ? 'Not logged today · last ' + store.weights[last] + ' kg on ' + wtName(last) : 'Log your weight once a day.';
     $('wt-go').textContent = v ? 'Update today’s weight' : 'Log today’s weight';
     if (document.activeElement !== inp && inp.value === wtShown) inp.value = wtShown = v ? String(v) : '';
+    wtFit();
   }
   function drawWeigh() {
     var keys = wtKeys(), last = keys.slice(-30), now = new Date(), today = wtKey(now), html = '';
@@ -10518,7 +10527,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('wt-chart').hidden = last.length < 2;
     $('wt-chart').innerHTML = last.length < 2 ? '' :
       '<div class="pchart-h"><b>' + vs[vs.length - 1] + ' kg</b><i>' +
-      wtSign(Math.round((vs[vs.length - 1] - vs[0]) * 10) / 10) + ' since ' + wtName(last[0]) + '</i></div>' +
+      wtSign(Math.round((vs[vs.length - 1] - vs[0]) * 100) / 100) + ' since ' + wtName(last[0]) + '</i></div>' +
       '<div class="pbars">' + last.map(function (k, i) {
         // the bars start at the lightest weigh-in, or every one of them would look the same
         var h = hi > lo ? 30 + (vs[i] - lo) / (hi - lo) * 70 : 60;
@@ -10561,6 +10570,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     wtSet(wtKey(new Date()), kg);
     toast('Saved');
   });
+  $('wt-in').addEventListener('input', wtFit);
   $('wt-body').addEventListener('click', function (e) {
     var c = e.target.closest('[data-wd]');
     if (c) wtOpen(c.dataset.wd);
