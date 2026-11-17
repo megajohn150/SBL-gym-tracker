@@ -1099,6 +1099,9 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
   width:calc(100% - 2 * var(--pad));max-width:calc(440px - 2 * var(--pad));
 }
 body.has-dock .restbar{bottom:calc(env(safe-area-inset-bottom) + 134px)}
+/* the routine form's footbar (+ Add exercise) sits where the bar would: lift it clear of it */
+body:has(#s-routine-form.on) #save-bar{bottom:calc(env(safe-area-inset-bottom) + 147px)}
+body.has-dock:has(#s-routine-form.on) #save-bar{bottom:calc(env(safe-area-inset-bottom) + 203px)}
 /* the rest timer lives in the dock: with the workout card under it, the two are one block */
 .dock .restbar{position:static;transform:none;width:auto;max-width:none}
 .dock #restbar:has(+ #dock-card:not([hidden])){border-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:none}
@@ -3735,7 +3738,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4514';
+  var APP_VERSION = '3.4515';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
