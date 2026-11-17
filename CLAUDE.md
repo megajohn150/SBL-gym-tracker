@@ -201,16 +201,16 @@ Monday), `report-seen`, `notes-seen`, `notes-hid`. IndexedDB `tracker-snaps` hol
 previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `data` JSON).
 
 ```js
-store   = { exercises, routines, workouts, gone, targets, plan?, injuries, profile, wiped? }   // gone is an array; wiped is a timestamp
-exercise = { id, name, code, muscle, head, cue, unilateral, step?, resetAt? }           // step: what +/- on the pad adds, kg
+store   = { exercises, routines, workouts, gone, targets, plan?, injuries, weights, profile, wiped? }   // weights: { 'YYYY-MM-DD': kg }, two decimals, the Weight card on Home   // gone is an array; wiped is a timestamp
+exercise = { id, name, code, muscle, head, cue, unilateral, bodyweight?, step?, resetAt? }           // step: what +/- on the pad adds, kg
 routine  = { id, name, items, short?, shared?, follow? }   // short: up to 3 characters for the week plan; absent = first three letters of name
 item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"; sets is 1..12
 follow   = { by, rid, user, map, side, born, at, dead }
 session  = { name, startedAt, idx, routineId, note?, exercises }
 sessionEx= { exId, name, code, muscle, unilateral, side, cue, step, reps, prev, prevNote, snote?, skipped?, sets }
-set      = { label, weight, reps, rir, plate?, done?, prs?, was? }   // all strings; '' means not logged; prs/was are derived
+set      = { label, weight, reps, rir, plate?, bw?, done?, prs?, was? }   // all strings; '' means not logged; prs/was are derived; bw: the body's weight on a bodyweight exercise, weight is then only the load added
 workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // records and set.prs/.was are derived
-workoutEx= { exId, name, muscle, unilateral, note, skipped?, sets }
+workoutEx= { exId, name, muscle, unilateral, bodyweight?, note, skipped?, sets }
 targets  = { <muscle or head>: { sets?, days? }, Total: { days } }   // Total = workouts a week (Weekly targets screen)
 plan     = [ routineId | '', x7 ]                  // Monday first; '' = rest day; absent until a day is set
 injuries = [{ id, name, muscles: [...], date }]
@@ -388,6 +388,15 @@ routine item is `[exercise name, sets, reps, side]`) never adds an exercise twic
 library's own one in the routines, giving a unilateral exercise a side and a standard one none; a routine
 that already exists under that name (or "name 2", "name 3") with the same exercises is skipped, one with
 other exercises gets the next free number. Nothing is deleted and there is no undo.
+
+**Weight and bodyweight exercises.** `store.weights` is one number a day (Home's Weight card, `s-weigh` calendar,
+`wt-sheet`); a pull replaces it wholesale, a lock clash unions the days. A bodyweight exercise (`exercise.bodyweight`, the
+Normal / Bodyweight switch in the exercise form) shows `bw` in front of the added `weight` on every set: `stampBw` writes
+the newest weigh-in onto the session's sets (and `finishSession` / `livePayload` run it first), so the body travels with
+the set and a later weigh-in never rewrites a finished workout. Volume is `setVol` (body + added, times reps) everywhere;
+records read the added load only (`recVol`, `recOrm`: the estimate as an added load, so an extra rep at +0 is a PR).
+New code that counts a set must pick `setVol` or `rec*`, never `num(st.weight) * num(st.reps)`. This is one flag, not the
+"exercise types" that were dropped.
 
 **Choosing exercises to delete.** The three dots on the exercise library (not on the picker) start `exDel`:
 the rows get a ring and the footer swaps to Cancel and Delete (N). `removeExercises` / `restoreExercises` are

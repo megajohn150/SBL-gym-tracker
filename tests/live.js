@@ -1,9 +1,9 @@
 /* Trening na żywo: to, co leci do znajomych, to tylko to, co rysuje ekran
    sesji. Notatki zostają w domu. */
-const { slice, suite } = require('./lib');
+const { slice, suite, bwCode } = require('./lib');
 
 const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
-const code = slice('  function sessStats()', '  function drawSessTotals()') + slice('  function livePayload() {', '  // not pushLive');
+const code = bwCode() + slice('  function sessStats()', '  function drawSessTotals()') + slice('  function livePayload() {', '  // not pushLive');
 const logged = (st) => num(st.reps) > 0;
 const t = suite('live');
 

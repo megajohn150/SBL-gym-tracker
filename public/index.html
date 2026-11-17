@@ -574,6 +574,16 @@ body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
 .rircell{color:var(--fg)}
 /* how far this set is from the last time, in the corner of its own box */
 .cellwrap{position:relative;min-width:0}
+/* a bodyweight set: the body's weight, small and greyed, then the weight added on top */
+.bwpair{display:flex;gap:6px;min-width:0;align-items:center}
+.bwpair .cellwrap,.bwpair > input.cell:not(.bwcell){flex:1}
+.bwpair .bwcell{flex:none;width:56px;padding-left:2px;padding-right:2px;font-size:.88rem}
+span.bwcell,.bwpair .bwcell[readonly]{display:block;color:var(--fg-3);background:none;font-weight:500}
+.sets-h.bw,.setrow.bw{grid-template-columns:50px 1.7fr 1fr 62px}
+.bwh{display:flex;gap:6px}
+.bwh i{font-style:normal;flex:1}
+.bwh i:first-child{flex:none;width:56px}
+.dbw{font-style:normal;color:var(--fg-3);font-weight:500}
 .delta{
   position:absolute;top:2px;right:4px;pointer-events:none;
   font-size:.62rem;font-weight:700;font-style:normal;letter-spacing:.02em;color:var(--fg-3);
@@ -902,6 +912,7 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .dexline{display:flex;align-items:center;gap:10px}
 .dexline .dexhead{flex:1;min-width:0;margin-bottom:0}
 .dex.edit .drow,.dex.edit .dhead{grid-template-columns:42px 1fr 1fr 56px 26px}
+.dex.edit.bwx .drow,.dex.edit.bwx .dhead{grid-template-columns:42px 1.8fr 1fr 56px 26px}
 .addrow{
   width:100%;margin-top:.7rem;padding:10px;border:var(--dash);border-radius:calc(var(--radius) - 2px);
   font-size:.74rem;letter-spacing:var(--labtrack);text-transform:uppercase;
@@ -2206,6 +2217,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <p class="hint" style="padding-left:0;padding-right:0">Unilateral means one side at a time &mdash; each side gets its own sets.</p>
     </div>
 
+    <div class="field">
+      <label>Weight</label>
+      <div class="seg two" id="ex-load">
+        <button data-load="normal" aria-pressed="true">Normal</button>
+        <button data-load="bodyweight" aria-pressed="false">Bodyweight</button>
+      </div>
+      <p class="hint" style="padding-left:0;padding-right:0">Bodyweight adds your weight (the latest one in the Weight calendar) to the volume of each set. Records count only the weight you add on top.</p>
+    </div>
+
     </div>
 
     <div class="footbar">
@@ -2297,7 +2317,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     </div>
 
     <div class="sets-h" id="sess-setshead">
-      <span></span><span>Weight</span><span>Reps</span><span>RIR</span>
+      <span></span><span id="sess-wh">Weight</span><span>Reps</span><span>RIR</span>
     </div>
     <div id="sess-sets"></div>
 
@@ -2857,7 +2877,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
       <li><b>Four tabs.</b> Home: today's routine, your plan and the week. Feed: your workouts and your friends'. Workout: your routines. Profile: charts, stats, friends, settings. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button> <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button> <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
-      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
+      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar, greyed out, in front of a box for the weight you add on top. With no weigh-in yet that box is a button that asks for one. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once, so an extra rep at +0 is a record. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
       <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;. The import button at the top of the Workout tab brings in a starter pack (SBL or Bro Lifter): all of its exercises, and the routines you tick. An exercise you already have by name is not added twice; a routine that is already there is skipped, and one with the same name but other exercises comes in as "Name 2". <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go. <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
     </ul>
@@ -3715,7 +3735,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4513';
+  var APP_VERSION = '3.4514';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -4204,10 +4224,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         var r = out[k] || (out[k] = [0, 0, 0]);
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
-          var kg = num(st.weight);
-          r[0] = Math.max(r[0], kg);
-          r[1] = Math.max(r[1], epley(kg, effReps(st)));
-          r[2] = Math.max(r[2], kg * num(st.reps));
+          r[0] = Math.max(r[0], num(st.weight));
+          r[1] = Math.max(r[1], recOrm(st));
+          r[2] = Math.max(r[2], recVol(st));
         });
       });
     });
@@ -4318,17 +4337,18 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // Only what the session screen draws. Notes stay home: the session note, a
   // note on an exercise and the "last time" note are nobody else's business.
   function livePayload() {
+    stampBw();
     return {
       name: session.name, startedAt: session.startedAt, idx: session.idx,
       react: !store.profile.noReact,          // friends see their reaction buttons greyed out when this is false
       stats: sessStats(),                     // the header row: sets, volume, records; a viewer cannot work out the records
       exercises: session.exercises.map(function (e) {
         return {
-          name: e.name, code: e.code, muscle: e.muscle, unilateral: !!e.unilateral,
+          name: e.name, code: e.code, muscle: e.muscle, unilateral: !!e.unilateral, bodyweight: !!e.bodyweight,
           cue: e.cue || '', reps: e.reps || '',
           prev: (e.prev || []).map(function (q) { return q && { weight: q.weight, reps: q.reps, rir: q.rir }; }),
           sets: e.sets.map(function (st) {
-            return { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir,
+            return { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir, bw: st.bw || '',
                      done: !!st.done, plate: st.plate || 0 };
           })
         };
@@ -4436,14 +4456,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         (ex.unilateral ? '<span class="extag">Uni</span>' : '') + '</span></span>' +
         '<span class="iconbtn" aria-hidden="true">&#8942;</span></div>' +
       (ex.cue ? '<div class="cue">' + PIN + '<span>' + esc(ex.cue) + '</span></div>' : '') +
-      '<div class="sets-h"><span></span><span>Weight</span><span>Reps</span><span>RIR</span></div>' +
+      '<div class="sets-h' + (ex.bodyweight ? ' bw' : '') + '"><span></span><span>' + bwHead(ex) + '</span><span>Reps</span><span>RIR</span></div>' +
       '<div style="pointer-events:none">' + ex.sets.map(function (st, n) {
         var pv = (ex.prev && ex.prev[n]) || { weight: '', reps: '', rir: '' };
-        return '<div class="swipe"><div class="setrow' + (st.done ? ' done' : '') + '">' +
+        return '<div class="swipe"><div class="setrow' + (ex.bodyweight ? ' bw' : '') + (st.done ? ' done' : '') + '">' +
           '<span class="setno">' + (st.done ? '&#10003;' : 'Set') + '<b>' + esc(st.label) + '</b></span>' +
-          '<span class="cellwrap"><input class="cell" type="text" readonly tabindex="-1" value="' + esc(st.weight) +
+          bwPair(ex, st, '<span class="cellwrap"><input class="cell" type="text" readonly tabindex="-1" value="' + esc(st.weight) +
             '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '">' +
-            delta(st.weight, pv.weight) + plateMark(st, 'plate') + '</span>' +
+            delta(st.weight, pv.weight) + plateMark(st, 'plate') + '</span>', false) +
           '<span class="cellwrap"><input class="cell" type="text" readonly tabindex="-1" value="' + esc(st.reps) +
             '" placeholder="' + (pv.reps ? esc(pv.reps) : '&ndash;') + '">' + delta(st.reps, pv.reps) + '</span>' +
           '<span class="cellwrap"><button class="cell' + (st.rir === '' ? ' blank' : '') + '" tabindex="-1">' +
@@ -5766,6 +5786,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       muscle: String(src.muscle || ''), head: String(src.head || ''),
       cue: String(src.cue || '').slice(0, 120), unilateral: !!src.unilateral
     };
+    if (src.bodyweight) x.bodyweight = true;
     if (cleanStep(src.step)) x.step = src.step;
     return x;
   }
@@ -6559,6 +6580,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   /* --- exercise form: create or edit --- */
   var exType = 'standard';
+  // Normal or Bodyweight; the word "bodyweight" in a name ticks it until it has been chosen by hand
+  var exLoad = 'normal', exLoadTouched = false;
   var exEditId = null;
 
   // A short code labels the exercise on the session bar. The user sets
@@ -6636,6 +6659,19 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var v = $('ex-code').value.toUpperCase().slice(0, 7);
     if (v !== $('ex-code').value) $('ex-code').value = v;
   });
+  function drawExLoad() {
+    document.querySelectorAll('#ex-load button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.load === exLoad));
+    });
+  }
+  document.querySelectorAll('#ex-load button').forEach(function (b) {
+    b.addEventListener('click', function () { exLoad = b.dataset.load; exLoadTouched = true; drawExLoad(); });
+  });
+  $('ex-name').addEventListener('input', function () {
+    if (exLoadTouched || !/bodyweight/i.test($('ex-name').value)) return;
+    exLoad = 'bodyweight';
+    drawExLoad();
+  });
   document.querySelectorAll('#ex-type button').forEach(function (b) {
     b.addEventListener('click', function () {
       exType = b.dataset.type;
@@ -6651,6 +6687,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('ex-delete').hidden = !x;
     $('ex-error').hidden = true;
     exType = x && x.unilateral ? 'unilateral' : 'standard';
+    exLoad = x && x.bodyweight ? 'bodyweight' : 'normal';
+    exLoadTouched = false;
+    drawExLoad();
     $('ex-title').textContent = x ? 'Edit exercise' : 'New exercise';
     $('ex-name').value = x ? x.name : '';
     $('ex-code').value = x ? (x.code || '') : '';
@@ -6893,6 +6932,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var stp = parseFloat($('ex-step').value.replace(',', '.'));
     if (stp > 0 && stp <= 100) ex.step = Math.round(stp * 100) / 100; else delete ex.step;
     ex.unilateral = exType === 'unilateral';
+    if (exLoad === 'bodyweight') ex.bodyweight = true; else delete ex.bodyweight;
 
     var editing = false;
     for (var i = 0; i < store.exercises.length; i++) {
@@ -8198,6 +8238,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       name: x ? x.name : 'Exercise',
       code: x ? codeOf(x) : '?',
       unilateral: !!(x && x.unilateral),
+      bodyweight: !!(x && x.bodyweight),
       muscle: x ? x.muscle : '',
       side: side,
       cue: (x && x.cue) || '',
@@ -8266,6 +8307,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   function drawSession() {
     if (!session) return;
+    stampBw();
     saveSession();
     var last = session.exercises.length;
     var done = session.idx >= last;                 // the closing card
@@ -8372,20 +8414,22 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
     livePrs(ex);
     drawSessTotals();
+    $('sess-wh').innerHTML = bwHead(ex);
+    $('sess-setshead').classList.toggle('bw', !!ex.bodyweight);
     $('sess-sets').innerHTML = ex.sets.map(function (st, i) {
       var pv = (ex.prev && ex.prev[i]) || { weight: '', reps: '', rir: '' };
       return '<div class="swipe">' +
         '<div class="swipe-bg"><button data-del="' + i + '">Delete</button></div>' +
-        '<div class="setrow' + (st.done ? ' done' : '') + '" data-row="' + i + '">' +
+        '<div class="setrow' + (ex.bodyweight ? ' bw' : '') + (st.done ? ' done' : '') + '" data-row="' + i + '">' +
         '<button class="setno' + (fillFrom(ex, i) ? ' hasprev' : '') +
           '" data-fill="' + i + '">' + (st.done ? '&#10003;' : 'Set') +
           '<b>' + esc(st.label) + '</b></button>' +
         medal(st, ex.name) +
-        '<span class="cellwrap">' +
+        bwPair(ex, st, '<span class="cellwrap">' +
           '<input class="cell' + padOn('weight', i) + '" type="text" inputmode="none" readonly data-f="weight" data-i="' + i +
             '" value="' + esc(st.weight) + '" placeholder="' + (pv.weight ? esc(pv.weight) : '&ndash;') + '" autocomplete="off">' +
           delta(st.weight, pv.weight) +
-          plateMark(st, 'plate') + '</span>' +
+          plateMark(st, 'plate') + '</span>', true) +
         '<span class="cellwrap">' +
           '<input class="cell' + padOn('reps', i) + '" type="text" inputmode="none" readonly data-f="reps" data-i="' + i +
             '" value="' + esc(st.reps) + '" placeholder="' + (pv.reps ? esc(pv.reps) : '&ndash;') + '" autocomplete="off">' +
@@ -8648,7 +8692,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         if (!st.done) return;
         o.d++;
         if (!logged(st)) return;
-        vol += num(st.weight) * num(st.reps);
+        vol += setVol(st);
         (Array.isArray(st.prs) ? st.prs : []).forEach(function (c) { hit[c] = true; });
       });
       Object.keys(rounds).forEach(function (r) { all++; if (rounds[r].d === rounds[r].n) cnt++; });
@@ -8677,7 +8721,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           return '<div class="drow"><span class="no">' + esc(String(st.label).replace(/^0+/, '')) + '</span>' +
             '<span class="c">' + (st.weight === '' ? '&ndash;' : esc(st.weight)) + '</span>' +
             '<span class="c">' + esc(st.reps) + '</span>' +
-            '<span class="c volr">' + fmtKg(num(st.weight) * num(st.reps)) + '</span></div>';
+            '<span class="c volr">' + fmtKg(setVol(st)) + '</span></div>';
         }).join('') + '</div>';
     });
     return out || '<p class="hint" style="padding:8px 0;text-align:center">Nothing ticked yet.</p>';
@@ -8996,7 +9040,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       e.sets.forEach(function (st) {
         if (!logged(st)) return;
         reps += num(st.reps);
-        volume += num(st.weight) * num(st.reps);
+        volume += setVol(st);
       });
     });
     return { sets: sets, volume: volume, reps: reps, exercises: exercises };
@@ -9024,6 +9068,36 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // A blank RIR (and F) counts as nothing left, which is how it always read.
   function effReps(st) { return num(st.reps) + num(st.rir); }
 
+  /* A bodyweight exercise: every set carries bw, the body's weight at the time (the newest weigh-in,
+     stamped onto the set so it travels with it). `weight` stays the load added on top, so the records,
+     last time, the exports and Compare read it as they always did. Only the volume counts the body. */
+  function bwOf(st) { return Math.min(Math.max(num(st.bw), 0), 500); }          // a friend's number: bounded
+  function setVol(st) { return (num(st.weight) + bwOf(st)) * num(st.reps); }
+  function recVol(st) { return num(st.weight) * num(st.reps); }                // best set: the added load only
+  // the estimate as an added load: the body plus the weight, less the body again, so extra reps count at +0
+  function recOrm(st) {
+    var b = bwOf(st);
+    return b ? epley(num(st.weight) + b, effReps(st)) - b : epley(num(st.weight), effReps(st));
+  }
+  function bwNow() { var k = wtKeys().pop(); return k ? store.weights[k] : 0; }
+  function stampBw() {
+    var b;
+    session.exercises.forEach(function (e) {
+      if (!e.bodyweight) return;
+      if (b == null) b = bwNow();
+      e.sets.forEach(function (st) { st.bw = b ? String(b) : ''; });
+    });
+  }
+  function bwHead(ex) { return ex.bodyweight ? '<span class="bwh"><i>BW</i><i>+ Weight</i></span>' : 'Weight'; }
+  // the weight cell of a set; a bodyweight one gets the body's weight in front of it. Yours with no
+  // weigh-in yet is a button that asks for one, a friend's is only a number.
+  function bwPair(ex, st, inner, mine) {
+    if (!ex.bodyweight) return inner;
+    var b = bwOf(st);
+    return '<span class="bwpair">' + (b || !mine ? '<span class="cell bwcell">' + (b ? esc(String(b)) : '&ndash;') + '</span>'
+      : '<button class="cell bwcell blank" data-bw-add aria-label="Add your weight">&ndash;</button>') + inner + '</span>';
+  }
+
   // Exercises are matched by id; name is only the fallback for old entries.
   function exKey(e) { return e.exId || ('name:' + e.name); }
 
@@ -9045,8 +9119,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // One logged set against the running bests: the records it breaks and what each stood at before.
   function stepRecords(b, st, first) {
     var prs = [], was = {}, kg = num(st.weight);
-    if (kg > 0) {
-      var orm = epley(kg, effReps(st)), vol = kg * num(st.reps);
+    if (kg > 0 || bwOf(st) > 0) {
+      var orm = recOrm(st), vol = recVol(st);
       if (kg > b.weight) { if (!first) { prs.push('Weight'); was.Weight = b.weight; } b.weight = kg; }
       if (orm > b.orm) { if (!first) { prs.push('1RM'); was['1RM'] = b.orm; } b.orm = orm; }
       if (vol > b.vol) { if (!first) { prs.push('Volume'); was.Volume = b.vol; } b.vol = vol; }
@@ -9095,7 +9169,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
           // wd/od/vd: the day each record was set; on a tie the earlier day keeps it
-          var o = epley(kg, effReps(st)), v = kg * reps;
+          var o = recOrm(st), v = recVol(st);
           if (kg > best.weight || (kg === best.weight && w.date < best.wd)) { best.weight = kg; best.wd = w.date; }
           if (o > best.orm || (o === best.orm && w.date < best.od)) { best.orm = o; best.od = w.date; }
           if (v > best.vol || (v === best.vol && w.date < best.vd)) { best.vol = v; best.vd = w.date; }
@@ -9118,6 +9192,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   function finishSession(seconds) {
     if (!session) return;
+    stampBw();
     var w = {
       id: uid(),
       name: session.name,
@@ -9130,10 +9205,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       exercises: session.exercises.map(function (e) {
         return {
           exId: e.exId, name: e.name, muscle: e.muscle, unilateral: e.unilateral,
+          bodyweight: e.bodyweight ? true : undefined,
           note: (e.snote || '').trim(),
           skipped: e.skipped ? true : undefined,
           sets: e.skipped ? [] : e.sets.filter(logged).map(function (st) {
             var out = { label: st.label, weight: st.weight, reps: st.reps, rir: st.rir };
+            if (e.bodyweight && st.bw) out.bw = st.bw;
             if (st.plate) out.plate = plateCount(st);
             return out;
           })
@@ -10501,6 +10578,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     saveStore();
     drawDash();
     if ($('s-weigh').classList.contains('on')) drawWeigh();
+    if (session && $('s-session').classList.contains('on')) drawSession();
   }
   // the box shows today's weight, but never overwrites what is being typed into it
   var wtShown = '';
@@ -10571,6 +10649,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     toast('Saved');
   });
   $('wt-in').addEventListener('input', wtFit);
+  // a bodyweight set with no weigh-in yet asks for one, and the answer lands in the Weight calendar
+  $('sess-sets').addEventListener('click', function (e) {
+    if (e.target.closest('[data-bw-add]')) wtOpen(wtKey(new Date()));
+  });
   $('wt-body').addEventListener('click', function (e) {
     var c = e.target.closest('[data-wd]');
     if (c) wtOpen(c.dataset.wd);
@@ -11555,7 +11637,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
-          var v = xMetric === 'orm' ? epley(kg, effReps(st)) : xMetric === 'vol' ? kg * reps : kg;
+          var v = xMetric === 'orm' ? recOrm(st) : xMetric === 'vol' ? recVol(st) : kg;
           if (v > b.v) b.v = v;
           // the bucket is marked when the record in this very metric fell in it
           if (st.prs && st.prs.indexOf(PR_CAT[xMetric]) >= 0) {
@@ -12087,7 +12169,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         }
         total += n;
         e.sets.forEach(function (st) {
-          if (logged(st)) volume += num(st.weight) * num(st.reps);
+          if (logged(st)) volume += setVol(st);
         });
       });
       Object.keys(hit).forEach(function (m) {
@@ -12768,7 +12850,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         var o = out[e.name] || (out[e.name] = {});
         var kg = num(st.weight), reps = num(st.reps);
         st.prs.forEach(function (c) {
-          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(epley(kg, effReps(st)) * 100) / 100 : kg * reps;
+          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(recOrm(st) * 100) / 100 : recVol(st);
           if (!(c in o) || v > o[c]) o[c] = v;
         });
       });
@@ -13408,7 +13490,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   // [category, value, what it was before] for each record a set broke
   function setRec(st, name) {
-    var kg = num(st.weight), val = { Weight: kg, '1RM': epley(kg, effReps(st)), Volume: kg * num(st.reps) };
+    var kg = num(st.weight), val = { Weight: kg, '1RM': recOrm(st), Volume: recVol(st) };
     return { x: name, r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
   }
 
@@ -13605,13 +13687,13 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       // in a friend's session, a lift you both have a weight for opens the two of you side by side
       var shared = detailRO ? sharedWith(detailUid, e.name, mineRec) : '';
       var tag = (known || shared) ? 'button' : 'div';
-      return '<div class="dex' + (detailEdit ? ' edit' : '') + (e.skipped ? ' skipped' : '') + '">' +
+      return '<div class="dex' + (detailEdit ? ' edit' : '') + (e.bodyweight ? ' bwx' : '') + (e.skipped ? ' skipped' : '') + '">' +
         '<div class="dexline"><' + tag + ' class="dexhead"' +
         (known ? ' data-ex-open="' + esc(e.exId) + '"' : shared ? ' data-cmp-ex="' + esc(shared) + '"' : '') +
         '>' + muscleArt(e.muscle) +
         '<span class="dext"><span class="nm">' + esc(e.name) + '</span>' +
         '<span class="meta">' + esc(e.muscle || '') + (e.unilateral ? ' &middot; unilateral' : '') +
-        '</span></span></' + tag + '>' +
+        (e.bodyweight ? ' &middot; bodyweight' : '') + '</span></span></' + tag + '>' +
         (detailEdit
           ? '<span class="tools">' +
               '<button class="kill" data-dmove="-1" data-i="' + ei + '" aria-label="Move up"' +
@@ -13630,7 +13712,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
             ? '<div class="wmore noteline">' + (e.skipped ? '<span>Skipped</span><span>&middot;</span>' : '') + NOTE_SVG + '<span>' + esc(e.note) + '</span></div>'
             : '')) +
         (rows.length
-          ? '<div class="dhead"><span></span><span>Weight</span><span>Reps</span><span>RIR</span>' +
+          ? '<div class="dhead"><span></span><span>' + (e.bodyweight ? 'BW + Weight' : 'Weight') + '</span><span>Reps</span><span>RIR</span>' +
             (detailEdit ? '<span></span>' : '') + '</div>' +
             rows.map(function (st, si) {
               if (!detailEdit) {
@@ -13648,7 +13730,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
                     '<span class="c">' + (pr.rir !== '' && pr.rir != null ? esc(pr.rir) : '&ndash;') + '</span></div>';
                 }
                 return '<div class="drow">' + no + '<span class="nol">' + esc(st.label) + '</span>' + medal(st, e.name) + '</span>' +
-                  '<span class="c">' + (st.weight === '' ? '&ndash;' : esc(st.weight)) +
+                  '<span class="c">' + (e.bodyweight ? '<i class="dbw">' + (bwOf(st) ? esc(String(bwOf(st))) : '&ndash;') + ' +</i> ' + (st.weight === '' ? '0' : esc(st.weight)) :
+                    st.weight === '' ? '&ndash;' : esc(st.weight)) +
                   plateMark(st, 'platec') + '</span>' +
                   '<span class="c">' + esc(st.reps) + '</span>' +
                   '<span class="c' + (st.rir === '' ? ' dim' : '') + '">' +
@@ -13656,12 +13739,13 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
               }
               var at = ' data-e="' + ei + '" data-s="' + si + '"';
               return '<div class="drow"><span class="no">' + esc(st.label) + '</span>' +
+                (e.bodyweight ? '<span class="bwpair"><input class="cell bwcell" inputmode="decimal" data-f="bw"' + at + ' value="' + esc(st.bw || '') + '" aria-label="Body weight">' : '') +
                 '<span class="cellwrap">' +
                   '<input class="cell" inputmode="decimal" data-f="weight"' + at + ' value="' + esc(st.weight) + '">' +
                   '<button class="platetog" data-plate="' + ei + '-' + si + '" data-n="' +
                     plateCount(st) + '" aria-label="Plates">' +
                     (plateCount(st) > 1 ? '<b>2</b>' : '') + PLATE_SM + '</button>' +
-                '</span>' +
+                '</span>' + (e.bodyweight ? '</span>' : '') +
                 '<input class="cell" inputmode="numeric" data-f="reps"' + at + ' value="' + esc(st.reps) + '">' +
                 '<button class="cell rircell" data-drir="' + ei + '-' + si + '">' +
                   (st.rir === '' ? '&ndash;' : esc(st.rir)) + '</button>' +
@@ -13878,6 +13962,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     } else {
       e2.sets.push(blankSet(pad2(e2.sets.length + 1)));
     }
+    if (e2.bodyweight) {                           // a new set weighs what the others did
+      var fb = e2.sets[0] && e2.sets[0].bw;
+      e2.sets.forEach(function (st) { if (st.bw == null) st.bw = fb || ''; });
+    }
     relabel(e2);
   }
 
@@ -13887,8 +13975,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (!x || !detailW) return;
     detailW.exercises.push({
       exId: x.id, name: x.name, muscle: x.muscle, unilateral: !!x.unilateral,
+      bodyweight: x.bodyweight ? true : undefined,
       note: '', sets: buildSets(1, x.unilateral, 'R')
     });
+    if (x.bodyweight) detailW.exercises[detailW.exercises.length - 1].sets.forEach(function (st) { st.bw = bwNow() ? String(bwNow()) : ''; });
     detailDirty = true;
   }
 

@@ -1,6 +1,6 @@
 /* Rekordy w profilu i leaderboard: po jednym wierszu na ćwiczenie (po nazwie),
    remisy dzielą miejsce, reset ćwiczenia ucina historię. */
-const { slice, suite } = require('./lib');
+const { slice, suite, bwCode } = require('./lib');
 
 const code = slice('  function nameKey(s)', '  function postRow(w)');
 const board = slice('  // everybody who has the exercise, best first', '  function lbCard');
@@ -21,7 +21,7 @@ const store = {
 };
 const store_ = store;
 const fn = new Function('store', 'num', 'logged', 'epley', 'effReps', 'cutMap', 'afterCut', 'exKey', 'byId',
-  code.slice(code.indexOf('function nameKey')) + '; return { myRecords: myRecords, nameKey: nameKey };');
+  bwCode() + code.slice(code.indexOf('function nameKey')) + '; return { myRecords: myRecords, nameKey: nameKey };');
 const cuts = { b: new Date('2026-02-01T00:00:00Z').getTime() };
 const epley = (w, r) => (r > 0 ? w * (1 + r / 30) : 0);
 const api = fn(store_, num, (st) => num(st.reps) > 0, epley, (st) => num(st.reps) + num(st.rir),

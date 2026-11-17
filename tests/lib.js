@@ -46,4 +46,7 @@ function suite(name) {
   };
 }
 
-module.exports = { FILE, slice, suite, planClean };
+// the bodyweight helpers (bwOf, setVol, recVol, recOrm, bwNow, stampBw): every block that counts a set needs them
+function bwCode() { return slice('  function bwOf(', '  function bwHead('); }
+
+module.exports = { FILE, slice, suite, planClean, bwCode };

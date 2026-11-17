@@ -1,6 +1,6 @@
 /* A workout in progress: how its sets are laid out and filled, and what of it is kept
    when it ends. node tests/session.js */
-const { slice, suite } = require('./lib');
+const { slice, suite, bwCode } = require('./lib');
 const t = suite('session');
 const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
 const pad2 = (n) => (n < 10 ? '0' + n : String(n));
@@ -44,7 +44,7 @@ const recs = new Function('num', slice('  function epley(w, r)', '  function exK
 const REC = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
 const fmtVolume = (kg) => Math.round(kg * 10) / 10 + ' kg';
 const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt', 'setRec', 'REC_NAME', 'fmtVolume',
-  slice('  function sessStats()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml, prs: sessPrHtml, stats: sessStats };');
+  bwCode() + slice('  function sessStats()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml, prs: sessPrHtml, stats: sessStats };');
 const run = (exs) => {
   totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume).totals();
   return [shown['sess-vol'], shown['sess-pr-n']];
@@ -145,7 +145,7 @@ const calls = [];
 const noop = (name) => () => { calls.push(name); };
 const end = new Function('store', 'session', 'uid', 'sessionSeconds', 'logged', 'plateCount', 'recomputeRecords', 'saveStore',
   'saveSession', 'stopRest', 'goTab', 'drawHome', 'push', 'drawSummary',
-  'var summaryW;' + slice('  function finishSession(seconds)', '  /* --- what the session came to') +
+  'var summaryW;' + bwCode() + slice('  function finishSession(seconds)', '  /* --- what the session came to') +
   '; finishSession(1234); return { session: session, summary: summaryW };')(
   store, running, () => 'new', () => 99, (st) => num(st.reps) > 0, (st) => (st.plate ? (typeof st.plate === 'number' ? st.plate : 1) : 0),
   noop('records'), noop('saveStore'), noop('saveSession'), noop('rest'), noop('tab'), noop('home'), noop('push'), noop('summary'));

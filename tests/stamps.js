@@ -1,7 +1,7 @@
 /* Pieczątki co STAMP treningów i licznik rekordów miesiąca (słupki PRs):
    daty pieczątek idą od najstarszego treningu, a PR-y liczą się po jednym
    na ćwiczenie i rodzaj, tak jak linia "N new PRs" w raporcie. */
-const { slice, suite } = require('./lib');
+const { slice, suite, bwCode } = require('./lib');
 
 const stampCode = slice('  var STAMP = 50;', '  function stampTag');
 const prCode = slice('  function workoutPRs', '  // one list of records');
@@ -26,7 +26,7 @@ const store = { workouts: [
   { date: '2026-04-02T10:00:00Z', exercises: [{ name: 'Bench', sets: [{ weight: '90', reps: '3', prs: ['Weight'] }] }] }
 ] };
 const pr = new Function('store', 'num', 'epley', 'effReps',
-  prCode + '; return { prTotal: prTotal };')(
+  bwCode() + prCode + '; return { prTotal: prTotal };')(
   store, num, epley, (st) => num(st.reps));
 t.is('one PR per exercise and kind: Bench Weight+1RM, Squat Volume', pr.prTotal(new Date('2026-03-01'), new Date('2026-04-01')), 3);
 t.is('a month with no records counts zero', pr.prTotal(new Date('2026-05-01'), new Date('2026-06-01')), 0);
