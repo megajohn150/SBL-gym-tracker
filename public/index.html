@@ -2880,7 +2880,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
       <li><b>Four tabs.</b> Home: today's routine, your plan and the week. Feed: your workouts and your friends'. Workout: your routines. Profile: charts, stats, friends, settings. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button> <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button> <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
-      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar, greyed out, in front of a box for the weight you add on top. With no weigh-in yet that box is a button that asks for one. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once, so an extra rep at +0 is a record. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
+      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar, greyed out, in front of a box for the weight you add on top. With no weigh-in yet that box is a button that asks for one. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once. At +0 more reps than ever at +0 is a Best set record (its medal shows your weight times those reps); the first +0 set only sets the bar. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
       <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;. The import button at the top of the Workout tab brings in a starter pack (SBL or Bro Lifter): all of its exercises, and the routines you tick. An exercise you already have by name is not added twice; a routine that is already there is skipped, and one with the same name but other exercises comes in as "Name 2". <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
       <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go. <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
     </ul>
@@ -3738,7 +3738,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4515';
+  var APP_VERSION = '3.4516';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -9082,6 +9082,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var b = bwOf(st);
     return b ? epley(num(st.weight) + b, effReps(st)) - b : epley(num(st.weight), effReps(st));
   }
+  // what a Best set medal shows: the added load times reps, or at +0 the body lifted that many times
+  function prVol(st) { return num(st.weight) === 0 && bwOf(st) > 0 ? bwOf(st) * num(st.reps) : recVol(st); }
   function bwNow() { var k = wtKeys().pop(); return k ? store.weights[k] : 0; }
   function stampBw() {
     var b;
@@ -9127,6 +9129,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       if (kg > b.weight) { if (!first) { prs.push('Weight'); was.Weight = b.weight; } b.weight = kg; }
       if (orm > b.orm) { if (!first) { prs.push('1RM'); was['1RM'] = b.orm; } b.orm = orm; }
       if (vol > b.vol) { if (!first) { prs.push('Volume'); was.Volume = b.vol; } b.vol = vol; }
+      // at +0 a set has no best set to beat, so more reps than ever at +0 is the record; the first +0 set only sets the bar
+      if (kg === 0 && bwOf(st) > 0) {
+        var r0 = num(st.reps);
+        if (r0 > (b.rep0 || 0)) {
+          if (!first && b.rep0 > 0 && prs.indexOf('Volume') < 0) { prs.push('Volume'); was.Volume = b.rep0 * bwOf(st); }
+          b.rep0 = r0;
+        }
+      }
     }
     return { prs: prs, was: was };
   }
@@ -9143,7 +9153,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       w.exercises.forEach(function (e) {
         if (e.skipped) return;
         var k = exKey(e);
-        var b = bests[k] || (bests[k] = { weight: 0, orm: 0, vol: 0 });
+        var b = bests[k] || (bests[k] = { weight: 0, orm: 0, vol: 0, rep0: 0 });
         var live = afterCut(w, cuts[k] || 0);
         // The first time an exercise is done it only sets the bar; you cannot
         // beat a record that did not exist yet. A reset starts this over.
@@ -9162,7 +9172,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   function bestsFor(key) {
-    var best = { weight: 0, orm: 0, vol: 0 }, cut = cutoffFor(key);
+    var best = { weight: 0, orm: 0, vol: 0, rep0: 0 }, cut = cutoffFor(key);
     store.workouts.forEach(function (w) {
       if (!afterCut(w, cut)) return;
       w.exercises.forEach(function (e) {
@@ -9176,6 +9186,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           if (kg > best.weight || (kg === best.weight && w.date < best.wd)) { best.weight = kg; best.wd = w.date; }
           if (o > best.orm || (o === best.orm && w.date < best.od)) { best.orm = o; best.od = w.date; }
           if (v > best.vol || (v === best.vol && w.date < best.vd)) { best.vol = v; best.vd = w.date; }
+          if (kg === 0 && bwOf(st) > 0 && reps > best.rep0) best.rep0 = reps;
         });
       });
     });
@@ -12853,7 +12864,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         var o = out[e.name] || (out[e.name] = {});
         var kg = num(st.weight), reps = num(st.reps);
         st.prs.forEach(function (c) {
-          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(recOrm(st) * 100) / 100 : recVol(st);
+          var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(recOrm(st) * 100) / 100 : prVol(st);
           if (!(c in o) || v > o[c]) o[c] = v;
         });
       });
@@ -13493,7 +13504,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   // [category, value, what it was before] for each record a set broke
   function setRec(st, name) {
-    var kg = num(st.weight), val = { Weight: kg, '1RM': recOrm(st), Volume: recVol(st) };
+    var kg = num(st.weight), val = { Weight: kg, '1RM': recOrm(st), Volume: prVol(st) };
     return { x: name, r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
   }
 

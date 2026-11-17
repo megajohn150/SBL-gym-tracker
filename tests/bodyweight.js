@@ -9,7 +9,7 @@ const effReps = (st) => num(st.reps) + num(st.rir);
 const pad2 = (n) => (n < 10 ? '0' + n : String(n));
 const make = (store, session) => new Function('store', 'session', 'num', 'epley', 'effReps', 'pad2', 'MONTHS',
   slice('  var WT_MIN', '  function wtParse') + bwCode() + slice('  function stepRecords(', '  // Walks the whole history') +
-  '; return { setVol: setVol, recVol: recVol, recOrm: recOrm, stampBw: stampBw, stepRecords: stepRecords };')(
+  '; return { setVol: setVol, recVol: recVol, recOrm: recOrm, prVol: prVol, stampBw: stampBw, stepRecords: stepRecords };')(
   store, session, num, epley, effReps, pad2, []);
 
 const h = make({ weights: { '2026-11-03': 75, '2026-11-10': 74.05 } }, null);
@@ -24,7 +24,14 @@ t.is('a friend’s body weight is bounded and must be a number', [h.setVol({ wei
 const b = { weight: 0, orm: 0, vol: 0 };
 const set = (reps, extra) => ({ weight: extra || '', reps: String(reps), rir: '', bw: '80' });
 h.stepRecords(b, set(10), true);
-t.is('at +0 an extra rep is a record (1RM), the added-weight ones are not', [h.stepRecords(b, set(11), false).prs, h.stepRecords(b, set(8), false).prs], [['1RM'], []]);
+t.is('at +0 an extra rep is a record, fewer reps are not', [h.stepRecords(b, set(11), false).prs, h.stepRecords(b, set(8), false).prs], [['1RM', 'Volume'], []]);
+// the case the 1RM alone misses: a loaded set once set a high estimate, so more reps at +0 must count on their own
+const c = { weight: 0, orm: 0, vol: 0, rep0: 0 };
+h.stepRecords(c, { weight: '20', reps: '5', rir: '', bw: '80' }, true);
+t.is('the first +0 set after loaded ones only sets the bar', h.stepRecords(c, set(12), false).prs, []);
+t.is('more reps than ever at +0 is a best-set record even when the estimate is lower', [h.stepRecords(c, set(13), false).prs, h.stepRecords(c, set(13), false).prs], [['Volume'], []]);
+t.is('and it remembers what it beat, in kg of the body', (() => { const d = { weight: 0, orm: 999, vol: 0, rep0: 12 }; return h.stepRecords(d, set(14), false).was; })(), { Volume: 960 });
+t.is('a medal at +0 shows the body lifted that many times, a loaded one the added load', [h.prVol(set(14)), h.prVol({ weight: '10', reps: '6', rir: '', bw: '80' })], [1120, 60]);
 t.is('added weight breaks all three', h.stepRecords(b, set(5, '20'), false).prs, ['Weight', '1RM', 'Volume']);
 t.is('with no body weight and no added weight there is nothing to record', make({ weights: {} }, null).stepRecords({ weight: 0, orm: 0, vol: 0 }, { weight: '', reps: '10', rir: '' }, false).prs, []);
 

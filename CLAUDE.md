@@ -394,7 +394,7 @@ other exercises gets the next free number. Nothing is deleted and there is no un
 Normal / Bodyweight switch in the exercise form) shows `bw` in front of the added `weight` on every set: `stampBw` writes
 the newest weigh-in onto the session's sets (and `finishSession` / `livePayload` run it first), so the body travels with
 the set and a later weigh-in never rewrites a finished workout. Volume is `setVol` (body + added, times reps) everywhere;
-records read the added load only (`recVol`, `recOrm`: the estimate as an added load, so an extra rep at +0 is a PR).
+records read the added load only (`recVol`, `recOrm`: the estimate as an added load). A +0 set has no best set to beat, so `stepRecords` tracks `rep0`, the most reps at +0, and more of them is a Volume PR (`prVol` is the value its medal shows).
 New code that counts a set must pick `setVol` or `rec*`, never `num(st.weight) * num(st.reps)`. This is one flag, not the
 "exercise types" that were dropped.
 
