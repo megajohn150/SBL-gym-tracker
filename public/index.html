@@ -2534,6 +2534,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <div id="people-find" style="padding:0 var(--pad)" hidden>
         <button class="dashbtn" data-push="find" style="width:100%">Find people</button>
       </div>
+      <div id="people-invite" style="padding:0 var(--pad) 1.2rem" hidden>
+        <button class="dashbtn" id="people-invite-go" style="width:100%">Invite a friend</button>
+      </div>
     </div>
     <div class="footbar" id="people-week" hidden>
       <button class="btn btn-ghost" data-wkb>Friends leaderboard</button>
@@ -2971,6 +2974,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Friends</div>
     <ul class="gdl">
       <li>Find people by username and follow. When you follow each other you are <b>friends</b>: you see each other's workouts, routines, week chart, streak, and live workouts. Strangers see only name, bio and counts. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
+      <li><b>Invite a friend:</b> the button on your Friends list copies a link to your profile. Whoever opens it and signs up lands on your profile, one tap from Follow.</li>
       <li><b>Friends leaderboard:</b> the button at the end of the Friends list ranks you and every friend since Monday by workouts, with sets and volume under each name. Medals go to the top three. It is counted from the sessions your feed already holds.</li>
       <li><b>Compare</b> (on a friend's profile): a period of your choice (30 days to start with, up to lifetime) side by side (muscle radar, workout count, time, volume) and the lifts you both have, by name. Open one for 1RM, heaviest and best set, plus a leaderboard. Lifts you share in a friend's workout open the same screen.</li>
     </ul>
@@ -3740,7 +3744,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4525';
+  var APP_VERSION = '3.4526';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -3913,6 +3917,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var pendingGo = (function () {
     var m = /^#go=(u|w|c|r|m):(.+)$/.exec(location.hash || '');
     if (!m) return null;
+    if (m[1] === 'u' && !/^[0-9a-f-]{36}$/i.test(m[2])) return null;   // a link anybody can write: only a real id
     history.replaceState(null, '', location.pathname + location.search);
     var parts = m[2].split(':');
     return m[1] === 'u'
@@ -5024,7 +5029,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         saveStore();
         $('uname').hidden = true;
         drawProfile(); drawHome();
-        if (!unameChange) return pushLibrary().then(syncPosts).then(loadFollows);
+        if (!unameChange) return pushLibrary().then(syncPosts).then(loadFollows).then(function () {
+          // somebody who signed up from an invite link has not met loadSocial's own check yet
+          if (pendingGo) openPush(pendingGo);
+        });
       });
     });
   });
@@ -5045,6 +5053,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var ids = peopleIds();
     $('people-title').textContent = PEOPLE_TITLE[peopleMode];
     $('people-note').hidden = ids.length > 0;
+    $('people-invite').hidden = peopleMode !== 'friends' || !!peopleList;
     $('people-find').hidden = ids.length > 0 || peopleMode !== 'friends' || !!peopleList;
     $('people-note').textContent = peopleMode === 'friends'
       ? 'Follow each other and they show up here.'
@@ -5065,6 +5074,19 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     }).join('');
     drawPeopleWeek(ids);
   }
+
+  // The invite is a link to your own profile: whoever opens it lands there once signed in (pendingGo
+  // 'u'), one tap from Follow. A link that cannot be copied is shared instead, where there is a sheet.
+  $('people-invite-go').addEventListener('click', function () {
+    if (!me) return;
+    var url = location.origin + '/#go=u:' + me.id;
+    function fail() {
+      if (navigator.share) navigator.share({ url: url }).catch(function () {});
+      else toast('Could not copy the link');
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('Invite link copied'); }, fail);
+    else fail();
+  });
 
   // Under your own friends list only: a footer button to the week board.
   function drawPeopleWeek(ids) {
