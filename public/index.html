@@ -3740,7 +3740,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4518';
+  var APP_VERSION = '3.4519';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10605,7 +10605,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // the box is as wide as what it holds, so "kg" stays right beside the number
   function wtFit() {
     var inp = $('wt-in'), w;
-    if (!inp.value) { inp.style.width = '1.2em'; return; }
+    if (!inp.value) { inp.style.width = Math.max(1.2, inp.placeholder.length * 0.62 + 0.3) + 'em'; return; }
     inp.style.width = '0';
     w = inp.scrollWidth;                       // 0 while Home is hidden: then a guess by the digit
     inp.style.width = w ? w + 2 + 'px' : inp.value.length * 0.62 + 0.3 + 'em';
@@ -10614,6 +10614,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var k = wtKey(new Date()), v = store.weights[k], last = wtKeys().pop(), inp = $('wt-in');
     $('wt-hint').textContent = v ? wtLine(k, v)
       : last ? 'Not logged today · last ' + store.weights[last] + ' kg on ' + wtName(last) : 'Log your weight once a day.';
+    // an empty box hints at the weigh-in before, so the day starts from a number instead of a dash
+    inp.placeholder = last ? String(store.weights[last]) : '\u2013';
     $('wt-go').textContent = v ? 'Update today’s weight' : 'Log today’s weight';
     if (document.activeElement !== inp && inp.value === wtShown) inp.value = wtShown = v ? String(v) : '';
     wtFit();
