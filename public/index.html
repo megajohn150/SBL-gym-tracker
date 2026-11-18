@@ -532,7 +532,9 @@ body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
 .injrow{margin:6px var(--pad) 0;padding:13px;border:var(--border);border-radius:var(--radius);background:var(--surface);line-height:1.45}
 .injrow .nm{font-weight:700}
 .injrow .sub{font-size:.8rem;color:var(--fg-3)}
-.injrow button{color:var(--red);font-size:.8rem;margin-top:6px}
+.injrow button{color:var(--red);font-size:.8rem;margin:6px 14px 0 0}
+.injrow button.injok{color:var(--fg-2)}
+.injrow.healed{opacity:.6}
 .injchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .injchips button{padding:6px 10px;border:var(--border);border-radius:var(--radius);font-size:.85rem;color:var(--fg-2)}
 .injchips button.on{background:var(--red);border-color:var(--red);color:#fff}
@@ -2959,7 +2961,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Set count per muscle group:</b> this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Muscle distribution, Chart:</b> radar of this period against the one before (7 days to a year) with workouts, duration, volume, sets. <button class="gdgo" data-push="stat-chart" aria-label="Open Muscle distribution chart">&rsaquo;</button></li>
       <li><b>Muscle distribution, Body:</b> a body map coloured green to red by sets, week by week with the arrows; the strip shows which days you trained. <button class="gdgo" data-push="stat-body" aria-label="Open Muscle distribution body map">&rsaquo;</button></li>
-      <li><b>Injuries:</b> name it and mark the muscles; the map shows them in red and those exercises get a warning in a workout. <button class="gdgo" data-push="stat-injuries" aria-label="Open Injuries">&rsaquo;</button></li>
+      <li><b>Injuries:</b> name it and mark the muscles; the map shows them in red and those exercises get a warning in a workout. <b>Healed</b> keeps the injury on the list with its date but stops the warning and the red; Reopen brings it back. <button class="gdgo" data-push="stat-injuries" aria-label="Open Injuries">&rsaquo;</button></li>
       <li><b>Muscle readiness:</b> a body map of what you trained in the last 72 hours; red is fresh work, green is recovering, gone is ready. <button class="gdgo" data-push="stat-ready" aria-label="Open Muscle readiness">&rsaquo;</button></li>
       <li><b>No recent records:</b> lifts you still do but have not set a record in for 4+ weeks; tap one to open it. <button class="gdgo" data-push="stat-stall" aria-label="Open No recent records">&rsaquo;</button></li>
       <li><b>Weekly recap:</b> the week with duration, volume, sets, streak, muscles and records, against the week before. Arrows or swipe go back; the share button makes an image. Pushed on Sunday evening. <button class="gdgo" data-push="stat-week" aria-label="Open Weekly recap">&rsaquo;</button></li>
@@ -3738,7 +3740,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4523';
+  var APP_VERSION = '3.4524';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -6172,7 +6174,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       $('stats-month').textContent = MONTHS[lastm.getMonth()] + ' ' + lastm.getFullYear();
       $('stats-week').textContent = recapTitle(monday(new Date()));
       // the count is part of this list, not of the injuries screen, so it is written here too
-      $('stats-inj').textContent = String(store.injuries.length);
+      $('stats-inj').textContent = String(injActive().length);
     }
     if (id === 's-session') { chipJump = true; chipAt = -1; drawSession(); }
     if (id === 's-profile') drawProfile();
@@ -8376,7 +8378,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var PIN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6l-1 6 4 3v2H6v-2l4-3-1-6ZM12 15v5"/></svg>';
     var PEN = NOTE_SVG;
 
-    var hurt = (store.injuries || []).filter(function (n) { return n.muscles.indexOf(ex.muscle) >= 0; });
+    var hurt = injActive().filter(function (n) { return n.muscles.indexOf(ex.muscle) >= 0; });
     $('sess-injury').hidden = done || !hurt.length;
     $('sess-injury').dataset.prs = esc('Injury (' + hurt.map(function (n) { return n.name; }).join(', ') +
       '): go easy, keep it light and stop if it hurts.');
@@ -12745,23 +12747,30 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     'Glutes', 'Quads', 'Hamstrings', 'Adductors', 'Calves', 'Forearms'];
   var injForm = null;                               // null while closed, else { muscles: [] }
 
+  // a healed injury stays on the list as a record; only an active one warns and shows red
+  function injActive() { return (store.injuries || []).filter(function (n) { return !n.healed; }); }
+
   function drawInjuries() {
     var list = store.injuries, hit = {}, blobs = '';
-    list.forEach(function (n) { n.muscles.forEach(function (m) { hit[m] = 1; }); });
+    injActive().forEach(function (n) { n.muscles.forEach(function (m) { hit[m] = 1; }); });
     Object.keys(hit).forEach(function (m) {
       (BODY_ART[m] || []).forEach(function (d) {
         blobs += '<path d="' + d + '" fill="#cf3b2f" fill-opacity=".7"/>';
       });
     });
     var today = new Date(); today.setHours(0, 0, 0, 0);
-    var rows = list.map(function (n) {
+    // active ones first, the healed below them (the sort is stable, so each group keeps its order)
+    var rows = list.slice().sort(function (a, b) { return !!a.healed - !!b.healed; }).map(function (n) {
       var d = new Date(n.date), at = new Date(d); at.setHours(0, 0, 0, 0);
-      var ago = Math.round((today - at) / 864e5);
-      return '<div class="injrow"><div class="nm">' + esc(n.name) + '</div>' +
+      var ago = Math.round((today - at) / 864e5), id = esc(n.id);
+      return '<div class="injrow' + (n.healed ? ' healed' : '') + '"><div class="nm">' + esc(n.name) + '</div>' +
         '<div class="sub">Added ' + dmy(d) + ' \u00b7 ' +
         (ago === 0 ? 'today' : ago + (ago === 1 ? ' day ago' : ' days ago')) + '</div>' +
+        (n.healed ? '<div class="sub">Healed ' + dmy(new Date(n.healed)) + '</div>' : '') +
         '<div class="sub">' + esc(n.muscles.join(', ')) + '</div>' +
-        '<button data-injdel="' + esc(n.id) + '">Delete</button></div>';
+        (n.healed ? '<button class="injok" data-injreopen="' + id + '">Reopen</button>'
+          : '<button class="injok" data-injheal="' + id + '">Healed</button>') +
+        '<button data-injdel="' + id + '">Delete</button></div>';
     }).join('');
     var form = injForm
       ? '<div class="field"><label for="inj-name">Injury</label>' +
@@ -12776,7 +12785,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('stinj-body').innerHTML =
       '<div class="bodymap"><img src="imgs/body.svg" alt=""><svg viewBox="0 0 800 600">' + blobs + '</svg></div>' +
       rows + form;
-    $('stats-inj').textContent = String(list.length);
+    $('stats-inj').textContent = String(injActive().length);
   }
 
   $('stinj-body').addEventListener('click', function (e) {
@@ -12795,6 +12804,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       if (!nm || !injForm.muscles.length) { toast('Name it and pick a muscle'); return; }
       store.injuries.push({ id: uid(), name: nm, muscles: injForm.muscles, date: new Date().toISOString() });
       injForm = null;
+      saveStore();
+    } else if (b.dataset.injheal || b.dataset.injreopen) {
+      var hid = b.dataset.injheal || b.dataset.injreopen, hn = store.injuries.filter(function (n) { return n.id === hid; })[0];
+      if (!hn) return;
+      if (b.dataset.injheal) {
+        hn.healed = new Date().toISOString();
+        toastUndo('Marked as healed', function () { var x = store.injuries.filter(function (n) { return n.id === hid; })[0]; if (x) { delete x.healed; saveStore(); drawInjuries(); } });
+      } else delete hn.healed;
       saveStore();
     } else if (b.dataset.injdel) {
       store.injuries = store.injuries.filter(function (n) { return n.id !== b.dataset.injdel; });
