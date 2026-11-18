@@ -2767,7 +2767,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="bar">
       <button class="back" data-pop><span>&lsaquo;</span> <span class="backlab"></span></button>
       <h1>Monthly report</h1>
-      <span></span>
+      <button class="iconbtn" id="mr-share" style="justify-self:end" aria-label="Share the month">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>
+      </button>
     </div>
     <div class="scroll" id="stmonth-body"></div>
   </section>
@@ -2961,7 +2963,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Muscle readiness:</b> a body map of what you trained in the last 72 hours; red is fresh work, green is recovering, gone is ready. <button class="gdgo" data-push="stat-ready" aria-label="Open Muscle readiness">&rsaquo;</button></li>
       <li><b>No recent records:</b> lifts you still do but have not set a record in for 4+ weeks; tap one to open it. <button class="gdgo" data-push="stat-stall" aria-label="Open No recent records">&rsaquo;</button></li>
       <li><b>Weekly recap:</b> the week with duration, volume, sets, streak, muscles and records, against the week before. Arrows or swipe go back; the share button makes an image. Pushed on Sunday evening. <button class="gdgo" data-push="stat-week" aria-label="Open Weekly recap">&rsaquo;</button></li>
-      <li><b>Monthly report:</b> last full month: a metric over 12 months, workout days, muscles, records. Pushed on the 1st. <button class="gdgo" data-push="stat-month" aria-label="Open Monthly report">&rsaquo;</button></li>
+      <li><b>Monthly report:</b> last full month: a metric over 12 months, workout days, muscles, records. The share button makes an image. Pushed on the 1st. <button class="gdgo" data-push="stat-month" aria-label="Open Monthly report">&rsaquo;</button></li>
     </ul>
 
     <div class="dsec">Friends</div>
@@ -3736,7 +3738,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4522';
+  var APP_VERSION = '3.4523';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -13084,6 +13086,36 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       if (streak) line.push(streak + ' week streak');
       if (nPR) line.push(nPR + (nPR === 1 ? ' new PR' : ' new PRs'));
       if (line.length) txt(line.join('  \u00b7  '), pad, 760, 40, 700, c('--accent'), 'left', disp);
+      var top = cur.by[names[0]] || 1, y = 850;
+      names.forEach(function (m) {
+        txt(m, pad, y, 34, 600, c('--fg'));
+        txt(String(cur.by[m]), W - pad, y, 34, 700, c('--fg-2'), 'right', disp);
+        g.fillStyle = c('--line'); g.fillRect(pad, y + 16, W - 2 * pad, 14);
+        g.fillStyle = c('--accent'); g.fillRect(pad, y + 16, Math.max(8, (W - 2 * pad) * cur.by[m] / top), 14);
+        y += 96;
+      });
+    });
+  });
+
+  // the report's month (the last full one), as a picture laid out like the week's
+  $('mr-share').addEventListener('click', function () {
+    var n = new Date(), pad = IMG_PAD;
+    var from = new Date(n.getFullYear(), n.getMonth() - 1, 1), to = new Date(from.getFullYear(), from.getMonth() + 1, 1);
+    var cur = statsFor(from, to), nPR = prTotal(from, to), streak = weekStreak();
+    var title = MONTHS[from.getMonth()] + ' ' + from.getFullYear();
+    var names = Object.keys(cur.by).filter(function (m) { return cur.by[m] > 0; }).sort(function (a, b) {
+      return cur.by[b] - cur.by[a] || a.localeCompare(b);
+    }).slice(0, 5);
+    shareCanvas('month-' + title.replace(' ', '-') + '.png', 1080, 1350, function (g, c, txt, face, disp, W) {
+      txt('SBL TRACKER', pad, 130, 30, 700, c('--fg-3'));
+      txt('Monthly report', pad, 250, 96, 800, c('--fg'), 'left', disp);
+      txt(title, pad, 310, 32, 400, c('--fg-2'));
+      txt(cur.workouts + (cur.workouts === 1 ? ' workout' : ' workouts'), pad, 440, 72, 700, c('--fg'), 'left', disp);
+      imgCells(g, c, txt, disp, W, 490, [[fmtDuration(cur.seconds), 'TIME'], [fmtKg(cur.volume), 'VOLUME'], [String(cur.sets), 'SETS']]);
+      var line = [];
+      if (streak) line.push(streak + ' week streak');
+      if (nPR) line.push(nPR + (nPR === 1 ? ' new PR' : ' new PRs'));
+      if (line.length) txt(line.join('  ·  '), pad, 760, 40, 700, c('--accent'), 'left', disp);
       var top = cur.by[names[0]] || 1, y = 850;
       names.forEach(function (m) {
         txt(m, pad, y, 34, 600, c('--fg'));
