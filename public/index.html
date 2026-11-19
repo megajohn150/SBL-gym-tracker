@@ -3744,13 +3744,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4528';
+  var APP_VERSION = '3.4529';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4529', 'Changing an exercise between standard and unilateral now updates every routine that uses it'],
     ['3.4512', 'Weight: log it once a day at the bottom of Home, see every weigh-in on a calendar, tap a day to add or change it'],
     ['3.4493', 'New Home tab: today\'s routine with a Start button, a weekly plan, sets, the month and your routines'],
     ['3.4493', 'The bell, search and the cards from the old Home moved to the new Home; the old Home is now Feed'],
