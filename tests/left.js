@@ -19,5 +19,5 @@ t.is('history alone carries a start: 10 rounds at 4 min', min(sessLeft(sess([], 
 t.is('a chat in the middle does not slow the pace', min(sessLeft(sess([3, 6, 9, 22, 25, 28], 12), 0, T0 + 28 * M)), 18);
 t.is('all ticked: nothing to estimate', sessLeft(sess([1, 2, 3], 3), 0, T0 + 3 * M), null);
 t.is('a unilateral pair counts once: 3 of 4 rounds done, 3 min a round', min(sessLeft(sess([2, 2.01, 5, 5.01, 8, 8.01], 8, true), 0, T0 + 8.01 * M)), 3);
-t.is('formats', [fmtLeft(30), fmtLeft(35 * 60), fmtLeft(70 * 60), fmtLeft(120 * 60)], ['<1 min left', '~35 min left', '~1h 10m left', '~2h 00m left']);
+t.is('formats', [fmtLeft(30), fmtLeft(35 * 60), fmtLeft(70 * 60), fmtLeft(120 * 60)], ['<1 min', '~35 min', '~1h 10m', '~2h 00m']);
 t.done();
