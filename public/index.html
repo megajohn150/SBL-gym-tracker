@@ -2923,7 +2923,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Sets.</b> Add Set under the list. Swipe a set left, then Delete (unilateral: both sides go).</li>
       <li><b>Medals.</b> A ticked set that beats your heaviest weight, estimated 1RM or best set (weight x reps) gets a medal and a short banner. Tap the medal to see the old record. The first time you do an exercise only sets the bar; nothing to beat yet.</li>
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
-      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle, this workout only); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
+      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
       <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
       <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
@@ -3762,13 +3762,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4538';
+  var APP_VERSION = '3.4539';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4539', 'Duplicate exercise: a copy of an exercise from its menu, with no history'],
+    ['3.4539', 'When every planned set is ticked the workout clock stops by itself, the cards turn dark and say Workout done, and the running rest goes'],
     ['3.4532', 'Exercise photos: add one from the exercise\'s menu and it shows above the records (kept on this phone only)'],
     ['3.4529', 'Changing an exercise between standard and unilateral now updates every routine that uses it'],
     ['3.4512', 'Weight: log it once a day at the bottom of Home, see every weigh-in on a calendar, tap a day to add or change it'],
@@ -14640,15 +14642,28 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     drawSession();
   });
 
-  // Only this workout changes; the routine keeps the exercise it had.
+  // This workout changes at once; the routine changes only if the toast that follows is tapped.
   function swapSessionExercise(exId) {
     var ex = session && session.exercises[session.idx], x = byId(exId);
     if (!ex || !x) return;
     var planned = Math.max(1, Math.round(ex.unilateral ? ex.sets.length / 2 : ex.sets.length));
     var go = function () {
-      session.exercises[session.idx] =
-        sessionItem(x.id, planned, x.unilateral ? (ex.side || 'R') : null, ex.reps);
+      var was = ex.exId, rid = session.routineId, side = x.unilateral ? (ex.side || 'R') : null;
+      session.exercises[session.idx] = sessionItem(x.id, planned, side, ex.reps);
       drawSession();
+      var r0 = rid && routineById(rid);
+      if (was === x.id || !r0 || r0.follow || !r0.items.some(function (i) { return i.exId === was; }) ||
+          r0.items.some(function (i) { return i.exId === x.id; })) return;
+      toast('Swap it in the routine too?', 8000, function () {
+        // looked up again: a pull may have replaced the routine while the toast was up
+        var r = routineById(rid), it = r && !r.follow && r.items.filter(function (i) { return i.exId === was; })[0];
+        if (!it) return;
+        it.exId = x.id;
+        it.side = side;
+        saveStore();
+        drawRoutines();
+        toast('Routine updated');
+      }, 'Swap');
     };
     if (ex.sets.some(logged)) {
       askConfirm('Swap in ' + x.name + '?',
