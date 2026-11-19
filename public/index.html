@@ -1214,6 +1214,15 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .stmprow span.stmpdate{font-size:.85rem;color:var(--fg-2);font-weight:600}
 #stamps-list{max-height:55vh;overflow-y:auto}
 #xhs-list{max-height:65vh;overflow-y:auto;margin:0 calc(var(--pad) * -1)}
+/* side balance: the verdict on top, then one line per session */
+#side-body{max-height:65vh;overflow-y:auto}
+.sbhead{font-family:var(--display);font-size:1.5rem;font-weight:700;text-align:center;margin:.5rem 0 .15rem}
+.sbsub{text-align:center;color:var(--fg-2);font-size:.95rem}
+.sbnote{color:var(--fg-3);font-size:.8rem;line-height:1.45;text-align:center;margin:.7rem 0 0}
+.sbhd,.sbrow{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:8px;align-items:center;text-align:center;padding:.6rem 0;border-bottom:1px solid var(--line)}
+.sbhd{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700;margin-top:1rem}
+.sbhd span:first-child,.sbrow span:first-child{text-align:left}
+.sbrow .win{font-weight:700}
 .phead{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .daynight{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .daynight svg{overflow:visible}
@@ -2944,7 +2953,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Exercises list and page</div>
     <ul class="gdl">
       <li>Search by name or muscle. When picking for a routine or workout, switch between Recently used and By muscle. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
-      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Duplicate exercise</b> (a copy under it, named with a number, with no history and no photo); <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts.</li>
+      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Duplicate exercise</b> (a copy under it, named with a number, with no history and no photo); <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts. For a one-sided exercise, <b>Side balance</b> (also in the exercise menu during a workout) says which side is stronger and by about how much, from your last sessions with both sides, and which one to start with: the weaker.</li>
       <li>Delete an exercise from its edit screen; it leaves your routines too, past workouts keep it, and Undo is offered.</li>
     </ul>
 
@@ -3329,6 +3338,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   <div class="pop-wrap" style="top:calc(env(safe-area-inset-top) + 56px)">
     <div class="pop-menu">
       <button id="xp-hist">View history</button>
+      <button id="xp-side">Side balance</button>
       <button id="xp-edit">Edit exercise</button>
       <button id="xp-meta">Edit exercise metadata</button>
       <button id="xp-swap">Swap exercise</button>
@@ -3587,6 +3597,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   </div>
 </div>
 
+<div class="sheet" id="side-sheet" hidden>
+  <div class="sheet-bg" data-side-close></div>
+  <div class="sheet-card">
+    <h3 id="side-title">Side balance</h3>
+    <div id="side-body"></div>
+  </div>
+</div>
+
 <div class="sheet" id="stamps-sheet" hidden>
   <div class="sheet-bg" data-stamps-close></div>
   <div class="sheet-card">
@@ -3769,13 +3787,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4556';
+  var APP_VERSION = '3.4557';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4558', 'Side balance: for one-sided exercises, which side is stronger, by how much, and which to start with (exercise page, and its menu in a workout)'],
     ['3.4549', 'Do later: send an exercise to the end of the workout from its menu'],
     ['3.4543', 'The row under the workout name shows how long is left (~35 min), worked out from your own pace and the routine\'s history'],
     ['3.4542', 'A dot after the Feed tab shows a friend\'s session you have not seen yet'],
@@ -6846,6 +6865,52 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       : '<div class="note">Not done yet.</div>';
   }
 
+  // Which side of a one-sided exercise is the stronger: per session the best estimated 1RM of each side, the
+  // two compared, averaged over the last six sessions where both sides were logged. Under 2% counts as even.
+  function sideBalance(rows) {
+    var list = [];
+    rows.forEach(function (r) {
+      if (!r.live || list.length >= 6) return;
+      var best = { L: 0, R: 0 };
+      r.e.sets.forEach(function (st) {
+        var s = String(st.label).charAt(0);
+        if (logged(st) && (s === 'L' || s === 'R')) best[s] = Math.max(best[s], recOrm(st));
+      });
+      if (best.L > 0 && best.R > 0) list.push({ w: r.w, l: best.L, r: best.R });
+    });
+    if (!list.length) return null;
+    var mean = list.reduce(function (a, q) { return a + q.r / q.l; }, 0) / list.length;
+    var pct = (mean >= 1 ? mean - 1 : 1 / mean - 1) * 100;
+    return { list: list, pct: Math.round(pct), strong: pct < 2 ? '' : mean > 1 ? 'R' : 'L' };
+  }
+  function sideHtml(rows) {
+    var s = sideBalance(rows), nm = { L: 'left', R: 'right' };
+    if (!s) return '<p class="sbnote">Not enough yet. Log both sides of this exercise in a workout and it shows which one is stronger.</p>';
+    var weak = s.strong === 'L' ? 'R' : 'L';
+    var gap = function (q) {
+      var d = Math.round((q.r >= q.l ? q.r / q.l - 1 : q.l / q.r - 1) * 100);
+      return d < 1 ? '=' : (q.r > q.l ? 'R' : 'L') + ' +' + d + '%';
+    };
+    var kg = function (v) { return Math.round(v * 10) / 10 + ' kg'; };
+    return '<p class="sbhead">' + (s.strong ? 'Start with your ' + nm[weak] : 'Both sides are even') + '</p>' +
+      '<p class="sbsub">' + (s.strong ? 'The ' + nm[s.strong] + ' is about ' + s.pct + '% stronger' : 'Start with either side') + '</p>' +
+      '<div class="sbhd"><span>Session</span><span>Left</span><span>Right</span><span>Gap</span></div>' +
+      s.list.map(function (q) {
+        return '<div class="sbrow"><span>' + dmy(new Date(q.w.date)) + '</span>' +
+          '<span' + (q.l > q.r ? ' class="win"' : '') + '>' + kg(q.l) + '</span>' +
+          '<span' + (q.r > q.l ? ' class="win"' : '') + '>' + kg(q.r) + '</span><span>' + gap(q) + '</span></div>';
+      }).join('') +
+      '<p class="sbnote">The best set of each side, as an estimated 1RM, over your last ' + s.list.length +
+      (s.list.length === 1 ? ' session' : ' sessions') + ' with both sides. The weaker side goes first, then match its reps on the other.</p>';
+  }
+  function openSides(key, name) {
+    var rows = histRows(key);
+    $('side-title').textContent = name;
+    $('side-body').innerHTML = sideHtml(rows);
+    $('side-sheet').hidden = false;
+  }
+  document.querySelector('[data-side-close]').addEventListener('click', function () { $('side-sheet').hidden = true; });
+
   function drawHistory() {
     var x = byId(histId);
     if (!x) return;
@@ -6862,6 +6927,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       '</div>';
     var lbBtn = sb && me ? '<div style="padding:1.2rem var(--pad) 0"><button class="dashbtn" data-xlb="' +
       esc(nameKey(x.name)) + '" style="width:100%">Friends leaderboard</button></div>' : '';
+
+    // one-sided exercises only: which side is stronger and so which one goes first
+    var sdBtn = x.unilateral ? '<div style="padding:' + (lbBtn ? '.6rem' : '1.2rem') + ' var(--pad) 0"><button class="dashbtn" data-xside style="width:100%">Side balance</button></div>' : '';
 
     hideTip();
     var xp = periodOf(xPeriod), buckets = exerciseBuckets(key);
@@ -6896,7 +6964,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       });
     }
     var photo = exPhoto[x.id] ? '<img class="xphoto" alt="" src="' + exPhoto[x.id] + '">' : '';
-    $('xh-body').innerHTML = photo + recs + chart + lbBtn + hist + '<div style="height:1.5rem"></div>';
+    $('xh-body').innerHTML = photo + recs + chart + lbBtn + sdBtn + hist + '<div style="height:1.5rem"></div>';
   }
 
   // Exercise photos live on this device only, in their own IndexedDB (not tracker-snaps, which sign-out
@@ -12518,6 +12586,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (sty) { xStyle = sty.dataset.xstyle; save('xstyle', xStyle); drawHistory(); return; }
     var w = e.target.closest('[data-wopen]');
     if (w) { openWorkout(w.dataset.wopen); return; }
+    if (e.target.closest('[data-xside]')) { openSides(histId, (byId(histId) || {}).name); return; }
     var lb = e.target.closest('[data-xlb]');
     if (lb) { lbFr = null; openLb(lb.dataset.xlb); return; }
     var r = e.target.closest('#xh-range');
@@ -14711,6 +14780,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var fr = session.routineId ? routineById(session.routineId) : null;
     $('xp-meta').hidden = !!(fr && fr.follow);
     $('xp-drop').hidden = session.exercises.length < 2;
+    $('xp-side').hidden = !session.exercises[session.idx].unilateral;
     $('xp-later').hidden = session.idx >= session.exercises.length - 1;   // already last: nowhere later to go
     $('xp-skip').textContent = session.exercises[session.idx].skipped ? 'Unskip exercise' : 'Skip exercise';
     $('ex-pop').hidden = false;
@@ -14737,6 +14807,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
   }
 
+  $('xp-side').addEventListener('click', function () {
+    closeExPop();
+    var ex = session && session.exercises[session.idx];
+    if (ex) openSides(exKey(ex), ex.name);
+  });
   $('xp-hist').addEventListener('click', function () {
     closeExPop();
     var ex = session && session.exercises[session.idx];
