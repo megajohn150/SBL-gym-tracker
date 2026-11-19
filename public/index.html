@@ -1374,6 +1374,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 #s-home .head,#s-dash .head{padding-bottom:.5rem}
 #s-home .reportbar,#s-dash .reportbar{margin-top:.6rem}
 /* the cloud has not got the latest changes: a dot after the Profile tab */
+.tabs button.feednew::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--accent);vertical-align:middle}
 .tabs button.unsynced::after{content:"";display:inline-block;width:6px;height:6px;margin-left:6px;border-radius:50%;background:var(--red);vertical-align:middle}
 /* someone else's routine, read only */
 .ctl .val{font-size:.85rem;font-weight:700}
@@ -2959,7 +2960,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
     <div class="dsec">Feed</div>
     <ul class="gdl">
-      <li><b>Feed:</b> your workouts and your friends'; All / Me / Friends appears once friends have trained. 30 cards at a time, Load more for the rest. <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button></li>
+      <li><b>Feed:</b> your workouts and your friends'; All / Me / Friends appears once friends have trained. A dot after the tab means a friend's session you have not seen yet; it clears when you open the Feed. 30 cards at a time, Load more for the rest. <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button></li>
       <li><b>A workout.</b> Hold one of your cards to get the &#8942; menu below without opening it. Tap a card to open it: totals with the change versus your last run of that routine, muscle split, every set (tap a medal for the old record; a plate icon means plates were used). &#8942;: <b>Edit workout</b> (name, start, duration, notes, weights, reps, RIR, plates, add/remove/reorder sets and exercises; Save or x at the bottom), <b>Save as routine</b>, Delete (Undo offered).</li>
       <li><b>Like and comment.</b> Thumb to like (hold it to see who liked). Bubble opens comments: write, Reply, Delete your own. Likes and comments made offline are sent later.</li>
       <li><b>Update.</b> Drag down from the top of Home, Feed, Workout, Profile or Settings to reload the newest version ("Version updated" appears after, with a What's new button that lists every change you have not opened yet; the list is kept until you open it).</li>
@@ -3762,7 +3763,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4540';
+  var APP_VERSION = '3.4541';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -6222,6 +6223,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (id !== 's-exercises' && id !== 's-exercise-form') { pickFor = null; pickMuscle = null; }
     if (id !== 's-exercises') exDel = null;
     if (id === 's-home' || id === 's-dash') refreshSocial();
+    if (id === 's-home') drawFeedDot();
     if (id === 's-dash') drawDash();
     if (id === 's-stats') {
       var lastm = new Date();
@@ -10059,7 +10061,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     dropPush().then(out).catch(function () {}).then(function () {
       ['uid', 'music', 'data', 'session', 'dirty'].forEach(function (k) { localStorage.removeItem('tracker-' + k); });
       // "this device keeps no copy": friends' cached sessions and the saved versions go too
-      if (id) localStorage.removeItem('tracker-feed-' + id);
+      if (id) { localStorage.removeItem('tracker-feed-' + id); localStorage.removeItem('tracker-feedseen-' + id); }
       try { indexedDB.deleteDatabase('tracker-snaps'); } catch (e) {}
       location.reload();
     });
@@ -11162,6 +11164,25 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
   });
 
+  // The dot after the Feed tab: a friend's session this phone has not shown on the Feed yet. "Seen" is the Feed
+  // being open while the post is in it, so nothing has to be tapped. The seen list is the keys of the feed as it
+  // was last looked at, so it never outgrows one page; an edit keeps a post's key and does not light the dot.
+  // The first run has no list and counts everything already there as seen.
+  function drawFeedDot() {
+    var tab = document.querySelector('.tabs [data-tab="home"]');
+    if (!tab || !me) return;
+    var keys = social.feed.filter(function (w) { return w.by !== me.id; }).map(function (w) { return w.by + '|' + w.id; });
+    var raw = null;
+    try { raw = JSON.parse(load('feedseen-' + me.id) || 'null'); } catch (e) {}
+    var fresh = false;
+    if (Array.isArray(raw)) fresh = keys.some(function (k) { return raw.indexOf(k) < 0; });
+    if (!Array.isArray(raw) ? keys.length : (fresh && current() === 's-home')) {
+      save('feedseen-' + me.id, JSON.stringify(keys));
+      fresh = false;
+    }
+    tab.classList.toggle('feednew', fresh);
+  }
+
   function drawHome() {
     drawLiveBars();                    // the names on them may have just arrived
     drawReportBar();
@@ -11170,6 +11191,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     drawRecapBar();
     drawWeekBar();
     drawDash();
+    drawFeedDot();
     var total = store.workouts.length;
     var rows = store.workouts.map(function (w, i) { return { w: w, n: total - i, who: null }; });
 
