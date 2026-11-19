@@ -3804,7 +3804,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4564';
+  var APP_VERSION = '3.4565';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -4311,8 +4311,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     return 'About ' + shown + ' ' + (shown === 1 ? pick[0] : pick[1]);
   }
   function grp(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-  function fmtTons(kg) { var t = kg / 1000; return (t < 10 ? Math.round(t * 10) / 10 : grp(t)) + ' t'; }
-  function fmtHours(sec) { var h = sec / 3600; return (h < 10 ? Math.round(h * 10) / 10 : grp(h)) + ' h'; }
+  function fmtTons(kg) { var t = kg / 1000; return (t < 10 ? Math.round(t * 10) / 10 : grp(t)) + 't'; }
+  function fmtHours(sec) { var h = sec / 3600; return (h < 10 ? Math.round(h * 10) / 10 : grp(h)) + 'h'; }
   // numbers in, null or undefined for one that is not shown; a friend's own are cleaned by the caller
   function pillsHtml(sets, kg, sec) {
     var out = '';
