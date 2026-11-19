@@ -168,7 +168,7 @@ const calls = [];
 const noop = (name) => () => { calls.push(name); };
 const end = new Function('store', 'session', 'uid', 'sessionSeconds', 'logged', 'plateCount', 'recomputeRecords', 'saveStore',
   'saveSession', 'stopRest', 'goTab', 'drawHome', 'push', 'drawSummary',
-  'var summaryW;' + bwCode() + slice('  function finishSession(seconds)', '  /* --- what the session came to') +
+  'var summaryW;' + bwCode() + slice('  function finishSession(seconds', '  /* --- what the session came to') +
   '; finishSession(1234); return { session: session, summary: summaryW };')(
   store, running, () => 'new', () => 99, (st) => num(st.reps) > 0, (st) => (st.plate ? (typeof st.plate === 'number' ? st.plate : 1) : 0),
   noop('records'), noop('saveStore'), noop('saveSession'), noop('rest'), noop('tab'), noop('home'), noop('push'), noop('summary'));
@@ -181,4 +181,15 @@ t.is('a set keeps its numbers and plates, not its tick', w.exercises[0].sets[0],
 t.is('notes are trimmed', [w.note, w.exercises[0].note], ['good', 'heavy']);
 t.is('records are counted before it is saved, and the summary gets the workout',
   [calls.indexOf('records') < calls.indexOf('saveStore'), end.summary === w], [true, true]);
+
+/* nothing logged: Save anyway keeps the exercises, without sets */
+{
+  const st2 = { workouts: [], exercises: [] };
+  const run2 = new Function('store', 'session', 'uid', 'sessionSeconds', 'logged', 'plateCount', 'recomputeRecords', 'saveStore',
+    'saveSession', 'stopRest', 'goTab', 'drawHome', 'push', 'drawSummary',
+    'var summaryW;' + bwCode() + slice('  function finishSession(seconds', '  /* --- what the session came to') +
+    '; finishSession(60, true);')(st2, { name: 'Home', startedAt: 1, exercises: [{ exId: 'a', name: 'Curl', sets: [{ label: '01', reps: '' }] }] },
+    () => 'n', () => 99, (s) => num(s.reps) > 0, () => 0, () => {}, () => {}, () => {}, () => {}, () => {}, () => {}, () => {}, () => {});
+  t.is('Save anyway keeps an exercise with no logged set', st2.workouts[0].exercises.map((e) => [e.name, e.sets.length]), [['Curl', 0]]);
+}
 t.done();

@@ -3,7 +3,7 @@
 const { slice, suite } = require('./lib');
 const t = suite('records');
 
-const code = slice("  var MONTHS = ['Jan'", '  function finishSession(seconds)');
+const code = slice("  var MONTHS = ['Jan'", '  function finishSession(seconds');
 const stats = slice('  function monday(d) {', '  function byGroup(by)');
 const cells = slice('  var MUSCLE_CELL = {', '  // Measured centres');
 const store = { exercises: [{ id: 'a', name: 'Bench' }, { id: 's', name: 'Raise', head: 'Rear delt' }], workouts: [] };

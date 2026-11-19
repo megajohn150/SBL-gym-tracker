@@ -3559,6 +3559,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   <div class="sheet-card">
     <h3 id="confirm-title">Are you sure?</h3>
     <p class="confirm-text" id="confirm-text"></p>
+    <button class="btn btn-primary" id="confirm-alt" hidden style="margin-bottom:8px"></button>
     <button class="btn btn-danger" id="confirm-yes">Delete</button>
     <button class="btn btn-ghost" id="confirm-no" style="margin-top:8px">Cancel</button>
   </div>
@@ -3768,7 +3769,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4555';
+  var APP_VERSION = '3.4556';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -8346,14 +8347,24 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
      ========================================================= */
   var confirmAction = null;
 
-  function askConfirm(title, text, label, fn) {
+  // `alt` ({ label, fn }) adds a second way forward above the main one, for a question with two good answers
+  var confirmAlt = null;
+  function askConfirm(title, text, label, fn, alt) {
     $('confirm-title').textContent = title;
     $('confirm-text').textContent = text;
     $('confirm-yes').textContent = label;
     confirmAction = fn;
+    confirmAlt = alt || null;
+    $('confirm-alt').hidden = !alt;
+    if (alt) $('confirm-alt').textContent = alt.label;
     $('confirm-sheet').hidden = false;
   }
-  function closeConfirm() { $('confirm-sheet').hidden = true; confirmAction = null; }
+  function closeConfirm() { $('confirm-sheet').hidden = true; confirmAction = null; confirmAlt = null; }
+  $('confirm-alt').addEventListener('click', function () {
+    var a = confirmAlt;
+    closeConfirm();
+    if (a) a.fn();
+  });
 
   $('confirm-yes').addEventListener('click', function () {
     var fn = confirmAction;
@@ -9543,7 +9554,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
   }
 
-  function finishSession(seconds) {
+  // `keepEmpty` saves a workout nothing was logged in (a session at home, other weights): its exercises stay, without sets
+  function finishSession(seconds, keepEmpty) {
     if (!session) return;
     stampBw();
     var w = {
@@ -9568,7 +9580,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
             return out;
           })
         };
-      }).filter(function (e) { return e.sets.length > 0 || e.skipped; })
+      }).filter(function (e) { return keepEmpty || e.sets.length > 0 || e.skipped; })
     };
     store.workouts.unshift(w);
     recomputeRecords();
@@ -10634,8 +10646,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // the clock is taken as it stands; both it and the date are editable later
   $('sess-end').addEventListener('click', function () {
     if (!session.exercises.some(function (e) { return !e.skipped && e.sets.some(logged); })) {
-      askConfirm('Empty workout', 'No set has any reps logged, so there is nothing to save.',
-        'Discard workout', dropSession);
+      askConfirm('Empty workout', 'No set has any reps logged. Save it anyway if the numbers were not tracked, a session at home for example, or discard it.',
+        'Discard workout', dropSession,
+        { label: 'Save anyway', fn: function () { finishSession(Math.max(60, sessionSeconds()), true); } });
       return;
     }
     var open = 0;
