@@ -2923,9 +2923,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Account.</b> Create one with email and password (or sign in; "Forgot your password?" sends a link). Then pick a username: 3 to 20 letters, numbers, dots or underscores. It is how friends find you; you can change it once a week. Your log syncs to the account, so any device shows the same thing. Offline still works; a red dot on Profile means changes are waiting to upload. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Install it.</b> Add the app to your phone's home screen. Push notifications only work from there.</li>
       <li><b>Four tabs.</b> Home: today's routine, your plan and the week. Feed: your workouts and your friends'. Workout: your routines. Profile: charts, stats, friends, settings. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button> <button class="gdgo" data-tabgo="home" aria-label="Open Feed">Feed &rsaquo;</button> <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button> <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
-      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar in front of a box for the weight you add on top. Tap that first box to change it: the new number replaces today's weigh-in, or becomes today's if you had not weighed in. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once. At +0 more reps than ever at +0 is a Best set record (its medal shows your weight times those reps); the first +0 set only sets the bar. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
+      <li><b>1. Exercises.</b> Workout &rsaquo; Exercises &rsaquo; + New exercise. Needed: a name (unique) and the target muscle. Optional: short code (up to 7 letters, shown on the strip while training), cue (one reminder under the exercise), weight step (what the +/&minus; keys add, default 1 kg). <b>Unilateral</b> = one side at a time, every set is a left and a right row; switching an exercise between standard and unilateral later updates every routine that uses it. <b>Bodyweight</b> (the Weight switch under Type; it ticks itself when the name has the word "bodyweight"): each set shows your latest weight from the Weight calendar in front of a box for the weight you add on top. Tap that first box to change it: the new number replaces today's weigh-in, or becomes today's if you had not weighed in. Volume counts your weight plus the added weight; records (heaviest, best set) count only the added weight, and the estimated 1RM is the added load you could lift once. At +0 more reps than ever at +0 is a Best set record (its medal shows your weight times those reps); the first +0 set only sets the bar. A shoulder exercise also needs a head (front, side or rear), because Stats count heads separately. To delete several at once, open &#8942; on the list, choose Delete exercises, tick the ones to remove and press Delete; they leave your routines too, past workouts keep them, and Undo brings them back. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
       <li><b>2. A routine.</b> Workout &rsaquo; + New routine. Name it, add exercises, set the number of sets and a rep range like 8-12 for each (unilateral: which side starts). Arrows, or the arrows button by the name, reorder. Save from &#8942;. The import button at the top of the Workout tab brings in a starter pack (SBL or Bro Lifter): all of its exercises, and the routines you tick. An exercise you already have by name is not added twice; a routine that is already there is skipped, and one with the same name but other exercises comes in as "Name 2". <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
-      <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go. <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
+      <li><b>3. Train.</b> Start routine on its card, or Start empty workout and add exercises as you go. On Home, until you have a routine, the top card lists these three steps and Import starter pack. <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
     </ul>
 
     <div class="dsec">Gestures</div>
@@ -2949,13 +2949,13 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Do later</b> (sends it to the end of the workout); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
       <li><b>The row under the name.</b> The clock, sets done out of planned, volume, records, and how long is left (~35 min). The estimate is the pace of your own sets so far, held up by how long this routine usually takes at the start; a long break in the middle is left out. When every set is ticked it says Done, and the clock stops.</li>
       <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, End workout (saves it from wherever you are), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
-      <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
-      <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
+      <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring (the last tick of a workout ends a running one and starts none); it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
+      <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept; a workout with no reps anywhere asks first, and Save anyway keeps it with its exercises, for a session where the numbers were not tracked. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
     </ul>
 
     <div class="dsec">Routines</div>
     <ul class="gdl">
-      <li>A card shows exercises, sets and the usual duration (average of the last five runs; tap it to see them). Tap the card to open the routine: a chart of every run (Volume / Reps / Time, line or bars, range), its exercises, and "View muscles targeted" (a body map). <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
+      <li>A card shows exercises, sets and the usual duration (average of the last five runs, in hours once it passes one; tap it to see them). Tap the card to open the routine: a chart of every run (Volume / Reps / Time, line or bars, range), its exercises, and "View muscles targeted" (a body map). <button class="gdgo" data-tabgo="workout" aria-label="Open Workout">Workout &rsaquo;</button></li>
       <li>&#8942; on that screen: Edit routine, Duplicate routine. Editing shows a bar at the bottom: Save or the x to discard. Reorder on the Workout tab drags cards into order. In the editor, &#8942; also has Delete (finished workouts stay).</li>
       <li><b>Enable following</b> (editor &#8942;): friends can follow this routine. Your changes reach them; nothing they do reaches yours. "Shared" on the card shows who follows it.</li>
       <li><b>Following a friend's routine.</b> On their profile open a routine: <b>Follow routine</b> adds it to yours and keeps it in step with theirs (you can run it, and change how you log it: standard or unilateral, side, weight step, cue). <b>Copy routine</b> copies it once. If they stop sharing, it freezes. &#8942; &rsaquo; Make it mine cuts the link so you can edit; Unfollow removes it.</li>
@@ -2970,8 +2970,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
     <div class="dsec">Home</div>
     <ul class="gdl">
-      <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
-      <li><b>Weight.</b> At the bottom of Home: the Weight card shows today's weight in kg: type it and tap Log (or Update) today's weight, once a day. Calendar opens a month view with the days you weighed in; tap any day to add or change it there, with the change against the weigh-in before it, or remove it. The bars above show the last 30 weigh-ins; tap one for its weight. Only you see it, and it syncs with your account.</li>
+      <li><b>Today.</b> The top card shows the routine planned for today with a Start button; <b>Pick another routine</b> starts a different one. On a rest day, or once you have trained, it shows what is next, and Train anyway starts something else. While a workout is running it says so and takes you back to it; when every set is ticked it turns dark, says Workout done and ends the workout from there. <button class="gdgo" data-tabgo="dash" aria-label="Open Home">Home &rsaquo;</button></li>
+      <li><b>Weight.</b> At the bottom of Home: the Weight card shows today's weight in kg: type it and tap Log (or Update) today's weight, once a day (the empty box hints at your last weigh-in). Calendar opens a month view with the days you weighed in; tap any day to add or change it there, with the change against the weigh-in before it, or remove it. The bars above show the last 30 weigh-ins; tap one for its weight. Only you see it, and it syncs with your account.</li>
       <li><b>Plan.</b> Seven days, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. Each cell shows a short name of up to three characters: change it in the box beside a routine when you tap a day (or in the routine's editor); without one the plan uses the first three letters. It syncs with your account.</li>
       <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
       <li><b>Sets this week:</b> the three muscles furthest from their weekly set goal (See more shows the rest), with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
@@ -3001,6 +3001,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
     <div class="dsec">Stats</div>
     <ul class="gdl">
+      <li><b>Empty screens.</b> Until you have a workout, the statistics screens say so and offer Start a workout.</li>
       <li><b>Set count per muscle group:</b> this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Muscle distribution, Chart:</b> radar of this period against the one before (7 days to a year) with workouts, duration, volume, sets. <button class="gdgo" data-push="stat-chart" aria-label="Open Muscle distribution chart">&rsaquo;</button></li>
       <li><b>Muscle distribution, Body:</b> a body map coloured green to red by sets, week by week with the arrows; the strip shows which days you trained. <button class="gdgo" data-push="stat-body" aria-label="Open Muscle distribution body map">&rsaquo;</button></li>
@@ -3804,7 +3805,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4565';
+  var APP_VERSION = '3.4566';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -3970,7 +3971,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     } catch (e) {}
   }
   function saveSession() { saveLocalSession(); queuePush(); touchStale(); queueLive(); }
-  // Pausing is gone. A session paused by an older version gets its clock back as if resumed now.
+  // There is no pause button; pausedAt is set only by autoPause (every planned set ticked). This puts the clock back as if
+  // resumed now: the gap since pausedAt is not counted.
   function unpause(s) {
     if (s && s.pausedAt) { s.startedAt += Date.now() - s.pausedAt; s.pausedAt = null; }
     return s;
@@ -7026,8 +7028,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   // Exercise photos live on this device only, in their own IndexedDB (not tracker-snaps, which sign-out
-  // deletes whole): the picture itself as a Blob under the exercise id. They are not synced, not in the
-  // backup file, and they stay when you sign out; Remove photo, deleting the exercise, Erase everything
+  // deletes whole): the picture itself as a Blob under the exercise id. They are not synced, they travel
+  // only in the JSON backup file, and they stay when you sign out; Remove photo, deleting the exercise, Erase everything
   // and deleting the account take them away. exPhoto is the session's cache of object URLs:
   // undefined = not asked yet, null = none, a string = the picture.
   var exPhoto = {};
