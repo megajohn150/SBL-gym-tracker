@@ -2940,7 +2940,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Exercises list and page</div>
     <ul class="gdl">
       <li>Search by name or muscle. When picking for a routine or workout, switch between Recently used and By muscle. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
-      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts.</li>
+      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Duplicate exercise</b> (a copy under it, named with a number, with no history and no photo); <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts.</li>
       <li>Delete an exercise from its edit screen; it leaves your routines too, past workouts keep it, and Undo is offered.</li>
     </ul>
 
@@ -3304,6 +3304,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   <div class="pop-wrap" style="top:calc(env(safe-area-inset-top) + 56px)">
     <div class="pop-menu">
       <button id="xh-edit">Edit exercise</button>
+      <button id="xh-dup">Duplicate exercise</button>
       <button id="xh-photo">Add photo</button>
       <button id="xh-nophoto">Remove photo</button>
       <button id="xh-reset" class="danger">Reset records</button>
@@ -3761,7 +3762,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4537';
+  var APP_VERSION = '3.4538';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -7098,6 +7099,24 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   $('xh-edit').addEventListener('click', function () {
     $('xh-pop').hidden = true;
     openExercise(histId);
+  });
+
+  // a copy of the exercise, right under it, with a free name; it starts clean: no reset date and no photo
+  // shortcut: the photo is not copied, a few taps to add it again, when someone asks for it
+  $('xh-dup').addEventListener('click', function () {
+    $('xh-pop').hidden = true;
+    var x = byId(histId);
+    if (!x) return;
+    var copy = JSON.parse(JSON.stringify(x)), n = 2;
+    var taken = function (v) { return store.exercises.some(function (e) { return nameKey(e.name) === nameKey(v); }); };
+    while (taken(x.name + ' ' + n)) n++;
+    copy.id = uid();
+    copy.name = x.name + ' ' + n;
+    delete copy.resetAt;
+    store.exercises.splice(store.exercises.indexOf(x) + 1, 0, copy);
+    saveStore();
+    drawExercises();
+    toast('Duplicated as ' + copy.name);
   });
 
   function openExercise(id) {
