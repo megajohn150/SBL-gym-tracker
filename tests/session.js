@@ -35,6 +35,24 @@ t.is('a session paused by an older version resumes with its clock where it stopp
   [old.pausedAt, Math.round((Date.now() - old.startedAt) / 60e3)], [null, 50]);
 t.is('one that was never paused is left alone', unpause({ startedAt: 5 }).startedAt, 5);
 
+/* the clock stops at x/x and runs again when a set is unticked or added */
+let sess = null;
+const ap = new Function('unpause', 'sessStats', 'getSession', 'var session = getSession();' + slice('  function autoPause()', '  // the sets of the last workout') .replace(/\n  function clockText[\s\S]*$/, '') + '; return autoPause;');
+{
+  const mk = (done) => ({ startedAt: Date.now() - 600e3, exercises: [{ sets: done.map((d) => ({ done: d })) }] });
+  let stats = { cnt: 1, all: 1 };
+  sess = mk([true]);
+  const run = ap(unpause, () => stats, () => sess);
+  run();
+  t.is('every set ticked pauses the clock', !!sess.pausedAt, true);
+  const at = sess.pausedAt; run();
+  t.is('a second look does not move the pause', sess.pausedAt, at);
+  stats = { cnt: 0, all: 1 }; run();
+  t.is('an unticked set resumes it', sess.pausedAt, null);
+  stats = { cnt: 0, all: 0 }; run();
+  t.is('an empty workout never pauses', !!sess.pausedAt, false);
+}
+
 /* the numbers under the header: ticked sets only, a record counted once per category per exercise */
 const shown = {};
 const fmtKg = (kg) => kg + ' kg';

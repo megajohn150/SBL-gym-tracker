@@ -3752,7 +3752,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4533';
+  var APP_VERSION = '3.4534';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -4082,6 +4082,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         // never drop a workout that is running here; adopt one from elsewhere
         if (r.data.session && r.data.session.exercises && !session) {
           session = unpause(r.data.session);
+          autoPause();
           saveLocalSession();
         }
         redrawAll();
@@ -4365,7 +4366,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // note on an exercise and the "last time" note are nobody else's business.
   function livePayload() {
     stampBw();
-    return {
+    var p = {
       name: session.name, startedAt: session.startedAt, idx: session.idx,
       react: !store.profile.noReact,          // friends see their reaction buttons greyed out when this is false
       stats: sessStats(),                     // the header row: sets, volume, records; a viewer cannot work out the records
@@ -4381,6 +4382,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         };
       })
     };
+    if (session.pausedAt) p.pausedAt = session.pausedAt;   // a friend's clock stops with yours (liveSecs reads it)
+    return p;
   }
 
   // not pushLive: that name is the push-notification flag further down
@@ -8386,7 +8389,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   function sessionSeconds() {
     if (!session) return 0;
-    return Math.floor((Date.now() - session.startedAt) / 1000);
+    return Math.floor(((session.pausedAt || Date.now()) - session.startedAt) / 1000);
+  }
+  // The clock stops by itself while every planned set is ticked (x/x) and runs again once one is unticked or
+  // another is added. There is no pause button; pausedAt is only ever set here. unpause shifts startedAt by the
+  // gap, so the time between the last tick and the resume is not counted.
+  function autoPause() {
+    var s = sessStats();
+    if (s.all > 0 && s.cnt === s.all) { if (!session.pausedAt) session.pausedAt = Date.now(); }
+    else unpause(session);
   }
   function clockText(t) {
     return Math.floor(t / 3600) + ':' + pad2(Math.floor(t / 60) % 60) + ':' + pad2(t % 60);
@@ -8505,6 +8516,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function drawSession() {
     if (!session) return;
     stampBw();
+    autoPause();
     saveSession();
     var last = session.exercises.length;
     var done = session.idx >= last;                 // the closing card
@@ -14448,6 +14460,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var txt = clockText(sessionSeconds());
     $('sess-clock').textContent = txt;
     $('dock-time').textContent = txt;
+    $('sess-clock').classList.toggle('paused', !!session.pausedAt);
+    $('dock-time').classList.toggle('paused', !!session.pausedAt);
   }
 
   $('sess-menu').addEventListener('click', function () {
@@ -15087,7 +15101,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   drawRoutines();
   try {
     var live = JSON.parse(load('session') || 'null');
-    if (live && live.exercises) session = unpause(live);
+    if (live && live.exercises) { session = unpause(live); autoPause(); }   // a reload must not restart a finished clock
   } catch (e) {}
 
   recomputeRecords();
