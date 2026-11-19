@@ -2957,7 +2957,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Sets this week:</b> the three muscles furthest from their weekly set goal (See more shows the rest), with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
       <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
-      <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live; while one is training a dot sits after the Home tab whenever you are on another tab), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
+      <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live; while one is training a dot sits after the Home tab whenever you are on another tab, except while watching them), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
       <li><b>Magnifier and bell.</b> The magnifier finds people. The bell lists likes, comments, replies, threads you joined and new followers; tap one to open it, x or Read all to clear. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
     </ul>
 
@@ -3767,7 +3767,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4550';
+  var APP_VERSION = '3.4551';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -4453,7 +4453,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // while you are on that tab and comes back as soon as you are on another one.
   function drawLiveDot() {
     var tab = document.querySelector('.tabs [data-tab="dash"]'), on = document.querySelector('.screen.on');
-    if (tab) tab.classList.toggle('livenew', Object.keys(liveSess).length > 0 && !(on && on.dataset.tab === 'dash'));
+    if (tab) tab.classList.toggle('livenew', Object.keys(liveSess).length > 0 && !(on && (on.dataset.tab === 'dash' || on.id === 's-livew')));   // watching a friend needs no reminder of them
   }
 
   function drawLiveBars() {
