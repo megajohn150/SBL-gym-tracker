@@ -119,15 +119,20 @@ t.is('for the newest workout it is the one before it, and the oldest has nothing
 {
   const lib = { exercises: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], routines: [
     { id: 'r1', items: [{ exId: 'a' }, { exId: 'b' }, { exId: 'c' }] }, { id: 'r2', items: [{ exId: 'c' }] }, { id: 'r3', items: [{ exId: 'b' }] }] };
-  const del = new Function('store', 'routineById',
+  // the photo store, answering at once: a is the only exercise with a picture
+  const pics = { a: 'blob-a' };
+  const del = new Function('store', 'routineById', 'photoForget', 'photoGet', 'photoDel', 'photoPut',
     slice('  function removeExercises(ids)', "  $('ex-delete').addEventListener") + '; return { remove: removeExercises, restore: restoreExercises, using: routinesUsing };')(
-    lib, (id) => lib.routines.filter((r) => r.id === id)[0]);
+    lib, (id) => lib.routines.filter((r) => r.id === id)[0], () => {}, (id, cb) => cb(pics[id] || null), (id) => { delete pics[id]; },
+    (id, b, cb) => { pics[id] = b; cb(true); });
   t.is('it counts the routines that hold any of them', [del.using(['a']), del.using(['a', 'c']), del.using(['x'])], [1, 2, 0]);
   const snap = del.remove(['a', 'c']);
   t.is('several go from the library and from every routine at once',
     [lib.exercises.map((x) => x.id), lib.routines.map((r) => r.items.map((i) => i.exId))], [['b'], [['b'], [], ['b']]]);
   t.is('the snapshot keeps what was taken', snap.dead.map((x) => x.id).sort(), ['a', 'c']);
+  t.is('a deleted exercise\'s photo leaves the store but waits in the snapshot', [Object.keys(pics), snap.photos.a], [[], 'blob-a']);
   del.restore(snap);
+  t.is('undo puts the photo back', pics.a, 'blob-a');
   t.is('undo puts the exercises and the routines\' items back',
     [lib.exercises.map((x) => x.id).sort(), lib.routines.map((r) => r.items.map((i) => i.exId))], [['a', 'b', 'c'], [['a', 'b', 'c'], ['c'], ['b']]]);
   t.is('emptying the library marks it wiped, so the other devices drop their copies too', [lib.wiped === undefined, (del.remove(['a', 'b', 'c']), typeof lib.wiped)], [true, 'number']);
