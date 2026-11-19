@@ -3767,13 +3767,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4548';
+  var APP_VERSION = '3.4549';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4549', 'Do later: send an exercise to the end of the workout from its menu'],
     ['3.4543', 'The row under the workout name shows how long is left (~35 min), worked out from your own pace and the routine\'s history'],
     ['3.4542', 'A dot after the Feed tab shows a friend\'s session you have not seen yet'],
     ['3.4540', 'Swapping an exercise in a workout now offers to swap it in the routine too'],
