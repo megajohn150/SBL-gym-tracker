@@ -2931,7 +2931,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Exercises list and page</div>
     <ul class="gdl">
       <li>Search by name or muscle. When picking for a routine or workout, switch between Recently used and By muscle. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
-      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, not in the backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts.</li>
+      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts.</li>
       <li>Delete an exercise from its edit screen; it leaves your routines too, past workouts keep it, and Undo is offered.</li>
     </ul>
 
@@ -2991,7 +2991,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report. <button class="gdgo" data-push="notifset" aria-label="Open Notifications">&rsaquo;</button></li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only. <button class="gdgo" data-push="music" aria-label="Open Music">&rsaquo;</button></li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral. <button class="gdgo" data-push="resttimer" aria-label="Open Rest timer">&rsaquo;</button></li>
-      <li><b>Data:</b> Export backup (asks JSON, the whole thing, or CSV, one row per set for a spreadsheet, which does not count as a backup); the file goes to the share sheet (on an iPhone: Save to Files), or downloads where there is no sheet, and the last backup only moves once it has really been sent / Import backup (asks JSON or Hevy; a JSON file is either merged, which adds what is missing and keeps what is here, or replaces everything on the device; it says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
+      <li><b>Data:</b> Export backup (asks JSON, the whole thing with your exercise photos, or CSV, one row per set for a spreadsheet, which does not count as a backup); the file goes to the share sheet (on an iPhone: Save to Files), or downloads where there is no sheet, and the last backup only moves once it has really been sent / Import backup (asks JSON or Hevy; a JSON file is either merged, which adds what is missing and keeps what is here (a photo only comes in for an exercise that has none), or replaces everything on the device; it says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device. <button class="gdgo" data-push="themes" aria-label="Open Themes">&rsaquo;</button></li>
       <li><b>Version:</b> the number at the bottom of Settings opens what that version changed (when it has a note); the Guide button beside it opens this guide.</li>
     </ul>
@@ -3752,7 +3752,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4532';
+  var APP_VERSION = '3.4533';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -6886,10 +6886,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       r.onerror = function () { fin(null, false); };
       r.onsuccess = function () {
         db = r.result;
-        var out = null, tx = db.transaction('p', write ? 'readwrite' : 'readonly');
-        act(tx.objectStore('p'), function (v) { out = v; });
-        tx.oncomplete = function () { fin(out, true); };
-        tx.onerror = tx.onabort = function () { fin(null, false); };
+        try {
+          var out = null, tx = db.transaction('p', write ? 'readwrite' : 'readonly');
+          act(tx.objectStore('p'), function (v) { out = v; });
+          tx.oncomplete = function () { fin(out, true); };
+          tx.onerror = tx.onabort = function () { fin(null, false); };
+        } catch (e) { fin(null, false); }     // a database without the store: answer "no" instead of never
       };
     } catch (e) { fin(null, false); }
   }
@@ -6916,6 +6918,40 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       var r = indexedDB.deleteDatabase('tracker-photos');
       r.onsuccess = r.onerror = r.onblocked = fin;
     } catch (e) { fin(); }
+  }
+
+  // Every stored photo as a data URL for the backup file, only for exercises that still exist.
+  function photoAll(cb) {
+    var have = {};
+    store.exercises.forEach(function (x) { have[x.id] = 1; });
+    photoRun(false, function (s, set) {
+      var k = s.getAllKeys(), v = s.getAll();
+      v.onsuccess = function () { set({ keys: k.result, vals: v.result }); };
+    }, function (res) {
+      var out = {}, todo = [], left;
+      if (res) res.keys.forEach(function (key, i) {
+        if (have[key] && res.vals[i] instanceof Blob) todo.push([key, res.vals[i]]);
+      });
+      left = todo.length;
+      if (!left) { cb(out); return; }
+      todo.forEach(function (p) {
+        var fr = new FileReader();
+        fr.onloadend = function () {
+          if (typeof fr.result === 'string') out[p[0]] = fr.result;
+          if (!--left) cb(out);
+        };
+        fr.readAsDataURL(p[1]);
+      });
+    });
+  }
+  // Photos from a backup file (already through cleanPhotos), keyed by the local exercise id. With
+  // onlyMissing a photo this device already has is left alone: on a clash this device wins.
+  function photoImport(map, onlyMissing) {
+    Object.keys(map).forEach(function (id) {
+      photoForget(id);
+      var put = function () { try { photoPut(id, photoBlob(map[id]), function () {}); } catch (e) {} };
+      if (onlyMissing) photoGet(id, function (b) { if (!b) put(); }); else put();
+    });
   }
 
   $('xh-photo').addEventListener('click', function () {
@@ -9606,27 +9642,42 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       routines: store.routines, workouts: store.workouts, targets: store.targets,
       plan: store.plan, injuries: store.injuries, weights: store.weights
     };
-    sendText(JSON.stringify(payload, null, 2), 'application/json', '.json', function () {
-      save('bk-last', new Date().toISOString());
-      drawBackupRows();
-      drawBackupBar();
-      exportSaved();
-    });
+    // The photos were read when the export sheet opened, so the share sheet is still opened inside the
+    // tap that chose JSON; a slow phone falls back to reading them now (sendFile then downloads if the
+    // browser refuses a share that late).
+    var go = function (ph) {
+      if (ph && Object.keys(ph).length) payload.photos = ph;
+      sendText(JSON.stringify(payload, null, 2), 'application/json', '.json', function () {
+        save('bk-last', new Date().toISOString());
+        drawBackupRows();
+        drawBackupBar();
+        exportSaved();
+      });
+    };
+    if (expPhotos) go(expPhotos); else photoAll(go);
   }
+  var expPhotos = null;
 
   // Every file leaves through here: the share sheet where there is one (on an iPhone it offers
   // Save to Files, easier than a download), a download where there is not. `done` runs only once
   // the file has really gone: a dismissed sheet is not an export, so the backup clock must not move.
   function sendFile(file, done) {
+    var download = function () {
+      var url = URL.createObjectURL(file), a = document.createElement('a');
+      a.href = url; a.download = file.name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      if (done) done();
+    };
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file] }).then(function () { if (done) done(); }, function () {});
+      // a dismissed sheet is an AbortError and sends nothing; NotAllowedError means the browser found
+      // the tap too old (a big file took time to build), so the file downloads instead of vanishing
+      navigator.share({ files: [file] }).then(function () { if (done) done(); }, function (err) {
+        if (err && err.name === 'NotAllowedError') download();
+      });
       return;
     }
-    var url = URL.createObjectURL(file), a = document.createElement('a');
-    a.href = url; a.download = file.name;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
-    if (done) done();
+    download();
   }
   function sendText(text, type, ext, done) {
     sendFile(new File([text], 'gym-tracker-' + new Date().toISOString().slice(0, 10) + ext, { type: type }), done);
@@ -9701,6 +9752,25 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     return { list: out, skipped: list.length - out.length };
   }
 
+  // The photos of a backup file: only for exercises the file itself lists, only a plain JPEG as base64 and
+  // not larger than a few hundred KB, so a hand-edited file can neither fill the disk nor hand the page
+  // another kind of data. Anything else is left out.
+  var PHOTO_URL = /^data:image\/jpeg;base64,[A-Za-z0-9+\/]+={0,2}$/;
+  function cleanPhotos(raw, exs) {
+    var out = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    exs.forEach(function (x) {
+      var u = Object.prototype.hasOwnProperty.call(raw, x.id) ? raw[x.id] : null;
+      if (typeof u === 'string' && u.length <= 400000 && PHOTO_URL.test(u)) out[x.id] = u;
+    });
+    return out;
+  }
+  function photoBlob(url) {
+    var b = atob(url.slice(url.indexOf(',') + 1)), a = new Uint8Array(b.length), i;
+    for (i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
+    return new Blob([a], { type: 'image/jpeg' });
+  }
+
   // The file added to what is already here, nothing taken away. A workout is the same one when its
   // id or its start time is already in the log. An exercise is the same one when its id, or failing
   // that its name, is already here: the file's workouts and routines are then pointed at the local
@@ -9747,7 +9817,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       st.injuries.forEach(function (x) { inj[x.id] = 1; });
       raw.injuries.forEach(function (x) { if (x && typeof x === 'object' && x.id && !inj[x.id]) { st.injuries.push(x); inj[x.id] = 1; } });
     }
-    return { workouts: added, same: same, exercises: addedEx, routines: addedRt };
+    return { workouts: added, same: same, exercises: addedEx, routines: addedRt, ids: remap };
   }
 
   function importDone() {
@@ -9784,6 +9854,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     closeImpc();
     if (!p) return;
     var r = mergeImport(store, p.raw, p.exs.list, p.clean.list);
+    var ph = cleanPhotos(p.raw.photos, p.exs.list), mine = {};
+    Object.keys(ph).forEach(function (id) { mine[r.ids[id] || id] = ph[id]; });
+    photoImport(mine, true);
     importDone();
     toast('Merged: ' + r.workouts + ' workout' + (r.workouts === 1 ? '' : 's') + ' added, ' + r.same + ' already here', 3000);
   });
@@ -9793,6 +9866,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (!p) return;
     var raw = p.raw;
     store.exercises = p.exs.list;
+    photoImport(cleanPhotos(raw.photos, p.exs.list), false);
     // a routines field that is not a list would throw here, halfway through the import
     store.routines = (Array.isArray(raw.routines) ? raw.routines : []).map(migrate);
     swapWorkouts(p.clean.list);
@@ -10150,12 +10224,17 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     pushSub().then(function (sub) { if (sub) pushOff(); else pushOn(); });
   });
 
-  $('set-export').addEventListener('click', function () { $('exp-sheet').hidden = false; });
+  $('set-export').addEventListener('click', function () {
+    $('exp-sheet').hidden = false;
+    expPhotos = null;
+    photoAll(function (m) { expPhotos = m; });       // read now, so the JSON tap can share at once
+  });
   function closeExp() { $('exp-sheet').hidden = true; }
-  $('exp-cancel').addEventListener('click', closeExp);
-  document.querySelector('[data-exp-close]').addEventListener('click', closeExp);
-  $('exp-json').addEventListener('click', function () { closeExp(); exportData(); });
-  $('exp-csv').addEventListener('click', function () { closeExp(); exportCsv(); });
+  function dropExp() { closeExp(); expPhotos = null; }
+  $('exp-cancel').addEventListener('click', dropExp);
+  document.querySelector('[data-exp-close]').addEventListener('click', dropExp);
+  $('exp-json').addEventListener('click', function () { closeExp(); exportData(); expPhotos = null; });
+  $('exp-csv').addEventListener('click', function () { dropExp(); exportCsv(); });
   /* =========================================================
      Hevy's own export, read straight into the log. One row is one
      set; the rows of a session arrive together, in order.

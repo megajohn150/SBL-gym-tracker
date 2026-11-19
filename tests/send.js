@@ -23,6 +23,10 @@ const file = { name: 'a.json' };
   a.fn(file, () => n++); await Promise.resolve().then(() => {});
   t.is('a dismissed sheet is not an export', [n, a.log], [0, []]);
 
+  a = make({ canShare: () => true, share: () => Promise.reject(Object.assign(new Error('late'), { name: 'NotAllowedError' })) }); n = 0;
+  a.fn(file, () => n++); await Promise.resolve().then(() => {}); await Promise.resolve().then(() => {});
+  t.is('a share the browser refuses as too late downloads the file instead', [n, a.log], [1, ['download']]);
+
   a = make({}); n = 0;
   a.fn(file, () => n++);
   t.is('no share sheet: it downloads and is done', [n, a.log], [1, ['download']]);

@@ -7,7 +7,7 @@ const code = planClean() + slice('  function cleanWorkouts(', '  function import
 let n = 0;
 const nameKey = (s) => String(s).trim().toLowerCase();
 const migrate = (r) => r;
-const api = new Function('uid', 'pad2', 'nameKey', 'migrate', code + '; return { clean: cleanWorkouts, ok: postOk, ex: cleanExercises, merge: mergeImport };')(
+const api = new Function('uid', 'pad2', 'nameKey', 'migrate', code + '; return { clean: cleanWorkouts, ok: postOk, ex: cleanExercises, merge: mergeImport, photos: cleanPhotos, blob: photoBlob };')(
   () => 'new' + ++n, (v) => (v < 10 ? '0' + v : String(v)), nameKey, migrate);
 
 const W = (extra) => Object.assign({ id: 'a', name: 'Push', date: new Date(2026, 0, 5).toISOString(), seconds: 3000,
@@ -63,6 +63,24 @@ t.is('on a clash this device wins, new routines, targets and injuries come in',
   [st.routines.map((r) => r.name), st.targets, st.injuries.map((i) => i.name)],
   [['Mine', 'New'], { Chest: { sets: 10 }, Legs: { sets: 8 } }, ['knee', 'elbow']]);
 t.is('the counts say what was added', [res.exercises, res.routines], [1, 1]);
+t.is('the id map says which local exercise a file exercise became', res.ids, { f1: 'e1' });
 const none = api.merge(mk(), {}, [], []);
-t.is('an empty file adds nothing, whatever it lacks', none, { workouts: 0, same: 0, exercises: 0, routines: 0 });
+t.is('an empty file adds nothing, whatever it lacks', none, { workouts: 0, same: 0, exercises: 0, routines: 0, ids: {} });
+
+/* photos in a backup file: a plain JPEG for an exercise the file lists, nothing else gets through */
+const jpg = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+const exl = [{ id: 'a' }, { id: 'b' }, { id: '__proto__' }];
+t.is('a good photo passes, for the exercises the file lists only',
+  api.photos({ a: jpg, zzz: jpg }, exl), { a: jpg });
+t.is('another type, a script, bad characters, a number and a missing photo are left out',
+  api.photos({ a: 'data:image/svg+xml;base64,AAAA', b: 'data:image/jpeg;base64,AA<script>' }, exl), {});
+t.is('html, a png label and plain text are left out',
+  [api.photos({ a: '<img src=x onerror=1>' }, exl), api.photos({ a: 'data:image/png;base64,AAAA' }, exl), api.photos({ a: 5, b: null }, exl)], [{}, {}, {}]);
+t.is('too large is left out, the size limit itself passes',
+  [api.photos({ a: 'data:image/jpeg;base64,' + 'A'.repeat(400000) }, exl), Object.keys(api.photos({ a: 'data:image/jpeg;base64,' + 'A'.repeat(399976) }, exl))], [{}, ['a']]);
+t.is('not an object (a list, text, nothing) brings nothing',
+  [api.photos([jpg], exl), api.photos('x', exl), api.photos(null, exl), api.photos(undefined, exl)], [{}, {}, {}, {}]);
+t.is('a hostile exercise id cannot reach the prototype', [api.photos(JSON.parse('{"__proto__": "' + jpg + '"}'), exl), ({}).polluted], [{}, undefined]);
+const bl = api.blob(jpg);
+t.is('the data URL becomes the same bytes as a JPEG blob', [bl.type, bl.size], ['image/jpeg', 10]);
 t.done();
