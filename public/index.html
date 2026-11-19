@@ -1040,6 +1040,8 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);t
 .sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.5)}
 /* a question asked from inside another sheet has to sit on top of it */
 #confirm-sheet{z-index:25}
+/* the profile editor is taller than a short phone: it stops short of the top and scrolls inside */
+#prof-sheet .sheet-card{max-height:85vh;max-height:85dvh;overflow-y:auto;overscroll-behavior:contain}
 .sheet-card{
   position:relative;width:100%;max-width:440px;background:var(--bg);
   border-top:var(--border);padding:16px var(--pad) calc(env(safe-area-inset-bottom) + 16px);
@@ -3800,7 +3802,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4561';
+  var APP_VERSION = '3.4562';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -12479,6 +12481,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('pf-bio').value = store.profile.bio;
     PILLS.forEach(function (k) { $('pf-sh-' + k).checked = !pillOff(k); });
     $('prof-sheet').hidden = false;
+    $('prof-sheet').querySelector('.sheet-card').scrollTop = 0;
   });
   function closeProf() { $('prof-sheet').hidden = true; }
   document.querySelector('[data-prof-close]').addEventListener('click', closeProf);
