@@ -1247,6 +1247,12 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .pstats b{display:block;font-size:.95rem;font-weight:700}
 .pstats i{display:block;font-style:normal;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:600;margin-top:2px}
 .pbio{padding:.7rem var(--pad) 0;font-size:.85rem;color:var(--fg-3)}
+/* lifetime highlights under the bio: one short row */
+.ppills{display:flex;gap:6px;padding:.55rem var(--pad) 0;overflow:hidden}
+/* the same pill as the streak badge on a friend's profile, all in one row */
+.ppill{flex:0 1 auto;min-width:0;font:inherit;padding:4px 8px;border:1px solid var(--fg-3);border-radius:999px;font-size:.62rem;font-weight:700;line-height:1.2;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-2);white-space:nowrap;background:none}
+.ppill b{font-weight:700;color:inherit}
+.ptipbtn{cursor:pointer}
 .pchart{padding:1.2rem var(--pad) 0}
 .pchart-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:.85rem}
 .pchart-h b{font-size:1.05rem;font-weight:700}
@@ -2443,6 +2449,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         </span>
       </div>
       <p class="pbio" id="p-bio"></p>
+      <div class="ppills" id="p-pills" hidden></div>
 
       <div class="pchart">
         <div class="pchart-h">
@@ -2982,6 +2989,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <ul class="gdl">
       <li>Top icons: sun/moon (light or dark; hold it to cycle themes), brush (Themes), person (picture, username, name, bio), gear (Settings). <button class="gdgo" data-tabgo="profile" aria-label="Open Profile">Profile &rsaquo;</button></li>
       <li>Counts of workouts, followers, following (tap a count for the list; Remove drops a follower). A highlight means someone follows you and you have not followed back.</li>
+      <li><b>Pills under the bio:</b> your lifetime sets, tons lifted and hours trained (tap the tons for a fun comparison); a friend sees them on your profile, and you see theirs. In the person icon you pick which pills show, and whether the workout stamp (one per 50 workouts) shows on your picture; everything is on until you turn it off, and what is off is not sent to anyone.</li>
       <li>Chart of Duration, Volume or Reps by day, week or month; Last month to Lifetime. Tap a bar for its value.</li>
       <li>Dashboard: Exercises, Calendar, Stats, Friends. Below: all your workouts; the filter picks one routine; search (with 6 or more workouts) reads names, exercises and notes. <button class="gdgo" data-push="exercises" aria-label="Open exercises">Exercises ›</button> <button class="gdgo" data-push="calendar" aria-label="Open calendar">Calendar ›</button> <button class="gdgo" data-push="stats" aria-label="Open stats">Stats ›</button></li>
       <li><b>Calendar:</b> Month, 3 months, Year, Multi-year (tap the title). Tap a day with a workout to open it. The streak sits on top. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
@@ -3431,6 +3439,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <input type="text" id="pf-name" autocomplete="off"></div>
     <div class="field" style="padding:0 0 .9rem"><label for="pf-bio">Bio</label>
       <input type="text" id="pf-bio" autocomplete="off"></div>
+    <div class="field" style="padding:0 0 .3rem"><label>Show under your bio</label></div>
+    <label class="privrow" style="margin-bottom:.4rem"><span>Sets<i>Total sets you have done</i></span><input type="checkbox" id="pf-sh-sets"></label>
+    <label class="privrow" style="margin-bottom:.4rem"><span>Tons lifted<i>Tap it on your profile for a fun comparison</i></span><input type="checkbox" id="pf-sh-vol"></label>
+    <label class="privrow" style="margin-bottom:.4rem"><span>Hours trained</span><input type="checkbox" id="pf-sh-time"></label>
+    <label class="privrow" style="margin-bottom:.9rem"><span>Workout stamp<i>The badge on your picture, one for every 50 workouts</i></span><input type="checkbox" id="pf-sh-stamp"></label>
     <button class="btn btn-primary" id="pf-save">Save</button>
   </div>
 </div>
@@ -3787,13 +3800,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4558';
+  var APP_VERSION = '3.4559';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4559', 'Profile pills under the bio: total sets, tons lifted (tap for a fun comparison) and hours trained, with switches in the profile editor, also for the workout stamp'],
     ['3.4557', 'Side balance: for one-sided exercises, which side is stronger, by how much, and which to start with (exercise page, and its menu in a workout)'],
     ['3.4549', 'Do later: send an exercise to the end of the workout from its menu'],
     ['3.4543', 'The row under the workout name shows how long is left (~35 min), worked out from your own pace and the routine\'s history'],
@@ -3871,6 +3885,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         if (typeof raw.profile.pic === 'number' || typeof raw.profile.pic === 'string') {
           store.profile.pic = raw.profile.pic;
         }
+        if (raw.profile.hide && typeof raw.profile.hide === 'object') store.profile.hide = raw.profile.hide;
       }
       fixHeads();
       fixCues();
@@ -4277,8 +4292,43 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     openStamps(st.workouts || 0, st.stamps50 || []);
   });
 
+  // Lifetime highlights, the small pills under the bio. What a person leaves out (profile.hide: sets, vol, time,
+  // stamp) is not drawn and not published either, so a friend's app cannot show it.
+  var FUN = [['grand piano', 'grand pianos', 0.45], ['family car', 'family cars', 1.5], ['African elephant', 'African elephants', 6],
+    ['double-decker bus', 'double-decker buses', 12], ['Boeing 737', 'Boeing 737s', 41], ['space shuttle', 'space shuttles', 78],
+    ['blue whale', 'blue whales', 150], ['Statue of Liberty', 'Statues of Liberty', 225], ['Eiffel Tower', 'Eiffel Towers', 10100]];
+  // the heaviest thing it is at least twice, else at least once, else a nudge
+  function funTons(t) {
+    var pick = null, i;
+    for (i = 0; i < FUN.length; i++) if (t / FUN[i][2] >= 2) pick = FUN[i];
+    if (!pick) for (i = 0; i < FUN.length; i++) if (t / FUN[i][2] >= 1) pick = FUN[i];
+    if (!pick) return 'Not yet as heavy as a grand piano';
+    var n = t / pick[2], shown = n < 10 ? Math.round(n * 10) / 10 : Math.round(n);
+    return 'About ' + shown + ' ' + (shown === 1 ? pick[0] : pick[1]);
+  }
+  function grp(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function fmtTons(kg) { var t = kg / 1000; return (t < 10 ? Math.round(t * 10) / 10 : grp(t)) + ' t'; }
+  function fmtHours(sec) { var h = sec / 3600; return (h < 10 ? Math.round(h * 10) / 10 : grp(h)) + ' h'; }
+  // numbers in, null or undefined for one that is not shown; a friend's own are cleaned by the caller
+  function pillsHtml(sets, kg, sec) {
+    var out = '';
+    if (sets != null) out += '<span class="ppill"><b>' + grp(sets) + '</b> sets</span>';
+    if (kg != null) out += '<button class="ppill ptipbtn" data-tip="' + esc(funTons(kg / 1000)) + '"><b>' + fmtTons(kg) + '</b> lifted</button>';
+    if (sec != null) out += '<span class="ppill"><b>' + fmtHours(sec) + '</b> trained</span>';
+    return out;
+  }
+  function lifeTotals() { return statsFor(new Date(0), new Date(Date.now() + 864e5)); }
+  function pillOff(k) { return !!(store.profile.hide && store.profile.hide[k] === true); }
+
   function myStats() {
-    return { workouts: store.workouts.length, streak: weekStreak(store.workouts), records: myRecords(), stamps50: stampDates(store.workouts) };
+    var st = { workouts: store.workouts.length, streak: weekStreak(store.workouts), records: myRecords(),
+               stamps50: pillOff('stamp') ? [] : stampDates(store.workouts) };
+    if (pillOff('stamp')) st.nostamp = true;
+    var t = lifeTotals();
+    if (!pillOff('sets')) st.sets = t.sets;
+    if (!pillOff('vol')) st.vol = Math.round(t.volume);
+    if (!pillOff('time')) st.secs = Math.round(t.seconds);
+    return st;
   }
 
   function nameKey(s) { return String(s).trim().toLowerCase(); }
@@ -5387,8 +5437,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
     // the row is whatever its owner wrote into it, and any account can read it
     var raw = p.stats || {}, stats = { workouts: cleanN(raw.workouts), streak: cleanN(raw.streak) };
+    // a pill a person left out is simply not in their row; the figures are shown to friends and to yourself
+    var big = function (v) { return v == null ? null : Math.min(cleanN(v), 1e13); };
+    var pills = friend || (me && id === me.id) ? pillsHtml(big(raw.sets), big(raw.vol), big(raw.secs)) : '';
     var head = '<div class="ptop"><span class="pavwrap">' + avatarTag(66, '', p) +
-      (stats.workouts >= STAMP ? stampTag(Math.floor(stats.workouts / STAMP) * STAMP) : '') + '</span>' +
+      (stats.workouts >= STAMP && !raw.nostamp ? stampTag(Math.floor(stats.workouts / STAMP) * STAMP) : '') + '</span>' +
       '<span class="pid"><span class="pname">' + esc(p.name || p.username || '') + '</span>' +
       '<span class="pstats">' +
         '<span><b>' + (stats.workouts || 0) + '</b><i>Workouts</i></span>' +
@@ -5396,6 +5449,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         '<button data-ufollow="following"><b>' + userView.fing + '</b><i>Following</i></button>' +
       '</span></span></div>' +
       (p.bio ? '<p class="pbio">' + esc(p.bio) + '</p>' : '') +
+      (pills ? '<div class="ppills">' + pills + '</div>' : '') +
       (me && id === me.id ? ''
         : '<div style="padding:.6rem var(--pad) 0">' +
           '<button class="followbtn' + (follows ? ' off' : '') + '" data-follow="' + id + '">' +
@@ -12326,7 +12380,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('p-workouts').textContent = store.workouts.length;
     // a stamp for every fifty sessions logged
     var hund = Math.floor(store.workouts.length / STAMP) * STAMP;
-    $('p-stamp').hidden = !hund;
+    $('p-stamp').hidden = !hund || pillOff('stamp');
+    var tt = store.workouts.length ? lifeTotals() : null;
+    $('p-pills').innerHTML = tt ? pillsHtml(pillOff('sets') ? null : tt.sets, pillOff('vol') ? null : tt.volume, pillOff('time') ? null : tt.seconds) : '';
+    $('p-pills').hidden = !$('p-pills').innerHTML;
     $('p-stamp').innerHTML = '<b>' + hund + '</b>workouts';
 
     hideTip();
@@ -12420,6 +12477,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('pf-handle').textContent = store.profile.handle;
     $('pf-name').value = store.profile.name;
     $('pf-bio').value = store.profile.bio;
+    PILLS.forEach(function (k) { $('pf-sh-' + k).checked = !pillOff(k); });
     $('prof-sheet').hidden = false;
   });
   function closeProf() { $('prof-sheet').hidden = true; }
@@ -12438,7 +12496,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       'Change it', function () { closeProf(); openUname(true); });
   });
 
+  var PILLS = ['sets', 'vol', 'time', 'stamp'];
   $('pf-save').addEventListener('click', function () {
+    var hide = {};
+    PILLS.forEach(function (k) { if (!$('pf-sh-' + k).checked) hide[k] = true; });
+    if (Object.keys(hide).length) store.profile.hide = hide; else delete store.profile.hide;
     store.profile.name = $('pf-name').value.trim();
     store.profile.bio = $('pf-bio').value.trim();
     store.profile.pic = pfPic;
@@ -12531,7 +12593,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function barTips(host) {
     host.addEventListener('pointermove', function (e) {
       // a date's bubble is opened by a click and stays, so a moving mouse must not close it
-      if (e.pointerType === 'mouse' && !(tipBar && tipBar.classList.contains('xrdate')))
+      if (e.pointerType === 'mouse' && !(tipBar && (tipBar.classList.contains('xrdate') || tipBar.classList.contains('ptipbtn'))))
         showTip(e.target.closest('.pbar'), e.clientX, e.clientY);
     });
     host.addEventListener('pointerleave', function (e) {
@@ -12550,7 +12612,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
     // the day above a record: same bubble, opened by a tap on the date, any pointer
     host.addEventListener('click', function (e) {
-      var d = e.target.closest('.xrdate');
+      var d = e.target.closest('.xrdate,.ptipbtn');
       if (!d || !d.dataset.tip) return;
       if (tipBar === d) { hideTip(); return; }
       var r = d.getBoundingClientRect();
@@ -12562,13 +12624,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   barTips($('p-bars'));
+  barTips($('p-pills'));
   barTips($('user-body'));
   barTips($('xh-body'));
   barTips($('stmonth-body'));
   barTips($('wt-chart'));
 
   document.addEventListener('pointerdown', function (e) {
-    if (tipBar && !e.target.closest('.pbar') && !e.target.closest('.xrdate') && !e.target.closest('#p-tip')) hideTip();
+    if (tipBar && !e.target.closest('.pbar') && !e.target.closest('.xrdate') && !e.target.closest('.ptipbtn') && !e.target.closest('#p-tip')) hideTip();
   });
   $('p-tip').addEventListener('click', function () {
     var id = this.dataset.prw;
