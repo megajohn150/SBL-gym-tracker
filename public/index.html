@@ -3766,7 +3766,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4546';
+  var APP_VERSION = '3.4547';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -12707,9 +12707,24 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       }).join('');
   }
 
+  // The statistics screens that are made of workouts say so, with one button, when there are none yet: the
+  // same shape as "No routines yet". True means the screen is drawn and the caller returns.
+  function statEmpty(bodyId) {
+    if (store.workouts.length) return false;
+    $(bodyId).innerHTML = '<div class="empty"><span class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg></span>' +
+      '<p class="big">No workouts yet</p><p class="small">These numbers fill in as you train.</p>' +
+      '<button class="act" data-statgo>Start a workout</button></div>';
+    return true;
+  }
+  // those buttons are made by the draw, so one listener on the page serves them all
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-statgo]')) goTab('workout');
+  });
+
   /* --- set count: this week, as far as it has got, and the weeks before it --- */
   var ssOff = 0;     // how many weeks back the set count is looking; 0 is this week
   function drawStatSets() {
+    if (statEmpty('stsets-body')) return;
     var end = addDays(monday(new Date()), 7);
     // the oldest week worth going back to is the one with your first workout in it
     var first = Infinity;
@@ -12865,6 +12880,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   function drawStatStall() {
+    if (statEmpty('ststall-body')) return;
     var list = stallList();
     $('ststall-body').innerHTML = !list.length
       ? '<div class="empty"><p class="big">No exercises without a recent record</p>' +
@@ -12955,6 +12971,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   function drawStatChart() {
+    if (statEmpty('stchart-body')) return;
     var def = stRangeDef(), now = new Date();
     var start = addDays(now, -def.days), before = addDays(now, -2 * def.days);
     var cur = statsFor(start, now), prev = statsFor(before, start);
@@ -13105,6 +13122,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   function drawStatBody() {
+    if (statEmpty('stbody-body')) return;
     var start = addDays(monday(new Date()), stWeek * 7), end = addDays(start, 7);
     var r = statsFor(start, end), max = 0;
     Object.keys(r.by).forEach(function (m) { max = Math.max(max, r.by[m]); });
@@ -13223,6 +13241,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   function drawReady() {
+    if (statEmpty('strdy-body')) return;
     var now = Date.now(), last = {}, rows = '', blobs = '', recent = [];
     store.workouts.slice().sort(function (x, y) { return new Date(y.date) - new Date(x.date); })
       .forEach(function (w) {
@@ -13397,6 +13416,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   function drawWeekRecap() {
+    if (statEmpty('wrecap-body')) return;
     var from = addDays(monday(new Date()), -7 * wrOff), to = addDays(from, 7), pfrom = addDays(from, -7);
     var cur = statsFor(from, to), prev = statsFor(pfrom, from);
     function gap(a, b, fmt) {
@@ -13543,6 +13563,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   function drawStatMonth() {
     hideTip();
+    if (statEmpty('stmonth-body')) return;
     // a report is written once the month is over, so this is the last full one
     var n = new Date();
     var from = new Date(n.getFullYear(), n.getMonth() - 1, 1);
