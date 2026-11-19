@@ -2926,7 +2926,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Sets.</b> Add Set under the list. Swipe a set left, then Delete (unilateral: both sides go).</li>
       <li><b>Medals.</b> A ticked set that beats your heaviest weight, estimated 1RM or best set (weight x reps) gets a medal and a short banner. Tap the medal to see the old record. The first time you do an exercise only sets the bar; nothing to beat yet.</li>
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
-      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
+      <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Do later</b> (sends it to the end of the workout); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
       <li><b>The row under the name.</b> The clock, sets done out of planned, volume, records, and how long is left (~35 min). The estimate is the pace of your own sets so far, held up by how long this routine usually takes at the start; a long break in the middle is left out. When every set is ticked it says Done, and the clock stops.</li>
       <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
@@ -3332,6 +3332,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <button id="xp-edit">Edit exercise</button>
       <button id="xp-meta">Edit exercise metadata</button>
       <button id="xp-swap">Swap exercise</button>
+      <button id="xp-later">Do later</button>
       <button id="xp-skip">Skip exercise</button>
       <button id="xp-drop" class="danger">Remove from workout</button>
     </div>
@@ -3766,7 +3767,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4547';
+  var APP_VERSION = '3.4548';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -14684,6 +14685,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var fr = session.routineId ? routineById(session.routineId) : null;
     $('xp-meta').hidden = !!(fr && fr.follow);
     $('xp-drop').hidden = session.exercises.length < 2;
+    $('xp-later').hidden = session.idx >= session.exercises.length - 1;   // already last: nowhere later to go
     $('xp-skip').textContent = session.exercises[session.idx].skipped ? 'Unskip exercise' : 'Skip exercise';
     $('ex-pop').hidden = false;
   });
@@ -14822,6 +14824,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (ex && ex.exId && byId(ex.exId)) openExercise(ex.exId);
   });
   $('xp-drop').addEventListener('click', function () { closeExPop(); dropSessionEx(); });
+  // sends this exercise to the end of the line-up as it is; the next one slides into its place
+  $('xp-later').addEventListener('click', function () {
+    closeExPop();
+    var at = session && session.idx;
+    if (!session || at >= session.exercises.length - 1) return;
+    closePad();
+    session.exercises.push(session.exercises.splice(at, 1)[0]);
+    drawSession();
+  });
   // a skipped exercise stays in the line-up, greyed out, and is left out of the numbers when the workout ends
   $('xp-skip').addEventListener('click', function () {
     closeExPop();
