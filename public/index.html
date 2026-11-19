@@ -2928,7 +2928,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
       <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Do later</b> (sends it to the end of the workout); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
       <li><b>The row under the name.</b> The clock, sets done out of planned, volume, records, and how long is left (~35 min). The estimate is the pace of your own sets so far, held up by how long this routine usually takes at the start; a long break in the middle is left out. When every set is ticked it says Done, and the clock stops.</li>
-      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
+      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, End workout (saves it from wherever you are), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
       <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
     </ul>
@@ -3345,6 +3345,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="pop-menu">
       <button id="menu-add">Add exercise</button>
       <button id="menu-reorder">Reorder exercises</button>
+      <button id="menu-end">End workout</button>
       <button id="menu-discard" class="danger">Discard workout</button>
     </div>
   </div>
@@ -3767,7 +3768,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4554';
+  var APP_VERSION = '3.4555';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -14647,6 +14648,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   });
   function closeMenu() { $('menu-sheet').hidden = true; }
   document.querySelector('[data-menu-close]').addEventListener('click', closeMenu);
+  // the same road as End workout on the closing card, with its question when sets are still open
+  $('menu-end').addEventListener('click', function () { closeMenu(); $('sess-end').click(); });
   $('menu-discard').addEventListener('click', function () { closeMenu(); discardSession(); });
 
   // the closing card offers the same thing as the menu: one more exercise before you end
