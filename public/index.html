@@ -405,6 +405,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 /* with no exercises the set count is hidden and the other three share the row in thirds */
 .sessinfo .clock{font-size:.8rem}
 .sessinfo .sesscnt{font-size:.7rem;margin-left:0}
+#sess-left{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .eyepop{
   position:fixed;right:8px;bottom:calc(env(safe-area-inset-bottom) + 68px);z-index:60;
   display:flex;align-items:flex-end;gap:6px;pointer-events:none;
@@ -2303,6 +2304,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <span class="sesscnt" id="sess-cnt" hidden></span>
       <span class="sesscnt" id="sess-vol" data-vol role="button">0 kg</span>
       <span class="sesscnt" id="sess-pr" data-sesspr role="button"><svg width="11" height="11" viewBox="0 0 24 24"><path fill="currentColor" d="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 .9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg><span id="sess-pr-n">0</span></span>
+      <span class="sesscnt" id="sess-left" hidden></span>
     </div>
 
     <div class="sscroll">
@@ -2925,6 +2927,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Medals.</b> A ticked set that beats your heaviest weight, estimated 1RM or best set (weight x reps) gets a medal and a short banner. Tap the medal to see the old record. The first time you do an exercise only sets the bar; nothing to beat yet.</li>
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
       <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
+      <li><b>The row under the name.</b> The clock, sets done out of planned, volume, records, and how long is left (~35 min). The estimate is the pace of your own sets so far, held up by how long this routine usually takes at the start; a long break in the middle is left out. It stops when every set is ticked, and the clock stops with it.</li>
       <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring; it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
       <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
@@ -3763,13 +3766,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4542';
+  var APP_VERSION = '3.4543';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4543', 'The row under the workout name shows how long is left (~35 min), worked out from your own pace and the routine\'s history'],
     ['3.4542', 'A dot after the Feed tab shows a friend\'s session you have not seen yet'],
     ['3.4540', 'Swapping an exercise in a workout now offers to swap it in the routine too'],
     ['3.4539', 'Duplicate exercise: a copy of an exercise from its menu, with no history'],
@@ -8437,6 +8441,79 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     return Math.floor(t / 3600) + ':' + pad2(Math.floor(t / 60) % 60) + ':' + pad2(t % 60);
   }
 
+  // How long is left, in seconds, or null when there is nothing to go on. The unit is a round (a unilateral
+  // pair is one), like the x/y counter. The pace is the mean gap between finished rounds (doneAt, stamped by
+  // stampDone), leaving out ties and anything past max(10 min, 4 x the median gap): that is a chat, not a set.
+  // `prior` is the seconds a round usually takes in this routine; it counts as three gaps, so history carries
+  // the first sets and today's own pace takes over as they pile up. The round being done right now is already
+  // partly behind you: the time since the last tick, up to one round, comes off.
+  function sessLeft(sess, prior, now) {
+    var ends = [], undone = 0;
+    sess.exercises.forEach(function (x) {
+      if (x.skipped) return;
+      var rounds = {};
+      x.sets.forEach(function (st, i) {
+        var r = x.unilateral ? String(st.label).slice(1) : i, o = rounds[r] || (rounds[r] = { n: 0, d: 0, t: 0 });
+        o.n++;
+        if (st.done) { o.d++; o.t = Math.max(o.t, Number(st.doneAt) || 0); }
+      });
+      Object.keys(rounds).forEach(function (r) {
+        var o = rounds[r];
+        if (o.d < o.n) undone++; else if (o.t) ends.push(o.t);
+      });
+    });
+    if (!undone) return null;
+    ends.sort(function (a, b) { return a - b; });
+    var gaps = [];
+    for (var i = 1; i < ends.length; i++) if (ends[i] - ends[i - 1] >= 5000) gaps.push((ends[i] - ends[i - 1]) / 1000);
+    var med = gaps.length ? gaps.slice().sort(function (a, b) { return a - b; })[Math.floor(gaps.length / 2)] : 0;
+    gaps = gaps.filter(function (g) { return g <= Math.max(600, 4 * med); });
+    var sum = gaps.reduce(function (a, g) { return a + g; }, 0), n = gaps.length, pace;
+    if (prior > 0) pace = (sum + prior * 3) / (n + 3);
+    else if (n >= 2) pace = sum / n;
+    else return null;
+    var since = (now - (ends.length ? ends[ends.length - 1] : sess.startedAt)) / 1000;
+    return Math.max(0, undone * pace - Math.max(0, Math.min(since, pace)));
+  }
+  function fmtLeft(sec) {
+    var m = Math.round(sec / 60);
+    if (sec < 60) return '<1 min left';
+    return m < 60 ? '~' + m + ' min left' : '~' + Math.floor(m / 60) + 'h ' + pad2(m % 60) + 'm left';
+  }
+  // a tick gets its time, an unticked set loses it; drawSession runs after every change, so this is the one place
+  function stampDone() {
+    var now = Date.now();
+    session.exercises.forEach(function (x) {
+      x.sets.forEach(function (st) {
+        if (st.done) { if (!st.doneAt) st.doneAt = now; } else if (st.doneAt) delete st.doneAt;
+      });
+    });
+  }
+  // seconds per round the last runs of this routine took (one that ran far over the median is a forgotten end)
+  var priorKey = '', priorVal = 0;
+  function sessPrior() {
+    var r = session.routineId ? routineById(session.routineId) : null;
+    var key = (r ? r.id : '') + '|' + store.workouts.length;
+    if (key === priorKey) return priorVal;
+    priorKey = key;
+    priorVal = 0;
+    var secs = r ? rtLastRuns(r).map(function (w) { return w.seconds; }) : [];
+    if (secs.length && totalSets(r.items)) {
+      var med = secs.slice().sort(function (a, b) { return a - b; })[Math.floor(secs.length / 2)];
+      secs = secs.filter(function (s) { return s <= 2.5 * med; });
+      priorVal = secs.reduce(function (a, s) { return a + s; }, 0) / secs.length / totalSets(r.items);
+    }
+    return priorVal;
+  }
+  function drawSessLeft() {
+    if (!session) return;
+    var s = sessStats(), el = $('sess-left');
+    el.hidden = !s.all || s.cnt === s.all;     // nothing left to estimate when there are no sets or all are ticked
+    if (el.hidden) return;
+    var left = sessLeft(session, sessPrior(), Date.now());
+    el.textContent = left === null ? '\u2013' : fmtLeft(left);
+  }
+
   // the sets of the last workout that contained this exercise
   // Each set index takes the newest time THAT set was logged, so a short
   // session does not wipe the reference for sets it did not include.
@@ -8550,6 +8627,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function drawSession() {
     if (!session) return;
     stampBw();
+    stampDone();
     autoPause();
     saveSession();
     var last = session.exercises.length;
@@ -8948,6 +9026,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var s = sessStats();
     $('sess-vol').textContent = fmtKg(s.vol);
     $('sess-pr-n').textContent = s.prs;
+    drawSessLeft();
   }
 
   // What the volume above is made of: the ticked sets, exercise by exercise in the workout's own order.
@@ -14523,6 +14602,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     $('sess-clock').classList.toggle('paused', !!session.pausedAt);
     $('dock-time').classList.toggle('paused', !!session.pausedAt);
     $('dock-card').classList.toggle('done', !!session.pausedAt);
+    drawSessLeft();                     // the time since the last tick is part of it, so it moves with the clock
     $('dock-card').querySelector('.lab').textContent = session.pausedAt ? 'Workout done' : 'Workout in progress';
   }
 

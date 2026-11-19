@@ -61,10 +61,10 @@ const esc = (s) => String(s).replace(/</g, '&lt;');
 const recs = new Function('num', slice('  function epley(w, r)', '  function exKey') + slice('  function setRec(', '  function medal(') + '; return setRec;')(num);
 const REC = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
 const fmtVolume = (kg) => Math.round(kg * 10) / 10 + ' kg';
-const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt', 'setRec', 'REC_NAME', 'fmtVolume',
+const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt', 'setRec', 'REC_NAME', 'fmtVolume', 'drawSessLeft',
   bwCode() + slice('  function sessStats()', '  // A typed number moves the medals') + '; return { totals: drawSessTotals, html: sessVolHtml, prs: sessPrHtml, stats: sessStats };');
 const run = (exs) => {
-  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume).totals();
+  totals((id) => ({ set textContent(v) { shown[id] = v; } }), num, logged, fmtKg, { exercises: exs }, esc, () => '', recs, REC, fmtVolume, () => {}).totals();
   return [shown['sess-vol'], shown['sess-pr-n']];
 };
 t.is('volume and records count only ticked, logged sets', run([
