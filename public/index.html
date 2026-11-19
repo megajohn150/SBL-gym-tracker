@@ -149,7 +149,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
    The header is a small caps label so it cannot be mistaken for a field inside. */
 #app-version{display:flex;justify-content:space-between;align-items:baseline}
 #app-version b{color:var(--fg);font-weight:700}
-#app-version b[data-chg-cur]{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+#app-version b[data-chg-cur]{text-decoration:underline;text-decoration-color:var(--ul);text-underline-offset:2px}
 #app-version button{font:inherit;color:var(--fg-3);text-decoration:underline}
 .fold-h{
   display:flex;align-items:center;gap:12px;width:100%;text-align:left;
@@ -202,7 +202,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .rtmeta{display:block;font-size:.8rem;color:var(--fg-3)}
 .rtmeta i{font-style:normal;opacity:.4;margin:0 .2ch}
 /* the estimate opens the list of runs it was made from: the faintest hint that it is a button */
-.rtmeta [data-est]{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.rtmeta [data-est]{text-decoration:underline;text-decoration-color:var(--ul);text-underline-offset:2px}
 .rtfrom{
   display:inline-block;padding:0 6px;border:var(--dash);border-radius:999px;
   font-size:.72rem;color:var(--fg-2);
@@ -514,7 +514,7 @@ body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
   letter-spacing:var(--nametrack);text-transform:var(--namecase);line-height:1.15;
 }
 .exhead button.nm{padding:0;text-align:left}
-.exhead button.nm:not(:disabled){text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.exhead button.nm:not(:disabled){text-decoration:underline;text-decoration-color:var(--ul);text-underline-offset:2px}
 .extags{display:flex;gap:5px;margin-top:7px;flex-wrap:nowrap}
 .extag{
   flex:none;white-space:nowrap;
@@ -901,7 +901,7 @@ div:has(> .dfoot) + .dsec{margin-top:0}
 .dex + .dex{border-top:var(--dash);padding-top:1.5rem}
 :root[data-theme="light"] .dav{background-image:url("imgs/muscles-light.jpg")}
 .dexhead{display:flex;align-items:center;gap:12px;margin-bottom:.2rem;width:100%;text-align:left}
-button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--ul);text-underline-offset:2px}
 .dav{
   display:block;width:42px;height:42px;flex:none;border-radius:50%;
   background-image:url("imgs/muscles.jpg");background-repeat:no-repeat;
@@ -1254,7 +1254,7 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 /* the same pill as the streak badge on a friend's profile, all in one row */
 .ppill{flex:0 1 auto;min-width:0;font:inherit;padding:3px 8px;border:1px solid var(--fg-3);border-radius:999px;font-size:.68rem;font-weight:700;line-height:1.2;letter-spacing:.01em;color:var(--fg-2);white-space:nowrap;background:none}
 .ppill b{font-weight:700;color:inherit}
-.ptipbtn{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.ptipbtn{cursor:pointer;text-decoration:underline;text-decoration-color:var(--ul);text-underline-offset:2px}
 .pchart{padding:1.2rem var(--pad) 0}
 .pchart-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:.85rem}
 .pchart-h b{font-size:1.05rem;font-weight:700}
@@ -1949,6 +1949,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .setrow.done .cell{border-color:var(--fg-3);opacity:.85}
 
 :root{--red:#b4473d;--green:#4c7a46;--done:rgba(0,0,0,.07)}
+/* the quiet underline of a tappable text: between the rule colour and the grey text, so it shows without shouting */
+:root{--ul:color-mix(in srgb, var(--fg-3) 45%, var(--line))}
 [data-theme="dark"]{--red:#cf6a5f;--green:#7d9f6b;--done:rgba(255,255,255,.065)}
 </style>
 </head>
@@ -3802,7 +3804,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4563';
+  var APP_VERSION = '3.4564';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
