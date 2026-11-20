@@ -20,7 +20,7 @@ let pushes = 0;
 const cloudPush = () => { pushes++; return Promise.resolve(); };
 const saveStore = () => { queuePush(); };
 const fixHeads = () => 0;
-const fixCues = () => 0;
+const fixCues = () => 0, fixPerSide = () => 0;
 const recomputeRecords = () => {};
 const drawExercises = () => {};
 const drawRoutines = () => {};

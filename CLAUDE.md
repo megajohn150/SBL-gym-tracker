@@ -163,7 +163,7 @@ calendar marks, the merge), `weights` (one number a day, the join of two devices
 added load in the records), `changelog` (what is unread, when the toast shows), `send` (a file leaves through the share sheet or a
 download; the backup clock moves only once it has gone), `sides` (an exercise that changes kind changes every routine item),
 `sides2` (side balance), `left` (the time left in a workout), `feeddot` (the dot after the Feed tab), `pills` (the lifetime pills
-and the fun comparison). Thirty-two files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
+and the fun comparison), `perside` (per side volume, the history migration). Thirty-three files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
@@ -208,15 +208,15 @@ exercise photos (store `p`, key the exercise id, value a JPEG Blob).
 
 ```js
 store   = { exercises, routines, workouts, gone, targets, plan?, injuries, weights, profile, wiped? }   // weights: { 'YYYY-MM-DD': kg }, two decimals, the Weight card on Home   // gone is an array; wiped is a timestamp
-exercise = { id, name, code, muscle, head, cue, unilateral, bodyweight?, step?, resetAt? }           // step: what +/- on the pad adds, kg
+exercise = { id, name, code, muscle, head, cue, unilateral, bodyweight?, perSide?, step?, resetAt? }           // step: what +/- on the pad adds, kg
 routine  = { id, name, items, short?, shared?, follow? }   // short: up to 3 characters for the week plan; absent = first three letters of name
 item     = { exId, sets, reps, side }            // side is 'L' | 'R' | null; reps is a range string like "8-12"; sets is 1..12
 follow   = { by, rid, user, map, side, born, at, dead }
 session  = { name, startedAt, idx, routineId, note?, pausedAt?, exercises }   // pausedAt: set by autoPause while every planned set is ticked
-sessionEx= { exId, name, code, muscle, unilateral, side, cue, step, reps, prev, prevNote, snote?, skipped?, sets }
-set      = { label, weight, reps, rir, plate?, bw?, done?, doneAt?, prs?, was? }   // all strings; '' means not logged; prs/was are derived; bw: the body's weight on a bodyweight exercise, weight is then only the load added
+sessionEx= { exId, name, code, muscle, unilateral, bodyweight, perSide, side, cue, step, reps, prev, prevNote, snote?, skipped?, sets }
+set      = { label, weight, reps, rir, plate?, bw?, ps?, done?, doneAt?, prs?, was? }   // all strings; '' means not logged; prs/was are derived; bw: the body's weight on a bodyweight exercise, weight is then only the load added; ps: '1' on a per side exercise, the volume and the Best set count it twice
 workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // records and set.prs/.was are derived
-workoutEx= { exId, name, muscle, unilateral, bodyweight?, note, skipped?, sets }
+workoutEx= { exId, name, muscle, unilateral, bodyweight?, perSide?, note, skipped?, sets }
 targets  = { <muscle or head>: { sets?, days? }, Total: { days } }   // Total = workouts a week (Weekly targets screen)
 plan     = [ routineId | '', x7 ]                  // Monday first; '' = rest day; absent until a day is set
 injuries = [{ id, name, muscles: [...], date, healed? }]   // healed: an ISO date; a healed one stays listed but no longer warns or shows red
@@ -434,6 +434,13 @@ the set and a later weigh-in never rewrites a finished workout. Volume is `setVo
 records read the added load only (`recVol`, `recOrm`: the estimate as an added load). A +0 set has no best set to beat, so `stepRecords` tracks `rep0`, the most reps at +0, and more of them is a Volume PR (`prVol` is the value its medal shows).
 New code that counts a set must pick `setVol` or `rec*`, never `num(st.weight) * num(st.reps)`. This is one flag, not the
 "exercise types" that were dropped.
+
+**Per side.** `exercise.perSide` (the Weight counts switch in the exercise form, hidden for a one-sided or a bodyweight exercise)
+means one weight entered for two, dumbbells. It is copied onto every workout exercise (`perSide`) and set (`ps`) by `fixPerSide`
+(run by every `saveStore`, `loadStore` and `redrawAll`), so flipping the exercise rewrites the whole history, on every device; a
+session gets `ps` from `stampBw`. `setVol` and `recVol` (volume, Best set) double it; the weight, the 1RM and the other records keep
+the number entered. The column head says Per side (`bwHead`), the exercise history adds a small `/side`. CSV does not carry it, the JSON does.
+`tests/perside.js` covers it.
 
 **Choosing exercises to delete.** The three dots on the exercise library (not on the picker) start `exDel`:
 the rows get a ring and the footer swaps to Cancel and Delete (N). `removeExercises` / `restoreExercises` are
