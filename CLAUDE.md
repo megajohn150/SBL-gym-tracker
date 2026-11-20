@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 The working guide for any model that touches this repository, checked against every line of
-the code at version 3.4409; what changed up to 3.4565 is brought up to date below. Read it whole
+the code at version 3.4409; what changed up to 3.4569 is brought up to date below. Read it whole
 before the first edit. The code beats this file.
 
 ## How to work here, in six lines
@@ -18,7 +18,7 @@ before the first edit. The code beats this file.
 SBL Tracker, a gym tracker PWA, installed to the iOS home screen, hosted on Cloudflare Pages
 (`gym-tracker-9hr.pages.dev`) with Supabase behind it. One user plus a handful of friends.
 
-**The entire app is `public/index.html`** — ~15540 lines holding the markup, the CSS and one
+**The entire app is `public/index.html`** — ~15650 lines holding the markup, the CSS and one
 IIFE of ES5-style vanilla JavaScript (`var`, `function`, no arrows or `let`/`const`). No build
 step, no bundler, no `package.json`, no framework. The only runtime dependency is supabase-js
 from a CDN, pinned in both the page and `public/sw.js` (bump both together). Fonts are
@@ -51,33 +51,33 @@ source to learn the architecture is paying twice.
 
 ## Map of `public/index.html`
 
-One IIFE, in this order. The banners are stable; the line numbers are from version 3.4565 and
+One IIFE, in this order. The banners are stable; the line numbers are from version 3.4569 and
 drift with every edit. **Banners are older than the code under them:** several sections hold
 more than their title says, listed here by what is actually inside.
 
 | ~line | banner | what is in it |
 |---|---|---|
-| 18 – 1955 | CSS | tokens, shared rules, then one block per `[data-skin]` (doc / editorial / receipt / mellow + cocoa), signal colours last (`--red`, `--green`, `--done`, and `--ul`, the quiet underline of a tappable text); new classes carry a feature prefix |
-| 1957 – 3773 | markup | every screen (`<section class="screen" id="s-…">`), the dock and tabs, then every sheet / pop / gate; the Guide screen (`s-guide`) is user-facing documentation and must be updated with a feature |
-| 3854 | STORE | `APP_VERSION` and `CHANGELOG` (3807, just above the banner), `store`, `save`/`load`, `loadStore`, the `fix*` migrations (`fixCues` also keeps every routine item's `side` in step with its exercise), `cleanSets`/`cleanStep`, `saveStore`, the wake lock, `saveSession`, `unpause` |
-| 3979 | CLOUD | keys, `pendingGo`, `syncState`/`syncDot`, `mergeStores`, `unionStores`, `redrawAll`, `cloudPull`, `cloudPush`, `cloudMeet`, `queuePush` |
-| 4221 | PEOPLE | `sigOf` and the sigs, stamps (`stampDates`, `openStamps`), the lifetime pills under the bio (`FUN`, `funTons`, `pillsHtml`, `lifeTotals`, `pillOff`), `myStats`, `myRecords`, `toast`/`toastUndo`, the workout-in-progress publisher (`livePayload`, `publishLive`, `loadLive`, `drawLiveBars`, `drawLiveDot`, `drawLiveView`), live reactions (`likePop`, `watchSync`, `peek`, `peekSync`), `pushProfile`, `pushLibrary`, `syncPosts`, `queueSocial`, `refreshSocial` |
-| 4839 | LIVE | the realtime channel (`liveOn`, `liveHit`, `liveRun`, `liveData`); **below it, still in this banner:** `loadFollows`, `loadFeed` + `feedCacheLoad`, `loadSocial`, the username gate (5112), people lists (5164, with the Invite a friend button) and, under the Friends list, the week board (`openWeekBoard`, screen `s-wkb`), find (5304), `openUser`/`drawUser`/`loadUser` (5349), Compare (5541: `openCompare`, `drawCompare`, `sharedWith`, `openCmpFromDetail`, `openCmpEx`/`drawCmpEx`), leaderboards (`board`, `openLb`), a friend's routine (`openFrRoutine`, `copyRoutine`) |
-| 5891 | A FOLLOWED ROUTINE | the `follow` block, `applyFollow`, `followRoutine`, `syncFollowed`, `rtSay`; **then:** the auth gate (6080: `setUser`, `authGo`, `initAuth`) and the small helpers `uid`, `esc`, `paint`, `byId` |
-| 6282 | NAVIGATION | the screen stack: `current`, `render` (the per-screen draw hooks live here), `push`/`pop`/`popTo`/`goTab` |
-| 6407 | PULL TO START OVER | the refresh gesture and `startOver` |
-| 6579 | EXERCISES | exercise list and picker, form, `similarNames`, `openHistory`/`drawHistory`, side balance (`sideBalance`, `sideHtml`, `openSides`), the exercise photos (`photoRun`/`photoGet`/`photoPut`/`photoDel`/`photoWipe`, `photoAll`/`photoImport`, cache `exPhoto`), Duplicate exercise (`xh-dup`), reset cutoffs, `saveExercise`, choosing exercises to delete (`exDel`, `removeExercises`), the starter packs (`PACKS`, `importPack`, `openPacks`) |
-| 7647 | ROUTINES | routine editor, `routineMuscles`, drag to reorder (`dragList`), `commitRoutine`, `rtLastRuns`/`rtEstimate`/`openEstimate`, `drawRoutines` |
-| 8216 | one routine over time | `runsOf`, `drawRtView` (Volume / Reps / Time chart), `routineBuckets`, `rvOwn` |
-| 8471 | CONFIRM | `askConfirm` (an optional fifth argument adds a second way forward, `confirm-alt`) |
-| 8503 | SESSION | the live workout (`startSession`, `drawSession`, the number pad, `padHit`), its clock (`sessionSeconds`, `autoPause`) and the time left (`sessLeft`, `sessPrior`, `drawSessLeft`, `stampDone`), its header row (`sessStats`, `drawSessTotals`, and behind the volume and trophy cells `sessVolHtml`, `sessPrHtml`), **and then** (9467) the numbers behind it: `num`, `logged`, `workoutTotals`, `epley`, `stepRecords`, `recomputeRecords`, `bestsFor`, `livePrs`, `finishSession`, `drawSummary`, `shareCanvas` / `imgCells` / `shareSummary` / `shareChart` |
-| 9913 | BACKUP | `exportData` / `exportCsv` (every file leaves through `sendFile` / `sendText`), `importData` (with `cleanWorkouts`, `cleanExercises`, `cleanPhotos` / `photoBlob`, `mergeImport` and its three-way sheet `impc-sheet`), erase, account sheets, `deleteAccount`, `leaveDevice` |
-| 10316 | push notifications | subscription handling, `pushJob`, the settings rows, the Live reactions switch |
-| 10518 | Hevy import | `hevyParse`/`hevyImport`, `hevyCsv` (the CSV export, its reverse); **then, with no banner of its own:** ending a workout (`sess-end`), the Home and Feed screens (10792) — `drawHome`, `drawDash` and the `dash*` / `plan*` helpers, `drawFeedDot`, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the install card (`drawA2hs`, `needsA2hs`), the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (11303: `snapTake`, `snapList`) |
-| 11513 | likes, comments, the bell | reactions, the offline queue (`rq*`), comments (11741), `openPush` (11911), notifications (11954), **and then** the profile screen and its charts (12110: `drawProfile`, `chartBody` with its shared scale `chartScale` / `chartH` / `xTick` and the end values `chartEnds` / `yEnds`, `bucketShell`), `weekStreak`, `miniMonth` |
-| 12696 | STATISTICS | `statsFor`, `weekBoard`, set count (`drawStatSets`: opens on the current week as far as it has got, `ssOff` 0), `drawTargets`, `stallList`, the radar, body map, injuries (`injActive`), readiness, the empty state of every statistics screen (`statEmpty`); the monthly report helpers and the weekly recap (13523: `drawWeekRecap`, `wrGo`, `drawRecapBar`), `drawStatMonth`; the calendar; `openWorkout` (14017), avatars and `muscleArt`, medals, `drawDetail` (a finished workout, own or a friend's) and its edit mode, where tapping a set number shows last time (`detailPv`); **then, under the same banner:** session menus (14759), the dock, edge-swipe back, swipe-to-delete, the rest timer (15166: `startRest`, `tickRest`), the music buttons, `drawRestCfg` |
-| 15346 | THEME | skins and light/dark |
-| 15452 | BOOT | startup order, the "Version updated" toast, the auth gate, service worker registration |
+| 18 – 1960 | CSS | tokens, shared rules, then one block per `[data-skin]` (doc / editorial / receipt / mellow + cocoa), signal colours last (`--red`, `--green`, `--done`, and `--ul`, the quiet underline of a tappable text); new classes carry a feature prefix |
+| 1962 – 3797 | markup | every screen (`<section class="screen" id="s-…">`), the dock and tabs, then every sheet / pop / gate; the Guide screen (`s-guide`) is user-facing documentation and must be updated with a feature |
+| 3880 | STORE | `APP_VERSION` and `CHANGELOG` (3838, just above the banner), `store`, `save`/`load`, `loadStore`, the `fix*` migrations (`fixCues` also keeps every routine item's `side` in step with its exercise), `fixPerSide` (stamps `ps` on every set of a per side exercise), `cleanSets`/`cleanStep`, `saveStore`, the wake lock, `saveSession`, `unpause` |
+| 4030 | CLOUD | keys, `pendingGo`, `syncState`/`syncDot`, `mergeStores`, `unionStores`, `redrawAll`, `cloudPull`, `cloudPush`, `cloudMeet`, `queuePush` |
+| 4272 | PEOPLE | `sigOf` and the sigs, stamps (`stampDates`, `openStamps`), the lifetime pills under the bio (`FUN`, `funTons`, `pillsHtml`, `lifeTotals`, `pillOff`), `myStats`, `myRecords`, `toast`/`toastUndo`, the workout-in-progress publisher (`livePayload`, `publishLive`, `loadLive`, `drawLiveBars`, `drawLiveDot`, `drawLiveView`), live reactions (`likePop`, `watchSync`, `peek`, `peekSync`), `pushProfile`, `pushLibrary`, `syncPosts`, `queueSocial`, `refreshSocial` |
+| 4890 | LIVE | the realtime channel (`liveOn`, `liveHit`, `liveRun`, `liveData`); **below it, still in this banner:** `loadFollows`, `loadFeed` + `feedCacheLoad`, `loadSocial`, the username gate (5163), people lists (5215, with the Invite a friend button) and, under the Friends list, the week board (`openWeekBoard`, screen `s-wkb`), find (5355), `openUser`/`drawUser`/`loadUser` (5401), Compare (5592: `openCompare`, `drawCompare`, `sharedWith`, `openCmpFromDetail`, `openCmpEx`/`drawCmpEx`), leaderboards (`board`, `openLb`), a friend's routine (`openFrRoutine`, `copyRoutine`) |
+| 5942 | A FOLLOWED ROUTINE | the `follow` block, `applyFollow`, `followRoutine`, `syncFollowed`, `rtSay`; **then:** the auth gate (6142: `setUser`, `authGo`, `initAuth`) and the small helpers `uid`, `esc`, `paint`, `byId` |
+| 6334 | NAVIGATION | the screen stack: `current`, `render` (the per-screen draw hooks live here), `push`/`pop`/`popTo`/`goTab` |
+| 6460 | PULL TO START OVER | the refresh gesture and `startOver` |
+| 6632 | EXERCISES | exercise list and picker, form, `similarNames`, `openHistory`/`drawHistory`, side balance (`sideBalance`, `sideHtml`, `openSides`), the exercise photos (`photoRun`/`photoGet`/`photoPut`/`photoDel`/`photoWipe`, `photoAll`/`photoImport`, cache `exPhoto`), Duplicate exercise (`xh-dup`), reset cutoffs, `saveExercise`, choosing exercises to delete (`exDel`, `removeExercises`), the starter packs (`PACKS`, `importPack`, `openPacks`) |
+| 7715 | ROUTINES | routine editor, `routineMuscles`, drag to reorder (`dragList`), `commitRoutine`, `rtLastRuns`/`rtEstimate`/`openEstimate`, `drawRoutines` |
+| 8284 | one routine over time | `runsOf`, `drawRtView` (Volume / Reps / Time chart), `routineBuckets`, `rvOwn` |
+| 8539 | CONFIRM | `askConfirm` (an optional fifth argument adds a second way forward, `confirm-alt`) |
+| 8571 | SESSION | the live workout (`startSession`, `drawSession`, the number pad, `padHit`), its clock (`sessionSeconds`, `autoPause`) and the time left (`sessLeft`, `sessPrior`, `drawSessLeft`, `stampDone`), its header row (`sessStats`, `drawSessTotals`, and behind the volume and trophy cells `sessVolHtml`, `sessPrHtml`), **and then** (9536) the numbers behind it: `num`, `logged`, `workoutTotals`, `epley`, `stepRecords`, `recomputeRecords`, `bestsFor`, `livePrs`, `finishSession`, `drawSummary`, `shareCanvas` / `imgCells` / `shareSummary` / `shareChart` |
+| 9985 | BACKUP | `exportData` / `exportCsv` (every file leaves through `sendFile` / `sendText`), `importData` (with `cleanWorkouts`, `cleanExercises`, `cleanPhotos` / `photoBlob`, `mergeImport` and its three-way sheet `impc-sheet`), erase, account sheets, `deleteAccount`, `leaveDevice` |
+| 10388 | push notifications | subscription handling, `pushJob`, the settings rows, the Live reactions switch |
+| 10590 | Hevy import | `hevyParse`/`hevyImport`, `hevyCsv` (the CSV export, its reverse); **then, with no banner of its own:** ending a workout (`sess-end`), the Home and Feed screens (10864) — `drawHome`, `drawDash` and the `dash*` / `plan*` helpers, `drawFeedDot`, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the install card (`drawA2hs`, `needsA2hs`), the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (11385: `snapTake`, `snapList`) |
+| 11595 | likes, comments, the bell | reactions, the offline queue (`rq*`), comments (11823), `openPush` (11993), notifications (12036), **and then** the profile screen and its charts (12192: `drawProfile`, `chartBody` with its shared scale `chartScale` / `chartH` / `xTick` and the end values `chartEnds` / `yEnds`, `bucketShell`), `weekStreak`, `miniMonth` |
+| 12778 | STATISTICS | `statsFor`, `weekBoard`, set count (`drawStatSets`: opens on the current week as far as it has got, `ssOff` 0), `drawTargets`, `drawPrio` (the Priorities screen `s-prio`, beside Weekly targets in the Set count menu), `stallList`, the radar, body map, injuries (`injActive`), readiness, the empty state of every statistics screen (`statEmpty`); the monthly report helpers and the weekly recap (13635: `drawWeekRecap`, `wrGo`, `drawRecapBar`), `drawStatMonth`; the calendar; `openWorkout` (14129), avatars and `muscleArt`, medals, `drawDetail` (a finished workout, own or a friend's) and its edit mode, where tapping a set number shows last time (`detailPv`); **then, under the same banner:** session menus (14872), the dock, edge-swipe back, swipe-to-delete, the rest timer (15279: `startRest`, `tickRest`), the music buttons, `drawRestCfg` |
+| 15460 | THEME | skins and light/dark |
+| 15566 | BOOT | startup order, the "Version updated" toast, the auth gate, service worker registration |
 
 ## Commands
 
@@ -217,7 +217,7 @@ sessionEx= { exId, name, code, muscle, unilateral, bodyweight, perSide, side, cu
 set      = { label, weight, reps, rir, plate?, bw?, ps?, done?, doneAt?, prs?, was? }   // all strings; '' means not logged; prs/was are derived; bw: the body's weight on a bodyweight exercise, weight is then only the load added; ps: '1' on a per side exercise, the volume and the Best set count it twice
 workout  = { id, name, note, date, seconds, routineId, records?, exercises }   // records and set.prs/.was are derived
 workoutEx= { exId, name, muscle, unilateral, bodyweight?, perSide?, note, skipped?, sets }
-targets  = { <muscle or head>: { sets?, days? }, Total: { days } }   // Total = workouts a week (Weekly targets screen)
+targets  = { <muscle or head>: { sets?, days?, star? }, Total: { days } }   // Total = workouts a week (Weekly targets screen); star: a priority (Priorities screen), only meaningful while sets is set
 plan     = [ routineId | '', x7 ]                  // Monday first; '' = rest day; absent until a day is set
 injuries = [{ id, name, muscles: [...], date, healed? }]   // healed: an ISO date; a healed one stays listed but no longer warns or shows red
 profile  = { handle, name, bio, pic, unameAt?, noReact?, hide? }   // hide: { sets?, vol?, time?, stamp? } = true for each lifetime pill (or the stamp) switched off
@@ -357,7 +357,7 @@ not the installed app; closing it lasts until the page is opened again, on purpo
 recap card (`drawRecapBar`, from 20:00 Warsaw time on Sundays; `WR_SHOWCASE`, now false, forces it every day), the
 month's report card, then `drawDash`: Today (`dashToday`), the week bar (`drawWeekBar`: workouts, sets against the
 summed set targets, week streak; reads `targets.Total`), Plan (`dashPlan`), Sets this week (`dashSets`: the muscles
-furthest from their `targets`, three rows and a See more for the rest, `dashSetsOpen`), the month (`dashCal`) and the four routines that waited longest (`dashRoutines`).
+with a set goal, priorities (`targets[m].star`, a star after the name, `prioStar`) first and then the most sets this week first; every priority shows, else three rows, and a See more for the rest, `dashSetsOpen`; the stars are picked on `s-prio`, and Statistics keeps its own order by sets), the month (`dashCal`) and the four routines that waited longest (`dashRoutines`).
 All of those hang off element ids (`live-bars`, `wk-bar`, `report-bar`…) that moved from Feed to Home unchanged. **The Feed tab's dot**
 (`drawFeedDot`, class `feednew`): `tracker-feedseen-<user_id>` holds the `by|id` keys of the feed as the Feed last showed it; a friend's
 post whose key is not in it lights the dot, opening the Feed (with the post in it) writes the list, and an edit keeps its key. The first
