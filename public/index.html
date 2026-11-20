@@ -896,6 +896,10 @@ div:has(> .dfoot) + .dsec{margin-top:0}
 .splitline{display:flex;align-items:center;gap:10px;margin-top:.35rem}
 .meter{flex:1;height:8px;background:var(--line-soft,var(--line));border-radius:4px;overflow:hidden;opacity:.45}
 .meter i{display:block;height:100%;background:var(--fg);border-radius:4px}
+.prstar{display:inline-flex;vertical-align:middle;margin:-6px 0 -6px 2px;padding:6px;color:var(--fg-3)}
+.prstar svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.prstar.on{color:var(--fg)}
+.prstar.on svg{fill:currentColor}
 .splitrow .p{font-size:.8rem;color:var(--fg-3);font-weight:700;min-width:3ch;text-align:right}
 .dex{padding:0 var(--pad) 1.5rem}
 .dex + .dex{border-top:var(--dash);padding-top:1.5rem}
@@ -2974,7 +2978,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Weight.</b> At the bottom of Home: the Weight card shows today's weight in kg: type it and tap Log (or Update) today's weight, once a day (the empty box hints at your last weigh-in). Calendar opens a month view with the days you weighed in; tap any day to add or change it there, with the change against the weigh-in before it, or remove it. The bars above show the last 30 weigh-ins; tap one for its weight. Only you see it, and it syncs with your account.</li>
       <li><b>Plan.</b> Seven days, Monday first, each with a routine or a rest day. Tap a day to choose its routine; a tick means you trained that day. Each cell shows a short name of up to three characters: change it in the box beside a routine when you tap a day (or in the routine's editor); without one the plan uses the first three letters. It syncs with your account.</li>
       <li><b>Week bar:</b> workouts and sets so far this week (against your targets), and the week streak: weeks in a row with a workout; an empty current week does not break it.</li>
-      <li><b>Sets this week:</b> the three muscles furthest from their weekly set goal (See more shows the rest), with how many days are left. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
+      <li><b>Sets this week:</b> your priority muscles first (tap the star beside a muscle that has a set goal), the rest by sets, most first; without priorities it shows the top three and See more the rest. Days left are counted too. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
       <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
       <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live; while one is training a dot sits after the Home tab whenever you are on another tab, except while watching them), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
@@ -3002,7 +3006,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Stats</div>
     <ul class="gdl">
       <li><b>Empty screens.</b> Until you have a workout, the statistics screens say so and offer Start a workout.</li>
-      <li><b>Set count per muscle group:</b> this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
+      <li><b>Set count per muscle group:</b> this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached; the star beside a muscle makes it a priority on Home. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Muscle distribution, Chart:</b> radar of this period against the one before (7 days to a year) with workouts, duration, volume, sets. <button class="gdgo" data-push="stat-chart" aria-label="Open Muscle distribution chart">&rsaquo;</button></li>
       <li><b>Muscle distribution, Body:</b> a body map coloured green to red by sets, week by week with the arrows; the strip shows which days you trained. <button class="gdgo" data-push="stat-body" aria-label="Open Muscle distribution body map">&rsaquo;</button></li>
       <li><b>Injuries:</b> name it and mark the muscles; the map shows them in red and those exercises get a warning in a workout. <b>Healed</b> keeps the injury on the list with its date but stops the warning and the red; Reopen brings it back. <button class="gdgo" data-push="stat-injuries" aria-label="Open Injuries">&rsaquo;</button></li>
@@ -3805,7 +3809,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4566';
+  var APP_VERSION = '3.4567';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10960,23 +10964,33 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   var dashSetsOpen = false;     // "See more" under Sets this week
+  // The priority star lives on the muscle's target (store.targets[k].star) so it syncs, exports and
+  // restores with the goals; only a muscle with a set goal gets one, and clearing the goal drops it.
+  function prioStar(k) {
+    var t = store.targets[k];
+    if (!t || !(Number(t.sets) > 0)) return '';
+    return '<button class="prstar' + (t.star ? ' on' : '') + '" data-prio="' + esc(k) + '" aria-pressed="' + (t.star ? 'true' : 'false') +
+      '" aria-label="Priority: ' + esc(k) + '"><svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg></button>';
+  }
   function dashSets() {
     var now = new Date(), from = monday(now), r = statsFor(from, addDays(from, 7)), rows = [];
     Object.keys(store.targets).forEach(function (k) {
       var g = Number((store.targets[k] || {}).sets) || 0;
       if (k === 'Total' || !g) return;
-      rows.push({ k: k, v: r.by[k] != null ? r.by[k] : (r.heads[k] || 0), g: g });
+      rows.push({ k: k, v: r.by[k] != null ? r.by[k] : (r.heads[k] || 0), g: g, p: !!store.targets[k].star });
     });
     if (!rows.length) return '';
-    rows.sort(function (a, b) { return a.v / a.g - b.v / b.g; });       // furthest behind first
+    // priorities first, then most sets first; with priorities all of them show, without any the top three
+    rows.sort(function (a, b) { return (b.p - a.p) || (b.v - a.v) || a.k.localeCompare(b.k); });
+    var shown = rows.filter(function (x) { return x.p; }).length || 3;
     var left = 7 - planIdx(now);
     return '<div class="dsec row2"><span>Sets this week</span><button class="dshlink" data-push="stat-sets">' +
       left + (left === 1 ? ' day left' : ' days left') + ' &rsaquo;</button></div><div class="split">' +
-      rows.slice(0, dashSetsOpen ? rows.length : 3).map(function (x) {
-        return '<div class="splitrow"><span class="m">' + esc(x.k) + '</span><div class="splitline"><div class="meter"><i style="width:' +
+      rows.slice(0, dashSetsOpen ? rows.length : shown).map(function (x) {
+        return '<div class="splitrow"><span class="m">' + esc(x.k) + prioStar(x.k) + '</span><div class="splitline"><div class="meter"><i style="width:' +
           Math.min(100, Math.round(x.v / x.g * 100)) + '%"></i></div><span class="p">' + x.v + '/' + x.g + '</span></div></div>';
       }).join('') + '</div>' +
-      (rows.length > 3 ? '<button class="mmore" data-dash="setsmore">' + (dashSetsOpen ? 'Show less' : 'See ' + (rows.length - 3) + ' more') + '</button>' : '');
+      (rows.length > shown ? '<button class="mmore" data-dash="setsmore">' + (dashSetsOpen ? 'Show less' : 'See ' + (rows.length - shown) + ' more') + '</button>' : '');
   }
 
   function dashCal() {
@@ -12844,7 +12858,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       return '<div class="strow' + (sub ? ' sub' : '') + '">' +
         (sub ? '<span class="stdot none"></span>'
              : '<span class="stdot" style="background:' + heat(x.v, max) + '"></span>') +
-        '<span class="nm">' + esc(x.name) + '</span>' +
+        '<span class="nm">' + esc(x.name) + (goal ? prioStar(x.key || x.name) : '') + '</span>' +
         (days ? '<span class="n n2 dim' + hit(x.d, t.days) + '"><b>' + (x.d || 0) + '</b>' +
           tgt(t.days) + '</span>' : '') +
         '<span class="n n2' + hit(x.v, t.sets) + '"><b>' + x.v + '</b>' + tgt(t.sets) +
@@ -12923,6 +12937,17 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     push('targets');
   });
 
+  // one star on Home, in Set count and on the body map; each redraws all three
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-prio]'), t = b && store.targets[b.dataset.prio];
+    if (!t || !(Number(t.sets) > 0)) return;
+    if (t.star) delete t.star; else t.star = true;
+    saveStore();
+    paint($('dash-sets'), dashSets());
+    drawStatSets();
+    drawStatBody();
+  });
+
   /* --- how much of each muscle a week should hold --- */
   function drawTargets() {
     var ms = [];
@@ -12954,6 +12979,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function setTarget(m, f, v) {
     var t = store.targets[m] || (store.targets[m] = {});
     if (v) t[f] = v; else delete t[f];
+    if (!t.sets) delete t.star;
     if (!t.sets && !t.days) delete store.targets[m];
     saveStore();
   }
