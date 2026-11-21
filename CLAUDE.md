@@ -163,7 +163,7 @@ calendar marks, the merge), `weights` (one number a day, the join of two devices
 added load in the records), `changelog` (what is unread, when the toast shows), `send` (a file leaves through the share sheet or a
 download; the backup clock moves only once it has gone), `sides` (an exercise that changes kind changes every routine item),
 `sides2` (side balance), `left` (the time left in a workout), `feeddot` (the dot after the Feed tab), `pills` (the lifetime pills
-and the fun comparison), `perside` (per side volume, the history migration), `uisize` (the five interface sizes and what lands on `<html>`), `targets` (`setTarget`: typing into a goal box must not cost the priority star), `setgrid` (`setsTrend`, the Set count grid), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-seven files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
+and the fun comparison), `perside` (per side volume, the history migration), `uisize` (the two interface sizes and what lands on `<html>`), `targets` (`setTarget`: typing into a goal box must not cost the priority star), `setgrid` (`setsTrend`, the Set count grid), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-seven files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
@@ -200,7 +200,7 @@ store), `session` (written directly as `tracker-session`), `skin`, `mode`, `xsty
 version this device ran, so the "Version updated" toast shows once per version), `chg` (the last version whose change list was opened; the list shows what is newer than it, so skipped toasts are not lost), `reopen` (the tab a pull-to-refresh
 asked for), `uid` (the last account here; also names the owner of snapshots at boot),
 `react-q` (queued likes and comments), `sigs-<user_id>` (what has already gone up),
-`feed-<user_id>` (the cached feed, below), `feedseen-<user_id>` (the keys of the feed as the Feed last showed it; drives the dot after the Feed tab), `feedf` (the Feed filter), `ui` (the interface size, -2 to 2, absent = normal; kept on the device), `ssweeks` (how many weeks the Set count grid holds), `home` (the Home layout, below; kept on the device like `skin`, never synced), `bk-cfg` / `bk-last` /
+`feed-<user_id>` (the cached feed, below), `feedseen-<user_id>` (the keys of the feed as the Feed last showed it; drives the dot after the Feed tab), `feedf` (the Feed filter), `ui` (the interface size, `0` normal or `-1` slightly smaller, absent = normal; kept on the device), `ssweeks` (how many weeks the Set count grid holds), `home` (the Home layout, below; kept on the device like `skin`, never synced), `bk-cfg` / `bk-last` /
 `bk-base` / `bk-snooze` (backup reminder), `wr-seen` (the recap card, keyed by the week's
 Monday), `report-seen`, `notes-seen`, `notes-hid`. IndexedDB `tracker-snaps` holds the
 previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `data` JSON); IndexedDB `tracker-photos` holds the
