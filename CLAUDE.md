@@ -163,7 +163,7 @@ calendar marks, the merge), `weights` (one number a day, the join of two devices
 added load in the records), `changelog` (what is unread, when the toast shows), `send` (a file leaves through the share sheet or a
 download; the backup clock moves only once it has gone), `sides` (an exercise that changes kind changes every routine item),
 `sides2` (side balance), `left` (the time left in a workout), `feeddot` (the dot after the Feed tab), `pills` (the lifetime pills
-and the fun comparison), `perside` (per side volume, the history migration), `targets` (`setTarget`: typing into a goal box must not cost the priority star), `setgrid` (`setsTrend`, the Set count grid), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-six files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
+and the fun comparison), `perside` (per side volume, the history migration), `uisize` (the five interface sizes and what lands on `<html>`), `targets` (`setTarget`: typing into a goal box must not cost the priority star), `setgrid` (`setsTrend`, the Set count grid), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-seven files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
@@ -200,7 +200,7 @@ store), `session` (written directly as `tracker-session`), `skin`, `mode`, `xsty
 version this device ran, so the "Version updated" toast shows once per version), `chg` (the last version whose change list was opened; the list shows what is newer than it, so skipped toasts are not lost), `reopen` (the tab a pull-to-refresh
 asked for), `uid` (the last account here; also names the owner of snapshots at boot),
 `react-q` (queued likes and comments), `sigs-<user_id>` (what has already gone up),
-`feed-<user_id>` (the cached feed, below), `feedseen-<user_id>` (the keys of the feed as the Feed last showed it; drives the dot after the Feed tab), `feedf` (the Feed filter), `ssweeks` (how many weeks the Set count grid holds), `home` (the Home layout, below; kept on the device like `skin`, never synced), `bk-cfg` / `bk-last` /
+`feed-<user_id>` (the cached feed, below), `feedseen-<user_id>` (the keys of the feed as the Feed last showed it; drives the dot after the Feed tab), `feedf` (the Feed filter), `ui` (the interface size, -2 to 2, absent = normal; kept on the device), `ssweeks` (how many weeks the Set count grid holds), `home` (the Home layout, below; kept on the device like `skin`, never synced), `bk-cfg` / `bk-last` /
 `bk-base` / `bk-snooze` (backup reminder), `wr-seen` (the recap card, keyed by the week's
 Monday), `report-seen`, `notes-seen`, `notes-hid`. IndexedDB `tracker-snaps` holds the
 previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `data` JSON); IndexedDB `tracker-photos` holds the
@@ -683,6 +683,7 @@ update `graphify-out/`; this file and a grep are the map.
 - **The screen frame is fixed**: `.bar` or `.head`, one `.scroll`, optional `.footbar`. The
   page itself never scrolls. A new screen is a `<section class="screen" id="s-…">` with
   `data-tab` and `data-title`, a draw hook in `render`, and a row in the Guide.
+- **Sizes are in rem.** The interface size setting (`UI_SIZES`, `applyUi`) scales the whole app by changing the font size of `<html>`, so a new size in the stylesheet or in a `style="…"` attribute is written in rem (px ÷ 16); only hairlines (2px and under) and the 999px pill radii stay px. A px size in new CSS silently refuses to scale. Normal is the browser's own 16px, which must stay pixel-identical to the app before the setting. SVG icons keep the size in their `width`/`height` attributes.
 - **Phone first, 440 px wide at most.** Thumb-sized targets, safe-area insets on anything
   fixed to an edge, no hover-only affordance, no zoom (it is switched off on purpose).
 - **Overlays**: `.sheet` for a choice or a form, `.pop` for a menu off the top-right dots,
