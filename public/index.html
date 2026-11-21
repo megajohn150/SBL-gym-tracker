@@ -1632,7 +1632,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .stlegend{display:flex;gap:16px;justify-content:center;padding:.2rem 0 .9rem;font-size:.7rem;color:var(--fg-3)}
 .stlegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
 .radar{display:block;margin:0 auto;max-width:330px;width:100%}
-.ssgrid{display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ssn), 20px);gap:2px 0;align-items:center;padding:.9rem var(--pad) 0}
+.ssgrid{display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ssn), 20px);gap:2px 0;align-items:center;padding:.5rem var(--pad) 0}
 .ssg-h{display:block;padding:3px 0;text-align:center;font:inherit;color:var(--fg-3);border-radius:calc(var(--radius) / 2)}
 .ssg-h b{display:block;font-size:.72rem;font-weight:700;color:var(--fg-2)}
 .ssg-h i{display:block;font-style:normal;font-size:.5rem;letter-spacing:.06em;text-transform:uppercase;min-height:.8em}
@@ -1648,6 +1648,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .ssg-c u.pend{border-color:var(--fg-3);border-style:dashed;color:var(--fg-2)}
 .ssg-c u.none{width:6px;height:6px;border-radius:50%;background:var(--line)}
 .ssg-note{padding:.5rem var(--pad) 0}
+.ssg-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1rem var(--pad) 0}
+.ssg-t{font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;color:var(--fg-3);font-weight:600}
+.ssg-ctl{display:flex;align-items:center;gap:8px}
+.ssg-ctl i{font-style:normal;font-size:.78rem;color:var(--fg-3)}
+.ssg-ctl .stepper button:disabled{opacity:.25}
+#stsets-body .mmore{text-align:center}
 .stweek{display:flex;align-items:center;gap:10px;padding:1rem var(--pad) .3rem}
 .stweek .lab{flex:1;text-align:center;font-size:.9rem;font-weight:700}
 .stweek button{color:var(--fg-2);font-size:1.1rem;padding:4px 10px}
@@ -3088,7 +3094,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Stats</div>
     <ul class="gdl">
       <li><b>Empty screens.</b> Until you have a workout, the statistics screens say so and offer Start a workout.</li>
-      <li><b>Set count per muscle group:</b> on top, a grid of the last 12 weeks (fewer while your history is shorter): a row for every muscle that has a weekly set goal, a cell per week with its sets, this week last; green where the goal was reached, red where a finished week fell short, outlined for this week, which is still open, and a dot for weeks before your first workout. A tap on a week's date opens that week in the picker below. Then this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached; a starred muscle is one of your priorities, picked in &#8942; &rsaquo; <b>Priorities</b>. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
+      <li><b>Set count per muscle group:</b> on top, a grid of the last weeks, 12 at first and 2 to 12 as you choose with the − and + (kept on this phone; fewer while your history is shorter): a row for every muscle that has a weekly set goal, three of them at first, the priorities and then the ones that missed most often, and See more for the rest, a cell per week with its sets, this week last; green where the goal was reached, red where a finished week fell short, outlined for this week, which is still open, and a dot for weeks before your first workout. A tap on a week's date opens that week in the picker below. Then this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached; a starred muscle is one of your priorities, picked in &#8942; &rsaquo; <b>Priorities</b>. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Muscle distribution, Chart:</b> radar of this period against the one before (7 days to a year) with workouts, duration, volume, sets. <button class="gdgo" data-push="stat-chart" aria-label="Open Muscle distribution chart">&rsaquo;</button></li>
       <li><b>Muscle distribution, Body:</b> a body map coloured green to red by sets, week by week with the arrows; the strip shows which days you trained. <button class="gdgo" data-push="stat-body" aria-label="Open Muscle distribution body map">&rsaquo;</button></li>
       <li><b>Injuries:</b> name it and mark the muscles; the map shows them in red and those exercises get a warning in a workout. <b>Healed</b> keeps the injury on the list with its date but stops the warning and the red; Reopen brings it back. <button class="gdgo" data-push="stat-injuries" aria-label="Open Injuries">&rsaquo;</button></li>
@@ -3900,13 +3906,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4576';
+  var APP_VERSION = '3.4577';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4577', 'The goal grid on Set count shows 3 muscles with See more for the rest, and you choose how many weeks it holds, from 2 to 12'],
     ['3.4576', 'Set count starts with a grid of the last 12 weeks: for every muscle with a goal, green where it was reached and red where it was missed; tap a week to open it below'],
     ['3.4575', 'Dividers on Home have a space of their own (Space around dividers in Customize Home), so they still divide with tight spacing'],
     ['3.4574', 'Home spacing is yours to pick: Tight (as it always was), Snug, Normal or Roomy, in Customize Home'],
@@ -13436,7 +13443,16 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   });
 
   /* --- set count: this week, as far as it has got, and the weeks before it --- */
-  var SS_WEEKS = 12;  // the weeks the grid above the picker holds, this one last
+  // The grid above the picker holds SS_MIN to SS_MAX weeks (the person's choice, kept on this device, this week last) and
+  // shows SS_ROWS muscles until See more; the grid is not synced, like the Home layout.
+  var SS_MIN = 2, SS_MAX = 12, SS_ROWS = 3;
+  function ssClamp(n) {
+    n = Math.round(Number(n));
+    if (!(n > 0)) return SS_MAX;                       // nothing saved, or not a number
+    return Math.max(SS_MIN, Math.min(SS_MAX, n));
+  }
+  var ssWeeks = ssClamp(load('ssweeks'));
+  var ssMore = false;                                  // See more under the grid
   // For every muscle with a weekly set goal, its sets in each of the last n weeks (oldest first, this week last), in the
   // order of the table below, the shoulder standing for its heads. `first` is the date of the first workout, or null: the
   // weeks before its week are marked, a goal cannot have been missed before there was anything to do.
@@ -13464,24 +13480,37 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (v >= goal) return 'hit';
     return week.off === 0 ? 'pend' : 'miss';
   }
+  // Which muscles come first when the grid is folded: the priorities, then the ones that missed their goal most often (the
+  // ones being neglected), then the order of the table below. A copy, the grid's own rows keep their order.
+  function ssOrder(g) {
+    return g.rows.map(function (r, i) {
+      var miss = 0;
+      r.vals.forEach(function (v, k) { if (ssState(v, r.goal, g.weeks[k]) === 'miss') miss++; });
+      return { r: r, i: i, miss: miss, star: (store.targets[r.name] || {}).star ? 1 : 0 };
+    }).sort(function (a, b) { return (b.star - a.star) || (b.miss - a.miss) || (a.i - b.i); }).map(function (x) { return x.r; });
+  }
   // the grid above the week picker: a column per week, a row per muscle with a goal; a tap on a week's head puts the
   // picker below on that week, which is marked. The number stays in the cell, so colour is not the only thing it says.
   function ssGridHtml(g) {
-    var sel = ssOff, prevMonth = -1;
+    var sel = ssOff, prevMonth = -1, all = ssOrder(g), shown = ssMore ? all : all.slice(0, SS_ROWS);
     var head = g.weeks.map(function (w) {
       var mo = w.from.getMonth(), tag = mo === prevMonth ? '&nbsp;' : MONTHS[mo];
       prevMonth = mo;
       return '<button class="ssg-h' + (w.off === sel ? ' sel' : '') + (w.off === 0 ? ' now' : '') + '" data-ssgo="' + w.off +
         '" aria-label="Week of ' + esc(dmy(w.from)) + '"><b>' + w.from.getDate() + '</b><i>' + tag + '</i></button>';
     }).join('');
-    var rows = g.rows.map(function (r) {
+    var rows = shown.map(function (r) {
       return '<span class="ssg-m">' + esc(r.name) + prioStar(r.name) + '<small>/' + r.goal + '</small></span>' +
         r.vals.map(function (v, i) {
           var st = ssState(v, r.goal, g.weeks[i]);
           return '<span class="ssg-c' + (g.weeks[i].off === sel ? ' sel' : '') + '"><u class="' + st + '">' + (st === 'none' ? '' : v) + '</u></span>';
         }).join('');
     }).join('');
-    return rows ? '<div class="ssgrid" style="--ssn:' + g.weeks.length + '"><span></span>' + head + rows + '</div>' +
+    return rows ? '<div class="ssg-bar"><span class="ssg-t">Goals reached</span><span class="ssg-ctl"><span class="stepper">' +
+      '<button data-ssw="-1" aria-label="Fewer weeks"' + (ssWeeks <= SS_MIN ? ' disabled' : '') + '>&minus;</button><b>' + ssWeeks +
+      '</b><button data-ssw="1" aria-label="More weeks"' + (ssWeeks >= SS_MAX ? ' disabled' : '') + '>+</button></span><i>weeks</i></span></div>' +
+      '<div class="ssgrid" style="--ssn:' + g.weeks.length + '"><span></span>' + head + rows + '</div>' +
+      (all.length > SS_ROWS ? '<button class="mmore" data-ssmore>' + (ssMore ? 'Show less' : 'See ' + (all.length - SS_ROWS) + ' more') + '</button>' : '') +
       '<p class="hint ssg-note">Weekly set goals, week by week: green reached, red missed, outlined for this week, which is still open. Tap a week to see it below.</p>' : '';
   }
   var ssOff = 0;     // how many weeks back the set count is looking; 0 is this week
@@ -13497,7 +13526,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var start = addDays(end, -7);
     var r = statsFor(start, end);
     // a trend needs two weeks to be one, and no more of them than there are since the first workout
-    var cols = Math.min(SS_WEEKS, max + 1), grid = cols > 1 ? setsTrend(cols, new Date(), new Date(first)) : null;
+    var cols = Math.min(ssWeeks, max + 1), grid = cols > 1 ? setsTrend(cols, new Date(), new Date(first)) : null;
     $('stsets-body').innerHTML = (grid ? ssGridHtml(grid) : '') +
       '<div class="stweek"><button data-ssnav="1" aria-label="Earlier week"' + (ssOff >= max ? ' disabled' : '') +
         '>&lsaquo;</button><span class="lab">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) +
@@ -13508,6 +13537,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   $('stsets-body').addEventListener('click', function (e) {
     var c = e.target.closest('[data-w]');
     if (c) { openWorkout(c.dataset.w); return; }
+    var sw = e.target.closest('[data-ssw]');
+    if (sw) {
+      if (!sw.disabled) { ssWeeks = ssClamp(ssWeeks + Number(sw.dataset.ssw)); save('ssweeks', String(ssWeeks)); drawStatSets(); }
+      return;
+    }
+    if (e.target.closest('[data-ssmore]')) { ssMore = !ssMore; drawStatSets(); return; }
     var go = e.target.closest('[data-ssgo]');
     if (go) { ssOff = Number(go.dataset.ssgo) || 0; drawStatSets(); return; }
     var nav = e.target.closest('[data-ssnav]');
