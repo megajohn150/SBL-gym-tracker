@@ -163,7 +163,7 @@ calendar marks, the merge), `weights` (one number a day, the join of two devices
 added load in the records), `changelog` (what is unread, when the toast shows), `send` (a file leaves through the share sheet or a
 download; the backup clock moves only once it has gone), `sides` (an exercise that changes kind changes every routine item),
 `sides2` (side balance), `left` (the time left in a workout), `feeddot` (the dot after the Feed tab), `pills` (the lifetime pills
-and the fun comparison), `perside` (per side volume, the history migration), `setgrid` (`setsTrend`, the Set count grid), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-five files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
+and the fun comparison), `perside` (per side volume, the history migration), `targets` (`setTarget`: typing into a goal box must not cost the priority star), `setgrid` (`setsTrend`, the Set count grid), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-six files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
