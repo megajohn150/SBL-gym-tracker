@@ -1632,7 +1632,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .stlegend{display:flex;gap:16px;justify-content:center;padding:.2rem 0 .9rem;font-size:.7rem;color:var(--fg-3)}
 .stlegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
 .radar{display:block;margin:0 auto;max-width:330px;width:100%}
-.ssgrid{display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ssn), 20px);gap:2px 0;align-items:center;padding:.5rem var(--pad) 0}
+.ssgrid{display:grid;grid-template-columns:minmax(6.2rem,1.4fr) repeat(var(--ssn), minmax(0,1fr));gap:2px 2px;align-items:center;padding:.5rem var(--pad) 0}
 .ssg-h{display:block;padding:3px 0;text-align:center;font:inherit;color:var(--fg-3);border-radius:calc(var(--radius) / 2)}
 .ssg-h b{display:block;font-size:.72rem;font-weight:700;color:var(--fg-2)}
 .ssg-h i{display:block;font-style:normal;font-size:.5rem;letter-spacing:.06em;text-transform:uppercase;min-height:.8em}
@@ -1642,11 +1642,20 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .ssg-m small{margin-left:4px;font-size:.65rem;font-weight:600;color:var(--fg-3)}
 .ssg-m .prstar{vertical-align:-1px}
 .ssg-c{display:grid;place-items:center;height:30px}
-.ssg-c u{display:grid;place-items:center;width:18px;height:20px;border-radius:calc(var(--radius) / 4);border:1.5px solid transparent;text-decoration:none;font-size:.6rem;font-weight:700;color:var(--bg)}
+.ssg-c u{display:grid;place-items:center;width:100%;max-width:3.6rem;height:20px;border-radius:calc(var(--radius) / 4);border:1.5px solid transparent;text-decoration:none;font-size:.6rem;font-weight:700;color:var(--bg)}
 .ssg-c u.hit{background:var(--green)}
 .ssg-c u.miss{background:var(--red)}
 .ssg-c u.pend{border-color:var(--fg-3);border-style:dashed;color:var(--fg-2)}
-.ssg-c u.none{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.ssgrid .ssg-c u.none{width:6px;height:6px;border-radius:50%;background:var(--line)}
+/* the fewer the weeks, the roomier the cells: the columns share the width, and what is in them grows with them */
+.ssgrid[data-ssz="m"] .ssg-c{height:34px}
+.ssgrid[data-ssz="m"] .ssg-c u{height:24px;font-size:.7rem}
+.ssgrid[data-ssz="m"] .ssg-h b{font-size:.8rem}
+.ssgrid[data-ssz="m"] .ssg-h i{font-size:.55rem}
+.ssgrid[data-ssz="l"] .ssg-c{height:42px}
+.ssgrid[data-ssz="l"] .ssg-c u{height:30px;font-size:.85rem}
+.ssgrid[data-ssz="l"] .ssg-h b{font-size:.95rem}
+.ssgrid[data-ssz="l"] .ssg-h i{font-size:.62rem}
 .ssg-note{padding:.5rem var(--pad) 0}
 .ssg-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1rem var(--pad) 0}
 .ssg-t{font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;color:var(--fg-3);font-weight:600}
@@ -3906,7 +3915,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4578';
+  var APP_VERSION = '3.4579';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -13510,7 +13519,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     return rows ? '<div class="ssg-bar"><span class="ssg-t">Goals reached</span><span class="ssg-ctl"><span class="stepper">' +
       '<button data-ssw="-1" aria-label="Fewer weeks"' + (ssWeeks <= SS_MIN ? ' disabled' : '') + '>&minus;</button><b>' + ssWeeks +
       '</b><button data-ssw="1" aria-label="More weeks"' + (ssWeeks >= SS_MAX ? ' disabled' : '') + '>+</button></span><i>weeks</i></span></div>' +
-      '<div class="ssgrid" style="--ssn:' + g.weeks.length + '"><span></span>' + head + rows + '</div>' +
+      '<div class="ssgrid" data-ssz="' + (g.weeks.length <= 6 ? 'l' : g.weeks.length <= 9 ? 'm' : 's') + '" style="--ssn:' + g.weeks.length + '"><span></span>' + head + rows + '</div>' +
       (all.length > SS_ROWS ? '<button class="mmore" data-ssmore>' + (ssMore ? 'Show less' : 'See ' + (all.length - SS_ROWS) + ' more') + '</button>' : '') +
       '<p class="hint ssg-note">Weekly set goals, week by week: green reached, red missed, outlined for this week, which is still open. Tap a week to see it below.</p>' : '';
   }
