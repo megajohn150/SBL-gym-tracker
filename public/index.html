@@ -2971,16 +2971,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     </div>
 
     <div class="group fold">
-      <button class="fold-h" aria-expanded="false"><span class="lab">Display</span><span class="chev">&rsaquo;</span></button>
-      <div class="fold-b"><div class="fold-in">
-      <div class="rows">
-        <button class="row" id="set-ui">
-          <span class="lab">Interface size</span>
-          <span class="val" id="set-ui-val">Normal</span>
-          <span class="chev">&rsaquo;</span>
-        </button>
-      </div>
-      </div></div>
+      <button class="fold-h" id="set-ui" data-nofold><span class="lab">Display</span><span class="chev">&rsaquo;</span></button>
     </div>
 
     <div class="group fold">
@@ -3142,7 +3133,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Account:</b> Mail and Change password (a new address takes over once its link is opened), sync status, Sign out (your training leaves this phone and comes back from the cloud when you sign in; exercise photos stay here), Delete account (removes the account itself, so the email and nick are free again). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Notifications:</b> Push only works in the installed app: on an iPhone open the site in Safari, tap Share, then Add to Home Screen (a card on Home asks again every time the page is opened in Safari). Live updates shows if friends' news arrives instantly. Push notifications on or off, then one switch per kind: likes, comments, replies, threads, followers, rest over, workout left running (after 15 minutes), weekly recap, monthly report. <button class="gdgo" data-push="notifset" aria-label="Open Notifications">&rsaquo;</button></li>
       <li><b>Workout, Music:</b> a Spotify or SoundCloud playlist link adds a button to the workout footer. Links stay on this phone only. <button class="gdgo" data-push="music" aria-label="Open Music">&rsaquo;</button></li>
-      <li><b>Display, Interface size:</b> Normal (the app as it always looked) or Slightly smaller. Text, spacing, buttons and cards scale together, so smaller shows more on a screen; icons keep their size. The change shows as you pick it, and it is kept on this phone, not synced. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
+      <li><b>Display:</b> opens the interface size, Normal (the app as it always looked) or Slightly smaller. Text, spacing, buttons and cards scale together, so smaller shows more on a screen; icons keep their size. The change shows as you pick it, and it is kept on this phone, not synced. <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Workout, Rest timer:</b> switch on to start a rest by itself each time you tick a set; one length for normal sets, one for unilateral. <button class="gdgo" data-push="resttimer" aria-label="Open Rest timer">&rsaquo;</button></li>
       <li><b>Data:</b> Export backup (asks JSON, the whole thing with your exercise photos, or CSV, one row per set for a spreadsheet, which does not count as a backup); the file goes to the share sheet (on an iPhone: Save to Files), or downloads where there is no sheet, and the last backup only moves once it has really been sent / Import backup (asks JSON or Hevy; a JSON file is either merged, which adds what is missing and keeps what is here (a photo only comes in for an exercise that has none), or replaces everything on the device; it says how many workouts it skipped because they could not be read); Backup reminder (a card on Home after N days) and Last backup; Previous versions (one copy a day, 7 kept, restore saves the current state first); Erase everything (deletes your exercises, routines and workouts here and in the cloud; you type your email to confirm); Hevy import (CSV; warm-ups skipped, duplicates skipped, muscles guessed, so set a muscle on new exercises that need one). <button class="gdgo" data-push="settings" aria-label="Open Settings">&rsaquo;</button></li>
       <li><b>Themes:</b> presets Dark, Light, Cocoa; Mode Light / Dark / System; Document, Editorial, Receipt, Mellow (green) or Dark brown (Cocoa). Kept on this device. <button class="gdgo" data-push="themes" aria-label="Open Themes">&rsaquo;</button></li>
@@ -3941,7 +3932,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4581';
+  var APP_VERSION = '3.4582';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10380,7 +10371,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function eraseWord() { return me && me.email ? me.email : 'ERASE'; }
 
   // one settings drawer open at a time; CSS animates the .open class
-  document.querySelectorAll('.fold-h:not([data-push])').forEach(function (h) {
+  document.querySelectorAll('.fold-h:not([data-push]):not([data-nofold])').forEach(function (h) {
     h.addEventListener('click', function () {
       var f = h.parentNode, was = f.classList.contains('open');
       document.querySelectorAll('.fold.open').forEach(function (o) {
@@ -16076,7 +16067,6 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
   function drawUi() {
     var cur = uiSize(load('ui'));
-    $('set-ui-val').textContent = cur[1];
     $('ui-list').innerHTML = UI_SIZES.map(function (z) {
       return '<button data-ui="' + z[0] + '" aria-pressed="' + (z === cur) + '">' + z[1] + '</button>';
     }).join('');
