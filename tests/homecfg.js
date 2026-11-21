@@ -25,11 +25,11 @@ const env = {
 const names = Object.keys(env);
 const f = new Function(...names, slice('  var HOME_CARDS', '  function dashTiles(') +
   '; return { cleanHome: cleanHome, cleanLayout: cleanLayout, homeIsRest: homeIsRest, homeLay: homeLay, homeMove: homeMove,' +
-  ' homeToggle: homeToggle, homeShow: homeShow, homeSwap: homeSwap, homeChartSet: homeChartSet, tileData: tileData, setCfg: function (c) { homeCfg = c; }, getCfg: function () { return homeCfg; },' +
+  ' homeToggle: homeToggle, homeShow: homeShow, homeLine: homeLine, homeLines: homeLines, homeCard: homeCard, homeSwap: homeSwap, homeChartSet: homeChartSet, tileData: tileData, setCfg: function (c) { homeCfg = c; }, getCfg: function () { return homeCfg; },' +
   ' ids: HOME_CARDS.map(function (c) { return c[0]; }) };')(...names.map((n) => env[n]));
 
 const ALL = f.ids;
-t.is('a first launch looks like the old Home, with the new cards waiting', f.cleanHome(null).t, { o: ALL, h: ['qa', 'tiles'] });
+t.is('a first launch looks like the old Home, with the new cards waiting', f.cleanHome(null).t, { o: ALL, h: ['qa', 'tiles'], d: [] });
 t.is('and has nothing chosen yet', [f.cleanHome(null).split, f.cleanHome(null).tiles, f.cleanHome(null).qa], [false, [], []]);
 t.is('the stored value at boot is the same clean one', f.getCfg(), f.cleanHome(null));
 t.is('garbage of every shape is the default', [f.cleanHome('x'), f.cleanHome(7), f.cleanHome([1, 2]), f.cleanHome(true)].map((c) => c.t.o.join()), [ALL.join(), ALL.join(), ALL.join(), ALL.join()]);
@@ -87,6 +87,27 @@ t.is('split on, a training day: the training layout', f.homeLay() === cfg.t, tru
 store.plan[today] = '';
 cfg.split = false;
 t.is('split off: the training layout even on a rest day', f.homeLay() === cfg.t, true);
+
+// the person's own lines
+t.is('a first launch has no line anywhere', f.cleanHome(null).t.d, []);
+t.is('lines: known cards only, once each', f.cleanLayout({ d: ['plan', 'plan', 'nope', 'sets', 5] }).d, ['plan', 'sets']);
+t.is('a layout with no list of lines has none', f.cleanLayout({ o: ALL }).d, []);
+t.is('the rest layout copies the lines too, as its own list', (() => { const c = f.cleanHome({ t: { d: ['plan'] } }); c.r.d.push('sets'); return [c.t.d, c.r.d]; })(), [['plan'], ['plan', 'sets']]);
+const ln = { o: ['a', 'b'], h: [], d: [] };
+f.homeLine(ln, 'b');
+t.is('a line is switched on', ln.d, ['b']);
+f.homeLine(ln, 'b');
+t.is('and off', ln.d, []);
+const full = { today: true, week: true, tiles: false, plan: true, sets: true };
+const L = (o, h, d) => Object.keys(f.homeLines({ o, h, d }, (k) => !!full[k]));
+t.is('a line shows above a card that has a card above it', L(['today', 'plan'], [], ['plan']), ['plan']);
+t.is('not above the first card: under the header it says nothing', L(['today', 'plan'], [], ['today']), []);
+t.is('not above a card that is switched off', L(['today', 'plan'], ['plan'], ['plan']), []);
+t.is('the first card shown counts as the first, whatever is hidden above it', L(['week', 'today', 'plan'], ['week'], ['today', 'plan']), ['plan']);
+t.is('nor above an empty card, and an empty card above does not count as something above', L(['tiles', 'plan'], [], ['tiles', 'plan']), []);
+t.is('a card with nothing in it does not hold a place: the line goes to the next one', L(['today', 'tiles', 'plan'], [], ['tiles', 'plan']), ['plan']);
+t.is('a line only where the person put it', L(['today', 'week', 'plan', 'sets'], [], ['sets']), ['sets']);
+t.is('homeCard finds a card by its id', f.homeCard('plan'), ['plan', 'dash-plan', 'Plan']);
 
 // moving and hiding
 const lay = { o: ['a', 'b', 'c'], h: ['b'] };
