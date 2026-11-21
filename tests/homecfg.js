@@ -93,6 +93,9 @@ t.is('the gap starts tight, as Home always was', f.cleanHome(null).gap, 'xs');
 t.is('and keeps a known choice', ['xs', 's', 'm', 'l'].map((g) => f.cleanHome({ gap: g }).gap), ['xs', 's', 'm', 'l']);
 t.is('anything else is tight', [f.cleanHome({ gap: 'huge' }).gap, f.cleanHome({ gap: 5 }).gap, f.cleanHome({ gap: '1rem; x' }).gap], ['xs', 'xs', 'xs']);
 
+t.is('the space around a divider is its own choice, snug at first', f.cleanHome(null).dgap, 's');
+t.is('it keeps a known one and drops the rest', [f.cleanHome({ dgap: 'l' }).dgap, f.cleanHome({ dgap: 'x' }).dgap, f.cleanHome({ gap: 'm' }).dgap], ['l', 's', 's']);
+
 // the person's own lines
 t.is('a first launch has no line anywhere', f.cleanHome(null).t.d, []);
 t.is('lines: known cards only, once each', f.cleanLayout({ d: ['plan', 'plan', 'nope', 'sets', 5] }).d, ['plan', 'sets']);

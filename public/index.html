@@ -1340,11 +1340,13 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshday b{font-size:1rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 2px;overflow:hidden;white-space:nowrap}
 /* Home cards sit one rhythm apart whatever their order, and carry no line of their own: a line between two of
    them is the person's (a divider in Customize Home), so the same card looks right first, last or in the middle.
-   The gap is the person's too (--hmgap, Spacing in Customize Home); a header gets .7rem more, it belongs to what is under it */
+   The gap is the person's too (--hmgap, Spacing in Customize Home); a header gets .7rem more, it belongs to what is under it.
+   A divider has its own space (--hmdv, above and below it: the card under it already brings --hmgap, hence the subtraction;
+   .scroll is a flex column, so margins add up instead of collapsing) */
 #s-dash .dsec{border-top:none;margin-top:0;padding:calc(var(--hmgap, .4rem) + .7rem) var(--pad) .6rem}
 #s-dash .dshtoday,#s-dash .wtcard,#s-dash .wkbar,#s-dash .hmtiles,#s-dash .hmqa{margin-top:var(--hmgap, .4rem)}
 #s-dash .split .splitrow:last-child{margin-bottom:0}
-.hmdiv{margin:var(--hmgap, .4rem) var(--pad) 0;border-top:var(--dash)}
+.hmdiv{margin:var(--hmdv, .8rem) var(--pad) calc(var(--hmdv, .8rem) - var(--hmgap, .4rem));border-top:var(--dash)}
 #s-dash .mmore{text-align:center}
 /* a card the layout has switched off: its own hidden attribute is used by some of them, so this is a class of its own */
 .homeoff{display:none !important}
@@ -3044,7 +3046,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Sets this week:</b> your priority muscles first, marked with a star (pick them in Set count &rsaquo; &#8942; &rsaquo; Priorities), the rest by sets, most first; without priorities it shows the top three and See more the rest. Days left are counted too. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
       <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
-      <li><b>Customize Home</b> (the sliders icon, top right). Spacing sets the gap between cards (Tight is how Home always looked). Tick the cards you want and move them up or down; the line button on a row puts a divider above that card (cards carry no line of their own, so dividers are only where you add them): Today, Quick actions, This week, Tiles, Plan, Sets this week, Month, Routines, Weight. <b>Tiles</b> are small numbers you choose, up to 8: week streak, workouts this month or in all, how long since the last workout, sets or volume this week, the sets of one muscle (against its goal), your weight with its last change, or one record of an exercise (heaviest, est. 1RM or best set); a tap opens the screen behind it. A <b>chart</b> tile is the exercise page's chart on Home, full width: pick the exercise and the record it plots, then change the record, line or bars and the range right on the card, as there (tap a bar for its value, the exercise name opens the page). Tiles go in the order of the list, which has arrows. <b>Quick actions</b>, up to 6, are one-tap buttons: log weight, empty workout, repeat last (the routine of your latest workout), stats, calendar, exercises, weekly recap, find people. Tiles and Quick actions start switched off, so Home looks as before until you ask. <b>Different on rest days</b> gives a day with nothing planned its own layout (it starts as a copy of the other one; with no plan, or while a workout is running, the training layout is used). The layout is kept on this phone, like the theme, and is not synced; Reset to default brings the old Home back.</li>
+      <li><b>Customize Home</b> (the sliders icon, top right). Spacing sets the gap between cards (Tight is how Home always looked); Space around dividers is the room above and below a divider, apart from that gap, so a divider still divides with tight spacing. Tick the cards you want and move them up or down; the line button on a row puts a divider above that card (cards carry no line of their own, so dividers are only where you add them): Today, Quick actions, This week, Tiles, Plan, Sets this week, Month, Routines, Weight. <b>Tiles</b> are small numbers you choose, up to 8: week streak, workouts this month or in all, how long since the last workout, sets or volume this week, the sets of one muscle (against its goal), your weight with its last change, or one record of an exercise (heaviest, est. 1RM or best set); a tap opens the screen behind it. A <b>chart</b> tile is the exercise page's chart on Home, full width: pick the exercise and the record it plots, then change the record, line or bars and the range right on the card, as there (tap a bar for its value, the exercise name opens the page). Tiles go in the order of the list, which has arrows. <b>Quick actions</b>, up to 6, are one-tap buttons: log weight, empty workout, repeat last (the routine of your latest workout), stats, calendar, exercises, weekly recap, find people. Tiles and Quick actions start switched off, so Home looks as before until you ask. <b>Different on rest days</b> gives a day with nothing planned its own layout (it starts as a copy of the other one; with no plan, or while a workout is running, the training layout is used). The layout is kept on this phone, like the theme, and is not synced; Reset to default brings the old Home back.</li>
       <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live; while one is training a dot sits after the Home tab whenever you are on another tab, except while watching them), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
       <li><b>Magnifier and bell.</b> The magnifier finds people. The bell lists likes, comments, replies, threads you joined and new followers; tap one to open it, x or Read all to clear. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
     </ul>
@@ -3882,13 +3884,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4574';
+  var APP_VERSION = '3.4575';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4575', 'Dividers on Home have a space of their own (Space around dividers in Customize Home), so they still divide with tight spacing'],
     ['3.4574', 'Home spacing is yours to pick: Tight (as it always was), Snug, Normal or Roomy, in Customize Home'],
     ['3.4573', 'Home cards no longer carry lines of their own, so the order you pick always looks even; add a divider above any card in Customize Home'],
     ['3.4572', 'Home tiles can show any record of an exercise (heaviest, est. 1RM, best set) and a chart of an exercise, with its own metric, range and line or bars, as on the exercise page'],
@@ -11189,7 +11192,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function cleanHome(raw) {
     var c = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
     var out = { split: c.split === true, t: cleanLayout(c.t), r: null, tiles: [], qa: [],
-      gap: HOME_GAPS.some(function (q) { return q[0] === c.gap; }) ? c.gap : 'xs' };
+      gap: HOME_GAPS.some(function (q) { return q[0] === c.gap; }) ? c.gap : 'xs',
+      dgap: HOME_GAPS.some(function (q) { return q[0] === c.dgap; }) ? c.dgap : 's' };    // the space around a divider, apart from the gap
     out.r = cleanLayout(c.r || out.t);
     (Array.isArray(c.tiles) ? c.tiles : []).forEach(function (x) {
       if (out.tiles.length >= HOME_TILES_MAX || !x || typeof x !== 'object') return;
@@ -11364,6 +11368,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function applyHome() {
     var lay = homeLay(), end = $('dash-end'), host = end.parentNode, ref = end;
     $('s-dash').style.setProperty('--hmgap', HOME_GAPS.filter(function (q) { return q[0] === homeCfg.gap; })[0][2]);
+    $('s-dash').style.setProperty('--hmdv', HOME_GAPS.filter(function (q) { return q[0] === homeCfg.dgap; })[0][2]);
     var lines = homeLines(lay, function (k) { var e = $(homeCard(k)[1]); return !e.hidden && e.children.length > 0; });
     for (var i = lay.o.length - 1; i >= 0; i--) {
       var k = lay.o[i], el = $(homeCard(k)[1]), dv = homeDiv(k);
@@ -11516,6 +11521,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     h += '<p class="hmlab" style="margin-top:.2rem">Spacing</p><div class="seg four" style="margin-bottom:.8rem">' + HOME_GAPS.map(function (q) {
       return '<button data-hm-gap="' + q[0] + '" aria-pressed="' + (homeCfg.gap === q[0]) + '">' + q[1] + '</button>';
     }).join('') + '</div>';
+    h += '<p class="hmlab" style="margin-top:.2rem">Space around dividers</p><div class="seg four" style="margin-bottom:.8rem">' + HOME_GAPS.map(function (q) {
+      return '<button data-hm-dgap="' + q[0] + '" aria-pressed="' + (homeCfg.dgap === q[0]) + '">' + q[1] + '</button>';
+    }).join('') + '</div>';
     h += '<label class="privrow"><span>Different on rest days<i>A second layout for days with nothing planned</i></span>' +
       '<input type="checkbox" id="hm-split"' + (homeCfg.split ? ' checked' : '') + '></label>';
     if (homeCfg.split) {
@@ -11570,7 +11578,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   });
   $('home-body').addEventListener('click', function (e) {
     var lay = homeCfg[homeEd], b;
-    if ((b = e.target.closest('[data-hm-gap]'))) { if (HOME_GAPS.some(function (q) { return q[0] === b.dataset.hmGap; })) homeCfg.gap = b.dataset.hmGap; }
+    if ((b = e.target.closest('[data-hm-dgap]'))) { if (HOME_GAPS.some(function (q) { return q[0] === b.dataset.hmDgap; })) homeCfg.dgap = b.dataset.hmDgap; }
+    else if ((b = e.target.closest('[data-hm-gap]'))) { if (HOME_GAPS.some(function (q) { return q[0] === b.dataset.hmGap; })) homeCfg.gap = b.dataset.hmGap; }
     else if ((b = e.target.closest('[data-hm-ed]'))) homeEd = b.dataset.hmEd;
     else if ((b = e.target.closest('[data-hm-vis]'))) homeToggle(lay, b.dataset.hmVis);
     else if ((b = e.target.closest('[data-hm-ln]'))) homeLine(lay, b.dataset.hmLn);
