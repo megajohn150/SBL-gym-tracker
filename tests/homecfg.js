@@ -25,7 +25,7 @@ const env = {
 const names = Object.keys(env);
 const f = new Function(...names, slice('  var HOME_CARDS', '  function dashTiles(') +
   '; return { cleanHome: cleanHome, cleanLayout: cleanLayout, homeIsRest: homeIsRest, homeLay: homeLay, homeMove: homeMove,' +
-  ' homeToggle: homeToggle, homeShow: homeShow, tileData: tileData, setCfg: function (c) { homeCfg = c; }, getCfg: function () { return homeCfg; },' +
+  ' homeToggle: homeToggle, homeShow: homeShow, homeSwap: homeSwap, homeChartSet: homeChartSet, tileData: tileData, setCfg: function (c) { homeCfg = c; }, getCfg: function () { return homeCfg; },' +
   ' ids: HOME_CARDS.map(function (c) { return c[0]; }) };')(...names.map((n) => env[n]));
 
 const ALL = f.ids;
@@ -49,7 +49,17 @@ t.is('split is only ever a real true', [f.cleanHome({ split: 'yes' }).split, f.c
 const tl = f.cleanHome({ tiles: [
   { k: 'streak' }, { k: 'bogus' }, null, 'x', { k: 'e1rm' }, { k: 'e1rm', x: 'a'.repeat(100) }, { k: 'msets' }, { k: 'msets', m: 'Chest', junk: 1 }, { k: 'weight', x: 'q' }
 ] }).tiles;
-t.is('tiles: unknown kinds, junk and half-made ones are dropped; extra fields too', tl.map((x) => JSON.stringify(x).replace(/a{60}/, 'A60')), ['{"k":"streak"}', '{"k":"e1rm","x":"A60"}', '{"k":"msets","m":"Chest"}', '{"k":"weight"}']);
+t.is('tiles: unknown kinds, junk and half-made ones are dropped; extra fields too', tl.map((x) => JSON.stringify(x).replace(/a{60}/, 'A60')), ['{"k":"streak"}', '{"k":"rec","x":"A60","r":"o"}', '{"k":"msets","m":"Chest"}', '{"k":"weight"}']);
+t.is('the first version\'s 1RM tile is now a record tile with the 1RM', f.cleanHome({ tiles: [{ k: 'e1rm', x: 'e1' }] }).tiles, [{ k: 'rec', x: 'e1', r: 'o' }]);
+t.is('a record tile: any of the three, anything else the 1RM', f.cleanHome({ tiles: [{ k: 'rec', x: 'e1', r: 'h' }, { k: 'rec', x: 'e1', r: 'b' }, { k: 'rec', x: 'e1', r: 'zzz' }, { k: 'rec', r: 'h' }] }).tiles.map((q) => q.r), ['h', 'b', 'o']);
+t.is('a chart tile gets the exercise page\'s defaults', f.cleanHome({ tiles: [{ k: 'chart', x: 'e1' }] }).tiles, [{ k: 'chart', x: 'e1', c: 'weight', p: '3m', s: 'line' }]);
+t.is('and keeps a view it is given', f.cleanHome({ tiles: [{ k: 'chart', x: 'e1', c: 'orm', p: 'all', s: 'bars' }] }).tiles, [{ k: 'chart', x: 'e1', c: 'orm', p: 'all', s: 'bars' }]);
+t.is('a view that is not one falls back, a chart with no exercise is dropped', f.cleanHome({ tiles: [{ k: 'chart', x: 'e1', c: '<b>', p: '9y', s: 'pie' }, { k: 'chart' }] }).tiles, [{ k: 'chart', x: 'e1', c: 'weight', p: '3m', s: 'line' }]);
+const ch = { k: 'chart', x: 'e1', c: 'weight', p: '3m', s: 'line' };
+t.is('a chart card\'s view changes only to known values', [f.homeChartSet(ch, 'c', 'vol'), f.homeChartSet(ch, 'p', '1y'), f.homeChartSet(ch, 's', 'bars'), f.homeChartSet(ch, 'c', 'nope'), f.homeChartSet(ch, 'p', '2y'), f.homeChartSet(ch, 's', 'x'), f.homeChartSet(ch, 'k', 'rec'), f.homeChartSet({ k: 'rec' }, 'c', 'vol'), f.homeChartSet(undefined, 'c', 'vol')], [true, true, true, false, false, false, false, false, false]);
+t.is('and ends up as set', ch, { k: 'chart', x: 'e1', c: 'vol', p: '1y', s: 'bars' });
+const sw = ['a', 'b', 'c'];
+t.is('tiles swap with a neighbour, not off the ends', [f.homeSwap(sw, 0, -1), f.homeSwap(sw, 2, 1), f.homeSwap(sw, 1, -1), f.homeSwap(sw, 9, 1), sw.join('')], [false, false, true, false, 'bac']);
 t.is('tiles are capped at eight', f.cleanHome({ tiles: Array.from({ length: 20 }, () => ({ k: 'streak' })) }).tiles.length, 8);
 t.is('quick actions: known, once each, at most six', f.cleanHome({ qa: ['weight', 'weight', 'nope', 'empty', 'last', 'stats', 'calendar', 'exercises', 'recap', 'find'] }).qa,
   ['weight', 'empty', 'last', 'stats', 'calendar', 'exercises']);
@@ -119,9 +129,11 @@ store.weights = { '2026-11-10': 82.5 };
 t.is('one weigh-in has no change to show', f.tileData({ k: 'weight' }, ctx()), { v: '82.5 kg', l: 'Weight', go: 'weigh' });
 store.weights['2026-11-17'] = 82.1;
 t.is('two: the change against the one before', f.tileData({ k: 'weight' }, ctx()).l, 'Weight · -0.40 kg');
-t.is('the 1RM of an exercise, opening that exercise', f.tileData({ k: 'e1rm', x: 'e1' }, ctx()), { v: '123.4 kg', l: 'Bench Press 1RM', ex: 'e1' });
-t.is('an exercise with no record yet: a dash', f.tileData({ k: 'e1rm', x: 'e2' }, ctx()).v, '–');
-t.is('a deleted exercise gives no tile', f.tileData({ k: 'e1rm', x: 'gone' }, ctx()), null);
+t.is('the 1RM of an exercise, opening that exercise', f.tileData({ k: 'rec', x: 'e1', r: 'o' }, ctx()), { v: '123 kg', l: 'Bench Press · Est. 1RM', ex: 'e1' });
+t.is('its heaviest and its best set', [f.tileData({ k: 'rec', x: 'e1', r: 'h' }, ctx()), f.tileData({ k: 'rec', x: 'e1', r: 'b' }, ctx())].map((d) => d.v + ' / ' + d.l), ['100 kg / Bench Press · Heaviest', '800 kg / Bench Press · Best set']);
+t.is('an exercise with no record yet: a dash', f.tileData({ k: 'rec', x: 'e2', r: 'o' }, ctx()).v, '–');
+t.is('a deleted exercise gives no tile', f.tileData({ k: 'rec', x: 'gone', r: 'o' }, ctx()), null);
+t.is('a chart is not a number: tileData leaves it to its own drawing', f.tileData({ k: 'chart', x: 'e1' }, ctx()), null);
 const shared = ctx();
 f.tileData({ k: 'wsets' }, shared);
 state.week = { sets: 0, volume: 0, by: {}, heads: {} };

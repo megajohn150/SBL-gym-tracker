@@ -1348,6 +1348,11 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .hmtile b{display:block;font-family:var(--display);font-size:1.2rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hmtile b small{font-size:.7rem;font-weight:600;color:var(--fg-3)}
 .hmtile i{display:block;margin-top:1px;font-style:normal;font-size:.66rem;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmtiles{grid-auto-flow:dense}
+.hmchart{grid-column:1 / -1;min-width:0;padding:10px 0 12px;background:var(--surface);border:var(--border);border-radius:var(--radius)}
+.hmchart .hmcn{display:block;max-width:100%;padding:0 var(--cardpad);text-align:left;font-family:var(--display);font-size:1.05rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmchart .pchart{padding:.5rem var(--cardpad) 0}
+.hmchart .hint{padding-left:var(--cardpad)}
 .hmqa{display:grid;grid-template-columns:repeat(auto-fit,minmax(30%,1fr));gap:6px;margin:.6rem var(--pad) 0}
 .hmqa button{min-width:0;padding:12px 4px;text-align:center;font-size:.78rem;font-weight:700;background:var(--surface);border:var(--border);border-radius:var(--radius)}
 /* Customize Home */
@@ -1362,9 +1367,10 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .hmchk[aria-pressed="true"]::after{content:"\2713";position:absolute;inset:0;display:grid;place-items:center;font-size:.8rem;font-weight:800;color:var(--accent-ink)}
 .hmmv{flex:none;width:30px;height:30px;font-size:1rem;color:var(--fg-2)}
 .hmmv:disabled{opacity:.25}
-.hmadd{display:flex;gap:6px;margin-top:.5rem}
-.hmadd select{flex:1;min-width:0;padding:10px 8px;font:inherit;font-size:.85rem;color:var(--fg);background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px)}
-.hmadd .btn{flex:none;width:auto;padding:10px 16px}
+.hmadd{display:flex;flex-wrap:wrap;gap:6px;margin-top:.5rem}
+.hmadd select{flex:1 1 40%;min-width:0;padding:10px 8px;font:inherit;font-size:.85rem;color:var(--fg);background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px)}
+.hmadd #hm-tk,.hmadd .btn{flex:1 1 100%}
+.hmadd .btn{width:auto;padding:10px 16px}
 .hmchips{display:flex;flex-wrap:wrap;gap:6px}
 .hmchips button{padding:7px 12px;border:1px solid var(--fg-3);border-radius:999px;font-size:.78rem;font-weight:700;color:var(--fg)}
 .hmchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -3031,7 +3037,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Sets this week:</b> your priority muscles first, marked with a star (pick them in Set count &rsaquo; &#8942; &rsaquo; Priorities), the rest by sets, most first; without priorities it shows the top three and See more the rest. Days left are counted too. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
       <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
-      <li><b>Customize Home</b> (the sliders icon, top right). Tick the cards you want and move them up or down: Today, Quick actions, This week, Tiles, Plan, Sets this week, Month, Routines, Weight. <b>Tiles</b> are small numbers you choose, up to 8: week streak, workouts this month or in all, how long since the last workout, sets or volume this week, the sets of one muscle (against its goal), your weight with its last change, or the estimated 1RM of one exercise; a tap opens the screen behind it. <b>Quick actions</b>, up to 6, are one-tap buttons: log weight, empty workout, repeat last (the routine of your latest workout), stats, calendar, exercises, weekly recap, find people. Tiles and Quick actions start switched off, so Home looks as before until you ask. <b>Different on rest days</b> gives a day with nothing planned its own layout (it starts as a copy of the other one; with no plan, or while a workout is running, the training layout is used). The layout is kept on this phone, like the theme, and is not synced; Reset to default brings the old Home back.</li>
+      <li><b>Customize Home</b> (the sliders icon, top right). Tick the cards you want and move them up or down: Today, Quick actions, This week, Tiles, Plan, Sets this week, Month, Routines, Weight. <b>Tiles</b> are small numbers you choose, up to 8: week streak, workouts this month or in all, how long since the last workout, sets or volume this week, the sets of one muscle (against its goal), your weight with its last change, or one record of an exercise (heaviest, est. 1RM or best set); a tap opens the screen behind it. A <b>chart</b> tile is the exercise page's chart on Home, full width: pick the exercise and the record it plots, then change the record, line or bars and the range right on the card, as there (tap a bar for its value, the exercise name opens the page). Tiles go in the order of the list, which has arrows. <b>Quick actions</b>, up to 6, are one-tap buttons: log weight, empty workout, repeat last (the routine of your latest workout), stats, calendar, exercises, weekly recap, find people. Tiles and Quick actions start switched off, so Home looks as before until you ask. <b>Different on rest days</b> gives a day with nothing planned its own layout (it starts as a copy of the other one; with no plan, or while a workout is running, the training layout is used). The layout is kept on this phone, like the theme, and is not synced; Reset to default brings the old Home back.</li>
       <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live; while one is training a dot sits after the Home tab whenever you are on another tab, except while watching them), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
       <li><b>Magnifier and bell.</b> The magnifier finds people. The bell lists likes, comments, replies, threads you joined and new followers; tap one to open it, x or Read all to clear. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
     </ul>
@@ -3869,13 +3875,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4571';
+  var APP_VERSION = '3.4572';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4572', 'Home tiles can show any record of an exercise (heaviest, est. 1RM, best set) and a chart of an exercise, with its own metric, range and line or bars, as on the exercise page'],
     ['3.4571', 'Customize Home: hide and reorder its cards, add tiles (streak, sets of a muscle, weight, 1RM of a lift…) and quick actions, and give rest days a layout of their own'],
     ['3.4569','Per side: an exercise can count its weight per side (dumbbells), so you enter one and the volume counts two, in every workout, past ones too'],
     ['3.4559', 'Profile pills under the bio: total sets, tons lifted (tap for a fun comparison) and hours trained, with switches in the profile editor, also for the workout stamp'],
@@ -7106,10 +7113,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       '</i></span>' +
       '<span class="phead-r">' + styleToggle(xStyle) +
         '<button class="prange" id="xh-range">' + xp.short + '</button>' + shareBtn('x') + '</span></div>' +
-      chartBody(buckets, xStyle, xp, function (b) {
-        var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
-        return String(xLabel(b.v).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
-      }, function (v) { return xLabel(v).join(' ').trim(); }) +
+      xChartBody(buckets, xStyle, xp, xMetric) +
       '<div class="pseg">' +
         '<button data-xmetric="weight" aria-pressed="' + (xMetric === 'weight') + '">Heaviest</button>' +
         '<button data-xmetric="orm" aria-pressed="' + (xMetric === 'orm') + '">Est. 1RM</button>' +
@@ -11152,8 +11156,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var TILE_KINDS = [
     ['streak', 'Week streak'], ['month', 'Workouts this month'], ['total', 'Workouts in all'], ['since', 'Last workout'],
     ['wsets', 'Sets this week'], ['wvol', 'Volume this week'], ['msets', 'Sets of one muscle'],
-    ['weight', 'Body weight'], ['e1rm', 'Estimated 1RM of one exercise']
+    ['weight', 'Body weight'], ['rec', 'Record of one exercise'], ['chart', 'Chart of one exercise']
   ];
+  // the three records of an exercise, as its page lists them; the chart's metric is the same three by their names there
+  var HOME_RECS = [['h', 'Heaviest', 'weight'], ['o', 'Est. 1RM', 'orm'], ['b', 'Best set', 'vol']];
+  var HOME_PERIODS = ['1m', '3m', '6m', '1y', 'all'], HOME_STYLES = ['line', 'bars'];
   var QA_KINDS = [
     ['weight', 'Log weight'], ['empty', 'Empty workout'], ['last', 'Repeat last'], ['stats', 'Stats'],
     ['calendar', 'Calendar'], ['exercises', 'Exercises'], ['recap', 'Weekly recap'], ['find', 'Find people']
@@ -11173,9 +11180,16 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     out.r = cleanLayout(c.r || out.t);
     (Array.isArray(c.tiles) ? c.tiles : []).forEach(function (x) {
       if (out.tiles.length >= HOME_TILES_MAX || !x || typeof x !== 'object') return;
+      if (x.k === 'e1rm') x = { k: 'rec', x: x.x, r: 'o' };          // the first version had only this one record
       var t = { k: String(x.k) };
       if (!TILE_KINDS.some(function (q) { return q[0] === t.k; })) return;
-      if (t.k === 'e1rm') { if (typeof x.x !== 'string' || !x.x) return; t.x = x.x.slice(0, 60); }
+      if (t.k === 'rec' || t.k === 'chart') { if (typeof x.x !== 'string' || !x.x) return; t.x = x.x.slice(0, 60); }
+      if (t.k === 'rec') t.r = HOME_RECS.some(function (q) { return q[0] === x.r; }) ? x.r : 'o';
+      if (t.k === 'chart') {
+        t.c = HOME_RECS.some(function (q) { return q[2] === x.c; }) ? x.c : 'weight';
+        t.p = HOME_PERIODS.indexOf(x.p) >= 0 ? x.p : '3m';
+        t.s = HOME_STYLES.indexOf(x.s) >= 0 ? x.s : 'line';
+      }
       if (t.k === 'msets') { if (typeof x.m !== 'string' || !x.m) return; t.m = x.m.slice(0, 20); }
       out.tiles.push(t);
     });
@@ -11205,6 +11219,23 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function homeShow(lay, k) {
     var i = lay.h.indexOf(k);
     if (i >= 0) lay.h.splice(i, 1);
+  }
+  // a tile one place up or down
+  function homeSwap(list, i, d) {
+    var j = i + d;
+    if (i < 0 || i >= list.length || j < 0 || j >= list.length) return false;
+    var x = list[i];
+    list[i] = list[j];
+    list[j] = x;
+    return true;
+  }
+  // a chart card's own view (metric, range, line or bars): only the values cleanHome lets through
+  function homeChartSet(t, key, v) {
+    var ok = key === 'c' ? HOME_RECS.some(function (q) { return q[2] === v; })
+      : key === 'p' ? HOME_PERIODS.indexOf(v) >= 0 : key === 's' ? HOME_STYLES.indexOf(v) >= 0 : false;
+    if (!t || t.k !== 'chart' || !ok) return false;
+    t[key] = v;
+    return true;
   }
 
   // One tile: { v: the big text, of: its goal, l: the small line, go: a screen, or ex: an exercise to open }, or null when
@@ -11243,25 +11274,46 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       if (!last) return { v: '–', l: 'Weight', go: 'weigh' };
       return { v: store.weights[last] + ' kg', l: 'Weight' + (before ? ' · ' + wtSign(Math.round((store.weights[last] - store.weights[before]) * 100) / 100) : ''), go: 'weigh' };
     }
-    if (k === 'e1rm') {
+    if (k === 'rec') {
       x = byId(t.x);
       if (!x) return null;
       v = (ctx.rec || (ctx.rec = myRecords()))[nameKey(x.name)];
-      return { v: v ? fmtKg(v[1]) : '–', l: x.name + ' 1RM', ex: x.id };
+      g = t.r === 'h' ? 0 : t.r === 'b' ? 2 : 1;               // [heaviest, est. 1RM, best set]
+      return { v: v ? (g === 1 ? Math.round(v[1]) + ' kg' : fmtKg(v[g])) : '\u2013', l: x.name + ' \u00b7 ' + HOME_RECS[g][1], ex: x.id };
     }
-    return null;
+    return null;                                                // a chart is drawn by homeChart, not as a number
   }
 
   function dashTiles() {
     if (!homeCfg.tiles.length || homeLay().h.indexOf('tiles') >= 0) return '';
     var ctx = { now: new Date() }, cells = '';
-    homeCfg.tiles.forEach(function (t) {
+    homeCfg.tiles.forEach(function (t, i) {
+      if (t.k === 'chart') { cells += homeChart(t, i); return; }
       var d = tileData(t, ctx);
       if (!d) return;
       cells += '<button class="hmtile" ' + (d.ex ? 'data-tile-ex="' + esc(d.ex) + '"' : 'data-push="' + d.go + '"') + '><b>' + esc(d.v) +
         (d.of ? ' <small>/ ' + esc(d.of) + '</small>' : '') + '</b><i>' + esc(d.l) + '</i></button>';
     });
     return cells ? '<div class="hmtiles">' + cells + '</div>' : '';
+  }
+
+  // the exercise page's chart on Home: its own metric, range and line/bars, kept in the tile; a tap on the
+  // name opens the exercise, a tap on a bar shows its value like everywhere else
+  function homeChart(t, i) {
+    var x = byId(t.x);
+    if (!x) return '';
+    var nm = '<button class="hmcn" data-tile-ex="' + esc(x.id) + '">' + esc(x.name) + '</button>';
+    if (!histRows(x.id).some(function (r) { return r.live; })) {
+      return '<div class="hmchart" data-hxi="' + i + '">' + nm + '<p class="hint" style="padding:.5rem 0 0">Nothing logged yet.</p></div>';
+    }
+    var xp = periodOf(t.p), buckets = exerciseBuckets(x.id, t.c, t.p), head = xLabel(buckets[buckets.length - 1].v, t.c);
+    return '<div class="hmchart" data-hxi="' + i + '">' + nm + '<div class="pchart"><div class="pchart-h"><span><b>' + head[0] + '</b> ' + head[1] + ' <i>' +
+      (xp.unit === 'day' ? 'today' : xp.unit === 'week' ? 'this week' : 'this month') + '</i></span>' +
+      '<span class="phead-r">' + styleToggle(t.s) + '<button class="prange" data-hxr>' + xp.short + '</button></span></div>' +
+      xChartBody(buckets, t.s, xp, t.c) +
+      '<div class="pseg">' + HOME_RECS.map(function (q) {
+        return '<button data-xmetric="' + q[2] + '" aria-pressed="' + (t.c === q[2]) + '">' + q[1] + '</button>';
+      }).join('') + '</div></div></div>';
   }
 
   function dashQa() {
@@ -11368,6 +11420,19 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (rt) { openRtView(rt.dataset.rt); return; }
     var tex = e.target.closest('[data-tile-ex]');
     if (tex) { if (byId(tex.dataset.tileEx)) openHistory(tex.dataset.tileEx); return; }
+    var hx = e.target.closest('[data-hxi]');
+    if (hx) {                                                      // a chart card: its metric, its line/bars, its range
+      var hi = Number(hx.dataset.hxi), ht = homeCfg.tiles[hi], hb;
+      if (!ht) return;
+      if ((hb = e.target.closest('[data-xmetric]'))) homeChartSet(ht, 'c', hb.dataset.xmetric);
+      else if ((hb = e.target.closest('[data-xstyle]'))) homeChartSet(ht, 's', hb.dataset.xstyle);
+      else if ((hb = e.target.closest('[data-hxr]'))) { homeChartAt = hi; openPeriod(hb, 'home'); return; }
+      else return;
+      save('home', JSON.stringify(homeCfg));
+      hideTip();
+      paint($('dash-tiles'), dashTiles());
+      return;
+    }
     var qa = e.target.closest('[data-qa]');
     if (qa) { homeQuick(qa.dataset.qa); return; }
     var go = e.target.closest('[data-dash]');
@@ -11383,23 +11448,30 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   /* --- the Customize Home sheet: every change is saved and shown behind it at once --- */
   var homeEd = 't';                                  // the layout being edited: t training day, r rest day
+  var homeChartAt = -1;                              // the chart card whose range is being picked
   function homeCard(k) { return HOME_CARDS.filter(function (c) { return c[0] === k; })[0]; }
   function tileName(t) {
-    var kind = TILE_KINDS.filter(function (q) { return q[0] === t.k; })[0], x = t.k === 'e1rm' && byId(t.x);
-    return (kind ? kind[1] : t.k) + (t.k === 'e1rm' ? ' · ' + (x ? x.name : 'deleted exercise') : t.k === 'msets' ? ' · ' + t.m : '');
+    var kind = TILE_KINDS.filter(function (q) { return q[0] === t.k; })[0], x = (t.k === 'rec' || t.k === 'chart') && byId(t.x);
+    var which = t.k === 'rec' ? HOME_RECS.filter(function (q) { return q[0] === t.r; })[0] : t.k === 'chart' ? HOME_RECS.filter(function (q) { return q[2] === t.c; })[0] : null;
+    return (kind ? kind[1] : t.k) + (t.k === 'rec' || t.k === 'chart' ? ' \u00b7 ' + (x ? x.name : 'deleted exercise') : '') +
+      (which && x ? ' \u00b7 ' + which[1] : '') + (t.k === 'msets' ? ' \u00b7 ' + t.m : '');
   }
-  // the second box beside the tile picker: which exercise or which muscle, hidden for a tile that needs neither
+  // the boxes beside the tile picker: which exercise or muscle, and which record, hidden for a tile that needs neither
   function homeFillX() {
-    var k = $('hm-tk').value, sel = $('hm-tx'), opts = '';
-    if (k === 'e1rm') {
-      opts = store.exercises.filter(function (x) { return !x.bodyweight; })      // a bodyweight lift has no weight to rank
+    var k = $('hm-tk').value, sel = $('hm-tx'), opts = '', vs = $('hm-tv'), vopts = '';
+    if (k === 'rec' || k === 'chart') {
+      // a bodyweight lift has no weight to rank as a record, but its chart works like the exercise page's
+      opts = store.exercises.filter(function (x) { return k === 'chart' || !x.bodyweight; })
         .sort(function (a, b) { return a.name.localeCompare(b.name); })
         .map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join('');
+      vopts = HOME_RECS.map(function (q) { return '<option value="' + (k === 'rec' ? q[0] : q[2]) + '">' + q[1] + '</option>'; }).join('');
     } else if (k === 'msets') {
       opts = INJ_MUSCLES.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
     }
     sel.innerHTML = opts;
     sel.hidden = !opts;
+    vs.innerHTML = vopts;
+    vs.hidden = !vopts;
   }
   function drawHomeSheet() {
     var lay = homeCfg[homeEd], h = '';
@@ -11419,12 +11491,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     h += '<p class="hmlab">Tiles</p>';
     if (homeCfg.tiles.length) {
       h += '<div class="hmrows">' + homeCfg.tiles.map(function (t, i) {
-        return '<div class="hmrow"><span>' + esc(tileName(t)) + '</span><button class="hmmv" data-hm-tdel="' + i + '" aria-label="Remove tile">&times;</button></div>';
+        return '<div class="hmrow"><span>' + esc(tileName(t)) + '</span>' +
+          '<button class="hmmv" data-hm-tup="' + i + '" aria-label="Move tile up"' + (i ? '' : ' disabled') + '>&uarr;</button>' +
+          '<button class="hmmv" data-hm-tdn="' + i + '" aria-label="Move tile down"' + (i < homeCfg.tiles.length - 1 ? '' : ' disabled') + '>&darr;</button>' +
+          '<button class="hmmv" data-hm-tdel="' + i + '" aria-label="Remove tile">&times;</button></div>';
       }).join('') + '</div>';
     }
     h += '<div class="hmadd"><select id="hm-tk" aria-label="Tile">' + TILE_KINDS.map(function (q) {
       return '<option value="' + q[0] + '">' + esc(q[1]) + '</option>';
-    }).join('') + '</select><select id="hm-tx" aria-label="Which one" hidden></select><button class="btn btn-ghost" id="hm-tadd">Add</button></div>';
+    }).join('') + '</select><select id="hm-tx" aria-label="Which one" hidden></select><select id="hm-tv" aria-label="Which record" hidden></select><button class="btn btn-ghost" id="hm-tadd">Add</button></div>';
     h += '<p class="hmlab">Quick actions</p><div class="hmchips">' + QA_KINDS.map(function (q) {
       return '<button data-hm-qa="' + q[0] + '" aria-pressed="' + (homeCfg.qa.indexOf(q[0]) >= 0) + '">' + esc(q[1]) + '</button>';
     }).join('') + '</div><button class="dshalt" id="hm-reset">Reset to default</button>';
@@ -11457,6 +11532,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     else if ((b = e.target.closest('[data-hm-vis]'))) homeToggle(lay, b.dataset.hmVis);
     else if ((b = e.target.closest('[data-hm-up]'))) homeMove(lay, b.dataset.hmUp, -1);
     else if ((b = e.target.closest('[data-hm-dn]'))) homeMove(lay, b.dataset.hmDn, 1);
+    else if ((b = e.target.closest('[data-hm-tup]'))) homeSwap(homeCfg.tiles, Number(b.dataset.hmTup), -1);
+    else if ((b = e.target.closest('[data-hm-tdn]'))) homeSwap(homeCfg.tiles, Number(b.dataset.hmTdn), 1);
     else if ((b = e.target.closest('[data-hm-tdel]'))) homeCfg.tiles.splice(Number(b.dataset.hmTdel), 1);
     else if ((b = e.target.closest('[data-hm-qa]'))) {
       var q = b.dataset.hmQa, at = homeCfg.qa.indexOf(q);
@@ -11464,11 +11541,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       else if (homeCfg.qa.length >= HOME_QA_MAX) { toast('Up to ' + HOME_QA_MAX + ' quick actions'); return; }
       else { homeCfg.qa.push(q); homeShow(lay, 'qa'); }          // a card asked for is a card wanted
     } else if (e.target.closest('#hm-tadd')) {
-      var t = { k: $('hm-tk').value }, tx = $('hm-tx');
-      if (t.k === 'e1rm') { if (!tx.value) { toast('Add an exercise first'); return; } t.x = tx.value; }
+      var t = { k: $('hm-tk').value }, tx = $('hm-tx'), tv = $('hm-tv');
+      if (t.k === 'rec' || t.k === 'chart') {
+        if (!tx.value) { toast('Add an exercise first'); return; }
+        t.x = tx.value;
+        if (t.k === 'rec') t.r = tv.value; else { t.c = tv.value; t.p = '3m'; t.s = 'line'; }
+      }
       if (t.k === 'msets') t.m = tx.value;
       if (homeCfg.tiles.length >= HOME_TILES_MAX) { toast('Up to ' + HOME_TILES_MAX + ' tiles'); return; }
-      if (homeCfg.tiles.some(function (x) { return x.k === t.k && x.x === t.x && x.m === t.m; })) { toast('That tile is already there'); return; }
+      if (homeCfg.tiles.some(function (x) { return x.k === t.k && x.x === t.x && x.m === t.m && x.r === t.r && x.c === t.c; })) { toast('That tile is already there'); return; }
       homeCfg.tiles.push(t);
       homeShow(lay, 'tiles');
     } else if (e.target.closest('#hm-reset')) {
@@ -12583,8 +12664,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   // an exercise chart keeps the best set of the bucket instead
-  function exerciseBuckets(key) {
-    var out = bucketShell(xPeriod), cut = cutoffFor(key);
+  // (the exercise page uses its own metric and period; a chart on Home passes its own)
+  function exerciseBuckets(key, metric, period) {
+    metric = metric || xMetric;
+    var out = bucketShell(period || xPeriod), cut = cutoffFor(key);
     store.workouts.forEach(function (w) {
       if (!afterCut(w, cut)) return;
       var t = new Date(w.date).getTime();
@@ -12595,10 +12678,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         e.sets.forEach(function (st) {
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
-          var v = xMetric === 'orm' ? recOrm(st) : xMetric === 'vol' ? recVol(st) : kg;
+          var v = metric === 'orm' ? recOrm(st) : metric === 'vol' ? recVol(st) : kg;
           if (v > b.v) b.v = v;
           // the bucket is marked when the record in this very metric fell in it
-          if (st.prs && st.prs.indexOf(PR_CAT[xMetric]) >= 0) {
+          if (st.prs && st.prs.indexOf(PR_CAT[metric]) >= 0) {
             b.pr = true;
             if (!b.prAt || t >= b.prAt) { b.prAt = t; b.prW = w.id; }
           }
@@ -12701,10 +12784,17 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       'stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button>';
   }
 
-  function xLabel(v) {
+  function xLabel(v, metric) {
     if (!v) return ['\u2013', ''];
-    if (xMetric === 'orm') return [Math.round(v) + ' kg', ''];
+    if ((metric || xMetric) === 'orm') return [Math.round(v) + ' kg', ''];
     return [fmtVolume(v), ''];
+  }
+  // the exercise chart as the exercise page draws it, for any metric: the page and Home's chart cards share it
+  function xChartBody(buckets, style, xp, metric) {
+    return chartBody(buckets, style, xp, function (b) {
+      var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
+      return String(xLabel(b.v, metric).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
+    }, function (v) { return xLabel(v, metric).join(' ').trim(); });
   }
 
   function metricOf(w) {
@@ -12918,7 +13008,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 
   function openPeriod(btn, which) {
     perFor = which;
-    var cur = which === 'profile' ? pPeriod : which === 'routine' ? rvPeriod : xPeriod;
+    var cur = which === 'profile' ? pPeriod : which === 'routine' ? rvPeriod : which === 'home' ? (homeCfg.tiles[homeChartAt] || {}).p : xPeriod;
     var r = btn.getBoundingClientRect();
     $('per-wrap').style.top = (r.bottom + 6) + 'px';
     document.querySelectorAll('[data-period]').forEach(function (b) {
@@ -12977,6 +13067,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       closePer();
       if (perFor === 'profile') { pPeriod = b.dataset.period; drawProfile(); }
       else if (perFor === 'routine') { rvPeriod = b.dataset.period; drawRtView(); }
+      else if (perFor === 'home') {
+        if (homeChartSet(homeCfg.tiles[homeChartAt], 'p', b.dataset.period)) { save('home', JSON.stringify(homeCfg)); paint($('dash-tiles'), dashTiles()); }
+      }
       else { xPeriod = b.dataset.period; drawHistory(); }
     });
   });
@@ -13022,6 +13115,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   barTips($('xh-body'));
   barTips($('stmonth-body'));
   barTips($('wt-chart'));
+  barTips($('dash-tiles'));
 
   document.addEventListener('pointerdown', function (e) {
     if (tipBar && !e.target.closest('.pbar') && !e.target.closest('.xrdate') && !e.target.closest('.ptipbtn') && !e.target.closest('#p-tip')) hideTip();

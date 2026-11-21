@@ -364,8 +364,11 @@ Nine cards (`HOME_CARDS`: today, qa, week, tiles, plan, sets, month, rts, weight
 layout in use, between the banners above and `dash-end`, and hides the switched-off ones with the class `homeoff` (not `hidden`: `wk-bar` uses
 that itself). `homeCfg.t` is the training-day layout, `homeCfg.r` the rest-day one, used only when `split` is on and `homeIsRest` (a plan, nothing planned
 today, no workout running); a layout is `{ o: order, h: hidden ids }`. Tiles and quick actions start switched off (`HOME_OFF`), so Home
-looks as before until asked. A tile is `{ k, x? (exercise id), m? (muscle) }` drawn by `tileData` (null when there is nothing to show, so a deleted
-exercise just disappears); a quick action is a key of `QA_KINDS` run by `homeQuick`. Caps: 8 tiles, 6 quick actions. `tests/homecfg.js` covers it.
+looks as before until asked. A tile is `{ k, ... }` drawn by `tileData` (null when there is nothing to show, so a deleted
+exercise just disappears): `rec` is one record of an exercise (`x` id, `r` h/o/b = heaviest / est. 1RM / best set), `msets` a muscle (`m`), and `chart`
+(`x`, `c` metric weight/orm/vol, `p` period, `s` line/bars) is the exercise page's chart drawn by `homeChart` on `exerciseBuckets(key, metric, period)` and
+`xChartBody`, both shared with the page; its controls write back into the tile (`homeChartSet`) and the range goes through `per-pop` with `perFor = 'home'`.
+The first version's `e1rm` tile is read as `rec` with the 1RM; a quick action is a key of `QA_KINDS` run by `homeQuick`. Caps: 8 tiles, 6 quick actions. `tests/homecfg.js` covers it.
 All of those hang off element ids (`live-bars`, `wk-bar`, `report-bar`…) that moved from Feed to Home unchanged. **The Feed tab's dot**
 (`drawFeedDot`, class `feednew`): `tracker-feedseen-<user_id>` holds the `by|id` keys of the feed as the Feed last showed it; a friend's
 post whose key is not in it lights the dot, opening the Feed (with the post in it) writes the list, and an edit keeps its key. The first
