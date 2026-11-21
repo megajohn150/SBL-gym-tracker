@@ -1046,7 +1046,7 @@ button.dexhead .nm{text-decoration:underline;text-decoration-color:var(--ul);tex
 /* a question asked from inside another sheet has to sit on top of it */
 #confirm-sheet{z-index:25}
 /* the profile editor is taller than a short phone: it stops short of the top and scrolls inside */
-#prof-sheet .sheet-card{max-height:85vh;max-height:85dvh;overflow-y:auto;overscroll-behavior:contain}
+#prof-sheet .sheet-card,#home-sheet .sheet-card{max-height:85vh;max-height:85dvh;overflow-y:auto;overscroll-behavior:contain}
 .sheet-card{
   position:relative;width:100%;max-width:440px;background:var(--bg);
   border-top:var(--border);padding:16px var(--pad) calc(env(safe-area-inset-bottom) + 16px);
@@ -1340,6 +1340,34 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 10px)}
 .dshday b{font-size:1rem;line-height:1.2;font-weight:700;max-width:100%;padding:0 2px;overflow:hidden;white-space:nowrap}
 #s-dash .wkbar{margin-top:.8rem}
 #s-dash .mmore{text-align:center}
+/* a card the layout has switched off: its own hidden attribute is used by some of them, so this is a class of its own */
+.homeoff{display:none !important}
+/* the tiles and the quick actions a person chose for Home */
+.hmtiles{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:.6rem var(--pad) 0}
+.hmtile{display:block;min-width:0;text-align:left;font:inherit;color:inherit;padding:8px 12px;background:var(--surface);border:var(--border);border-radius:var(--radius)}
+.hmtile b{display:block;font-family:var(--display);font-size:1.2rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmtile b small{font-size:.7rem;font-weight:600;color:var(--fg-3)}
+.hmtile i{display:block;margin-top:1px;font-style:normal;font-size:.66rem;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmqa{display:grid;grid-template-columns:repeat(auto-fit,minmax(30%,1fr));gap:6px;margin:.6rem var(--pad) 0}
+.hmqa button{min-width:0;padding:12px 4px;text-align:center;font-size:.78rem;font-weight:700;background:var(--surface);border:var(--border);border-radius:var(--radius)}
+/* Customize Home */
+.hmlab{margin:1rem 0 .4rem;font-size:var(--lab);letter-spacing:var(--labtrack);text-transform:uppercase;color:var(--fg-3);font-weight:600}
+.hmrows{margin:.2rem 0 .4rem;background:var(--surface);border:var(--border);border-radius:var(--radius);overflow:hidden}
+.hmrow{display:flex;align-items:center;gap:8px;padding:7px var(--cardpad);border-bottom:var(--dash)}
+.hmrow:last-child{border-bottom:none}
+.hmrow span{flex:1;min-width:0;font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hmrow.off span{color:var(--fg-3)}
+.hmchk{position:relative;flex:none;width:22px;height:22px;border:var(--border);border-radius:calc(var(--radius) / 3)}
+.hmchk[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.hmchk[aria-pressed="true"]::after{content:"\2713";position:absolute;inset:0;display:grid;place-items:center;font-size:.8rem;font-weight:800;color:var(--accent-ink)}
+.hmmv{flex:none;width:30px;height:30px;font-size:1rem;color:var(--fg-2)}
+.hmmv:disabled{opacity:.25}
+.hmadd{display:flex;gap:6px;margin-top:.5rem}
+.hmadd select{flex:1;min-width:0;padding:10px 8px;font:inherit;font-size:.85rem;color:var(--fg);background:var(--surface);border:var(--border);border-radius:calc(var(--radius) - 2px)}
+.hmadd .btn{flex:none;width:auto;padding:10px 16px}
+.hmchips{display:flex;flex-wrap:wrap;gap:6px}
+.hmchips button{padding:7px 12px;border:1px solid var(--fg-3);border-radius:999px;font-size:.78rem;font-weight:700;color:var(--fg)}
+.hmchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .dshlink{font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit}
 button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .dshc.done.now{color:var(--bg);box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--fg)}
@@ -2008,6 +2036,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           <h1 class="title">Home</h1>
         </span>
         <span class="picons">
+          <button class="iconbtn" id="home-edit" aria-label="Customize Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg></button>
           <button class="iconbtn" data-push="find" aria-label="Find people"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.4"/><path d="m16 16 4.4 4.4"/></svg></button>
           <button class="iconbtn" id="home-bell" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17.4 10.2a5.4 5.4 0 0 0-10.8 0c0 4.4-1.7 5.6-1.7 5.6h14.2s-1.7-1.2-1.7-5.6z"/><path d="M13.6 18.5a1.9 1.9 0 0 1-3.2 0"/></svg></button>
         </span>
@@ -2032,12 +2061,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <button class="x" id="report-x" aria-label="Dismiss">&times;</button>
     </div>
     <div id="dash-today"></div>
+    <div id="dash-qa"></div>
     <div class="wkbar" id="wk-bar" hidden></div>
+    <div id="dash-tiles"></div>
     <div id="dash-plan"></div>
     <div id="dash-sets"></div>
     <div id="dash-cal"></div>
     <div id="dash-rts"></div>
-    <div class="dshtoday wtcard">
+    <div class="dshtoday wtcard" id="dash-wt">
       <div class="wtcard-h"><p class="eyebrow">Weight</p><button class="wtpill" data-push="weigh">Calendar &rsaquo;</button></div>
       <form id="wt-form">
         <label class="wtbig"><input type="text" id="wt-in" inputmode="decimal" maxlength="6" placeholder="&ndash;" autocomplete="off" aria-label="Weight in kg"><span>kg</span></label>
@@ -2045,7 +2076,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         <button class="btn btn-primary" id="wt-go" type="submit" style="margin-top:.9rem"></button>
       </form>
     </div>
-    <div style="height:1.5rem"></div>
+    <div id="dash-end" style="height:1.5rem"></div>
     </div>
   </section>
 
@@ -3000,6 +3031,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Sets this week:</b> your priority muscles first, marked with a star (pick them in Set count &rsaquo; &#8942; &rsaquo; Priorities), the rest by sets, most first; without priorities it shows the top three and See more the rest. Days left are counted too. Goals are set in Weekly targets. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Month.</b> Days you trained are filled (tap one to open it), planned days are dotted, a planned day earlier this week that you skipped is struck out. <button class="gdgo" data-push="calendar" aria-label="Open Calendar">&rsaquo;</button></li>
       <li><b>Routines:</b> the four that waited longest, with when you last ran them and their planned days; tap one to open it.</li>
+      <li><b>Customize Home</b> (the sliders icon, top right). Tick the cards you want and move them up or down: Today, Quick actions, This week, Tiles, Plan, Sets this week, Month, Routines, Weight. <b>Tiles</b> are small numbers you choose, up to 8: week streak, workouts this month or in all, how long since the last workout, sets or volume this week, the sets of one muscle (against its goal), your weight with its last change, or the estimated 1RM of one exercise; a tap opens the screen behind it. <b>Quick actions</b>, up to 6, are one-tap buttons: log weight, empty workout, repeat last (the routine of your latest workout), stats, calendar, exercises, weekly recap, find people. Tiles and Quick actions start switched off, so Home looks as before until you ask. <b>Different on rest days</b> gives a day with nothing planned its own layout (it starts as a copy of the other one; with no plan, or while a workout is running, the training layout is used). The layout is kept on this phone, like the theme, and is not synced; Reset to default brings the old Home back.</li>
       <li><b>Cards on top:</b> a friend training right now (tap to watch their sets live; while one is training a dot sits after the Home tab whenever you are on another tab, except while watching them), the install and backup reminders, the Sunday recap (from 20:00), last month's report. Each can be closed.</li>
       <li><b>Magnifier and bell.</b> The magnifier finds people. The bell lists likes, comments, replies, threads you joined and new followers; tap one to open it, x or Read all to clear. <button class="gdgo" data-push="find" aria-label="Open Find people">&rsaquo;</button></li>
     </ul>
@@ -3669,6 +3701,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   </div>
 </div>
 
+<div class="sheet" id="home-sheet" hidden>
+  <div class="sheet-bg" data-home-close></div>
+  <div class="sheet-card">
+    <h3>Customize Home</h3>
+    <div id="home-body"></div>
+    <button class="btn btn-primary" id="home-done" style="margin-top:12px">Done</button>
+  </div>
+</div>
 <div class="sheet" id="plan-sheet" hidden>
   <div class="sheet-bg" data-plan-close></div>
   <div class="sheet-card">
@@ -3829,14 +3869,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4570';
+  var APP_VERSION = '3.4571';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
-    ['3.4569', 'Per side: an exercise can count its weight per side (dumbbells), so you enter one and the volume counts two, in every workout, past ones too'],
+    ['3.4571', 'Customize Home: hide and reorder its cards, add tiles (streak, sets of a muscle, weight, 1RM of a lift…) and quick actions, and give rest days a layout of their own'],
+    ['3.4569','Per side: an exercise can count its weight per side (dumbbells), so you enter one and the volume counts two, in every workout, past ones too'],
     ['3.4559', 'Profile pills under the bio: total sets, tons lifted (tap for a fun comparison) and hours trained, with switches in the profile editor, also for the workout stamp'],
     ['3.4557', 'Side balance: for one-sided exercises, which side is stronger, by how much, and which to start with (exercise page, and its menu in a workout)'],
     ['3.4549', 'Do later: send an exercise to the end of the workout from its menu'],
@@ -11098,12 +11139,176 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       }).join('') + '</div>';
   }
 
+  /* --- Home layout: which cards show, in what order, plus the tiles and the quick actions ---
+     It is a taste of the phone in your hand, so it lives in this browser (tracker-home) like the skin
+     and is never synced. [id, element, name]: a card a newer version adds is appended by cleanLayout. */
+  var HOME_CARDS = [
+    ['today', 'dash-today', 'Today'], ['qa', 'dash-qa', 'Quick actions'], ['week', 'wk-bar', 'This week'],
+    ['tiles', 'dash-tiles', 'Tiles'], ['plan', 'dash-plan', 'Plan'], ['sets', 'dash-sets', 'Sets this week'],
+    ['month', 'dash-cal', 'Month'], ['rts', 'dash-rts', 'Routines'], ['weight', 'dash-wt', 'Weight']
+  ];
+  var HOME_OFF = ['qa', 'tiles'];                    // asked for, not shown from the start: Home looks as it always did
+  var HOME_TILES_MAX = 8, HOME_QA_MAX = 6;
+  var TILE_KINDS = [
+    ['streak', 'Week streak'], ['month', 'Workouts this month'], ['total', 'Workouts in all'], ['since', 'Last workout'],
+    ['wsets', 'Sets this week'], ['wvol', 'Volume this week'], ['msets', 'Sets of one muscle'],
+    ['weight', 'Body weight'], ['e1rm', 'Estimated 1RM of one exercise']
+  ];
+  var QA_KINDS = [
+    ['weight', 'Log weight'], ['empty', 'Empty workout'], ['last', 'Repeat last'], ['stats', 'Stats'],
+    ['calendar', 'Calendar'], ['exercises', 'Exercises'], ['recap', 'Weekly recap'], ['find', 'Find people']
+  ];
+  function cleanLayout(l) {
+    var src = l && typeof l === 'object' && !Array.isArray(l) ? l : {}, o = [], h = [];
+    var ids = HOME_CARDS.map(function (c) { return c[0]; });
+    (Array.isArray(src.o) ? src.o : []).forEach(function (k) { if (ids.indexOf(k) >= 0 && o.indexOf(k) < 0) o.push(k); });
+    ids.forEach(function (k) { if (o.indexOf(k) < 0) o.push(k); });
+    (Array.isArray(src.h) ? src.h : HOME_OFF).forEach(function (k) { if (ids.indexOf(k) >= 0 && h.indexOf(k) < 0) h.push(k); });
+    return { o: o, h: h };
+  }
+  // whatever is in storage, a file or a friend's idea of it: only known cards, kinds and a sane number of each
+  function cleanHome(raw) {
+    var c = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+    var out = { split: c.split === true, t: cleanLayout(c.t), r: null, tiles: [], qa: [] };
+    out.r = cleanLayout(c.r || out.t);
+    (Array.isArray(c.tiles) ? c.tiles : []).forEach(function (x) {
+      if (out.tiles.length >= HOME_TILES_MAX || !x || typeof x !== 'object') return;
+      var t = { k: String(x.k) };
+      if (!TILE_KINDS.some(function (q) { return q[0] === t.k; })) return;
+      if (t.k === 'e1rm') { if (typeof x.x !== 'string' || !x.x) return; t.x = x.x.slice(0, 60); }
+      if (t.k === 'msets') { if (typeof x.m !== 'string' || !x.m) return; t.m = x.m.slice(0, 20); }
+      out.tiles.push(t);
+    });
+    (Array.isArray(c.qa) ? c.qa : []).forEach(function (k) {
+      if (out.qa.length < HOME_QA_MAX && out.qa.indexOf(k) < 0 && QA_KINDS.some(function (q) { return q[0] === k; })) out.qa.push(k);
+    });
+    return out;
+  }
+  var homeCfg = {};
+  try { homeCfg = JSON.parse(load('home')); } catch (e) {}
+  homeCfg = cleanHome(homeCfg);
+
+  // a rest day is one with a plan and nothing on it; a workout already running makes it a training day
+  function homeIsRest(now) { return !!(store.plan && !planAt(planIdx(now)) && !session); }
+  function homeLay() { return homeCfg.split && homeIsRest(new Date()) ? homeCfg.r : homeCfg.t; }
+  function homeMove(lay, k, d) {
+    var i = lay.o.indexOf(k), j = i + d;
+    if (i < 0 || j < 0 || j >= lay.o.length) return false;
+    lay.o[i] = lay.o[j];
+    lay.o[j] = k;
+    return true;
+  }
+  function homeToggle(lay, k) {
+    var i = lay.h.indexOf(k);
+    if (i < 0) lay.h.push(k); else lay.h.splice(i, 1);
+  }
+  function homeShow(lay, k) {
+    var i = lay.h.indexOf(k);
+    if (i >= 0) lay.h.splice(i, 1);
+  }
+
+  // One tile: { v: the big text, of: its goal, l: the small line, go: a screen, or ex: an exercise to open }, or null when
+  // there is nothing to show (an exercise since deleted, a muscle that is not one). ctx caches the walks over the history.
+  function tileData(t, ctx) {
+    var now = ctx.now, k = t.k, v, x, g;
+    function week() { return ctx.week || (ctx.week = statsFor(monday(now), addDays(monday(now), 7))); }
+    function day(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+    if (k === 'streak') return { v: String(weekStreak(store.workouts)), l: 'Week streak', go: 'calendar' };
+    if (k === 'month') {
+      v = store.workouts.filter(function (w) {
+        var d = new Date(w.date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }).length;
+      return { v: String(v), l: 'Workouts this month', go: 'calendar' };
+    }
+    if (k === 'total') return { v: String(store.workouts.length), l: 'Workouts in all', go: 'stats' };
+    if (k === 'since') {
+      v = 0;
+      store.workouts.forEach(function (w) { v = Math.max(v, new Date(w.date).getTime() || 0); });
+      if (!v) return { v: '–', l: 'Last workout', go: 'calendar' };
+      v = Math.round((day(now) - day(new Date(v))) / 864e5);
+      return { v: v <= 0 ? 'Today' : v === 1 ? 'Yesterday' : v + ' days', l: 'Last workout', go: 'calendar' };
+    }
+    if (k === 'wsets') return { v: String(week().sets), l: 'Sets this week', go: 'stat-sets' };
+    if (k === 'wvol') return { v: fmtKg(week().volume), l: 'Volume this week', go: 'stat-week' };
+    if (k === 'msets') {
+      v = week().by[t.m];
+      if (typeof v !== 'number') v = week().heads[t.m];
+      if (typeof v !== 'number') return null;
+      g = Number((store.targets[t.m] || {}).sets) || 0;
+      return { v: String(v), of: g ? String(g) : '', l: t.m + ' sets', go: 'stat-sets' };
+    }
+    if (k === 'weight') {
+      var keys = wtKeys(), last = keys.pop(), before = keys.pop();
+      if (!last) return { v: '–', l: 'Weight', go: 'weigh' };
+      return { v: store.weights[last] + ' kg', l: 'Weight' + (before ? ' · ' + wtSign(Math.round((store.weights[last] - store.weights[before]) * 100) / 100) : ''), go: 'weigh' };
+    }
+    if (k === 'e1rm') {
+      x = byId(t.x);
+      if (!x) return null;
+      v = (ctx.rec || (ctx.rec = myRecords()))[nameKey(x.name)];
+      return { v: v ? fmtKg(v[1]) : '–', l: x.name + ' 1RM', ex: x.id };
+    }
+    return null;
+  }
+
+  function dashTiles() {
+    if (!homeCfg.tiles.length || homeLay().h.indexOf('tiles') >= 0) return '';
+    var ctx = { now: new Date() }, cells = '';
+    homeCfg.tiles.forEach(function (t) {
+      var d = tileData(t, ctx);
+      if (!d) return;
+      cells += '<button class="hmtile" ' + (d.ex ? 'data-tile-ex="' + esc(d.ex) + '"' : 'data-push="' + d.go + '"') + '><b>' + esc(d.v) +
+        (d.of ? ' <small>/ ' + esc(d.of) + '</small>' : '') + '</b><i>' + esc(d.l) + '</i></button>';
+    });
+    return cells ? '<div class="hmtiles">' + cells + '</div>' : '';
+  }
+
+  function dashQa() {
+    if (!homeCfg.qa.length || homeLay().h.indexOf('qa') >= 0) return '';
+    return '<div class="hmqa">' + homeCfg.qa.map(function (k) {
+      var q = QA_KINDS.filter(function (x) { return x[0] === k; })[0];
+      return '<button data-qa="' + esc(k) + '">' + esc(q[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+
+  // the cards go into the order of the layout that fits today, and the ones it switches off get .homeoff;
+  // a card already in its place is not moved, so a redraw does not shake the page
+  function applyHome() {
+    var lay = homeLay(), end = $('dash-end'), host = end.parentNode, ref = end;
+    for (var i = lay.o.length - 1; i >= 0; i--) {
+      var c = HOME_CARDS.filter(function (x) { return x[0] === lay.o[i]; })[0], el = $(c[1]);
+      if (el.nextElementSibling !== ref) host.insertBefore(el, ref);
+      el.classList.toggle('homeoff', lay.h.indexOf(lay.o[i]) >= 0);
+      ref = el;
+    }
+  }
+
+  function homeQuick(k) {
+    if (k === 'weight') { wtOpen(wtKey(new Date())); return; }
+    if (k === 'empty' || k === 'last') {
+      if (session) { push('session'); return; }                    // one workout at a time: this one is still running
+      if (k === 'empty') { startEmpty(); return; }
+      var best = null;
+      store.workouts.forEach(function (w) {
+        if (w.routineId && routineById(w.routineId) && (!best || new Date(w.date) > new Date(best.date))) best = w;
+      });
+      if (best) startSession(routineById(best.routineId)); else toast('No routine to repeat yet');
+      return;
+    }
+    if (k === 'exercises') { pickFor = null; exFilter = null; push('exercises'); return; }
+    push(k === 'recap' ? 'stat-week' : k);                          // stats, calendar, find
+  }
+
   function drawDash() {
     paint($('dash-today'), dashToday());
+    paint($('dash-tiles'), dashTiles());
+    paint($('dash-qa'), dashQa());
     paint($('dash-plan'), dashPlan());
     paint($('dash-sets'), dashSets());
     paint($('dash-cal'), dashCal());
     paint($('dash-rts'), dashRoutines());
+    applyHome();
     drawWtHint();
   }
 
@@ -11161,6 +11366,10 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (wk) { openWorkout(wk.dataset.w); return; }
     var rt = e.target.closest('[data-rt]');
     if (rt) { openRtView(rt.dataset.rt); return; }
+    var tex = e.target.closest('[data-tile-ex]');
+    if (tex) { if (byId(tex.dataset.tileEx)) openHistory(tex.dataset.tileEx); return; }
+    var qa = e.target.closest('[data-qa]');
+    if (qa) { homeQuick(qa.dataset.qa); return; }
     var go = e.target.closest('[data-dash]');
     if (!go) return;
     var k = go.dataset.dash;
@@ -11170,6 +11379,103 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     else if (k === 'packs') openPacks(true);
     else if (k === 'setsmore') { dashSetsOpen = !dashSetsOpen; paint($('dash-sets'), dashSets()); }
     else if (k === 'workout') goTab('workout');
+  });
+
+  /* --- the Customize Home sheet: every change is saved and shown behind it at once --- */
+  var homeEd = 't';                                  // the layout being edited: t training day, r rest day
+  function homeCard(k) { return HOME_CARDS.filter(function (c) { return c[0] === k; })[0]; }
+  function tileName(t) {
+    var kind = TILE_KINDS.filter(function (q) { return q[0] === t.k; })[0], x = t.k === 'e1rm' && byId(t.x);
+    return (kind ? kind[1] : t.k) + (t.k === 'e1rm' ? ' · ' + (x ? x.name : 'deleted exercise') : t.k === 'msets' ? ' · ' + t.m : '');
+  }
+  // the second box beside the tile picker: which exercise or which muscle, hidden for a tile that needs neither
+  function homeFillX() {
+    var k = $('hm-tk').value, sel = $('hm-tx'), opts = '';
+    if (k === 'e1rm') {
+      opts = store.exercises.filter(function (x) { return !x.bodyweight; })      // a bodyweight lift has no weight to rank
+        .sort(function (a, b) { return a.name.localeCompare(b.name); })
+        .map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join('');
+    } else if (k === 'msets') {
+      opts = INJ_MUSCLES.map(function (m) { return '<option>' + esc(m) + '</option>'; }).join('');
+    }
+    sel.innerHTML = opts;
+    sel.hidden = !opts;
+  }
+  function drawHomeSheet() {
+    var lay = homeCfg[homeEd], h = '';
+    h += '<label class="privrow"><span>Different on rest days<i>A second layout for days with nothing planned</i></span>' +
+      '<input type="checkbox" id="hm-split"' + (homeCfg.split ? ' checked' : '') + '></label>';
+    if (homeCfg.split) {
+      h += '<div class="seg two" style="margin-bottom:.6rem"><button data-hm-ed="t" aria-pressed="' + (homeEd === 't') + '">Training day</button>' +
+        '<button data-hm-ed="r" aria-pressed="' + (homeEd === 'r') + '">Rest day</button></div>';
+    }
+    h += '<div class="hmrows">' + lay.o.map(function (k, i) {
+      var off = lay.h.indexOf(k) >= 0, nm = esc(homeCard(k)[2]);
+      return '<div class="hmrow' + (off ? ' off' : '') + '"><button class="hmchk" data-hm-vis="' + k + '" aria-pressed="' + !off + '" aria-label="' + nm + '"></button>' +
+        '<span>' + nm + '</span>' +
+        '<button class="hmmv" data-hm-up="' + k + '" aria-label="Move up"' + (i ? '' : ' disabled') + '>&uarr;</button>' +
+        '<button class="hmmv" data-hm-dn="' + k + '" aria-label="Move down"' + (i < lay.o.length - 1 ? '' : ' disabled') + '>&darr;</button></div>';
+    }).join('') + '</div>';
+    h += '<p class="hmlab">Tiles</p>';
+    if (homeCfg.tiles.length) {
+      h += '<div class="hmrows">' + homeCfg.tiles.map(function (t, i) {
+        return '<div class="hmrow"><span>' + esc(tileName(t)) + '</span><button class="hmmv" data-hm-tdel="' + i + '" aria-label="Remove tile">&times;</button></div>';
+      }).join('') + '</div>';
+    }
+    h += '<div class="hmadd"><select id="hm-tk" aria-label="Tile">' + TILE_KINDS.map(function (q) {
+      return '<option value="' + q[0] + '">' + esc(q[1]) + '</option>';
+    }).join('') + '</select><select id="hm-tx" aria-label="Which one" hidden></select><button class="btn btn-ghost" id="hm-tadd">Add</button></div>';
+    h += '<p class="hmlab">Quick actions</p><div class="hmchips">' + QA_KINDS.map(function (q) {
+      return '<button data-hm-qa="' + q[0] + '" aria-pressed="' + (homeCfg.qa.indexOf(q[0]) >= 0) + '">' + esc(q[1]) + '</button>';
+    }).join('') + '</div><button class="dshalt" id="hm-reset">Reset to default</button>';
+    paint($('home-body'), h);
+    homeFillX();
+  }
+  function homeChanged() {
+    save('home', JSON.stringify(homeCfg));
+    drawHomeSheet();
+    drawDash();
+  }
+  $('home-edit').addEventListener('click', function () {
+    homeEd = 't';
+    drawHomeSheet();
+    $('home-sheet').hidden = false;
+  });
+  $('home-done').addEventListener('click', function () { $('home-sheet').hidden = true; });
+  document.querySelector('[data-home-close]').addEventListener('click', function () { $('home-sheet').hidden = true; });
+  $('home-body').addEventListener('change', function (e) {
+    if (e.target.id === 'hm-split') {
+      homeCfg.split = e.target.checked;
+      homeEd = 't';
+      if (homeCfg.split) homeCfg.r = cleanLayout(homeCfg.t);    // it starts as a copy of the layout in use
+      homeChanged();
+    } else if (e.target.id === 'hm-tk') homeFillX();
+  });
+  $('home-body').addEventListener('click', function (e) {
+    var lay = homeCfg[homeEd], b;
+    if ((b = e.target.closest('[data-hm-ed]'))) homeEd = b.dataset.hmEd;
+    else if ((b = e.target.closest('[data-hm-vis]'))) homeToggle(lay, b.dataset.hmVis);
+    else if ((b = e.target.closest('[data-hm-up]'))) homeMove(lay, b.dataset.hmUp, -1);
+    else if ((b = e.target.closest('[data-hm-dn]'))) homeMove(lay, b.dataset.hmDn, 1);
+    else if ((b = e.target.closest('[data-hm-tdel]'))) homeCfg.tiles.splice(Number(b.dataset.hmTdel), 1);
+    else if ((b = e.target.closest('[data-hm-qa]'))) {
+      var q = b.dataset.hmQa, at = homeCfg.qa.indexOf(q);
+      if (at >= 0) homeCfg.qa.splice(at, 1);
+      else if (homeCfg.qa.length >= HOME_QA_MAX) { toast('Up to ' + HOME_QA_MAX + ' quick actions'); return; }
+      else { homeCfg.qa.push(q); homeShow(lay, 'qa'); }          // a card asked for is a card wanted
+    } else if (e.target.closest('#hm-tadd')) {
+      var t = { k: $('hm-tk').value }, tx = $('hm-tx');
+      if (t.k === 'e1rm') { if (!tx.value) { toast('Add an exercise first'); return; } t.x = tx.value; }
+      if (t.k === 'msets') t.m = tx.value;
+      if (homeCfg.tiles.length >= HOME_TILES_MAX) { toast('Up to ' + HOME_TILES_MAX + ' tiles'); return; }
+      if (homeCfg.tiles.some(function (x) { return x.k === t.k && x.x === t.x && x.m === t.m; })) { toast('That tile is already there'); return; }
+      homeCfg.tiles.push(t);
+      homeShow(lay, 'tiles');
+    } else if (e.target.closest('#hm-reset')) {
+      homeCfg = cleanHome(null);
+      homeEd = 't';
+    } else return;
+    homeChanged();
   });
 
   /* --- Weight: one number a day, store.weights = { 'YYYY-MM-DD': kg }, synced with the rest of the store --- */

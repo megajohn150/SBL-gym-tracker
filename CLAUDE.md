@@ -73,7 +73,7 @@ more than their title says, listed here by what is actually inside.
 | 8571 | SESSION | the live workout (`startSession`, `drawSession`, the number pad, `padHit`), its clock (`sessionSeconds`, `autoPause`) and the time left (`sessLeft`, `sessPrior`, `drawSessLeft`, `stampDone`), its header row (`sessStats`, `drawSessTotals`, and behind the volume and trophy cells `sessVolHtml`, `sessPrHtml`), **and then** (9536) the numbers behind it: `num`, `logged`, `workoutTotals`, `epley`, `stepRecords`, `recomputeRecords`, `bestsFor`, `livePrs`, `finishSession`, `drawSummary`, `shareCanvas` / `imgCells` / `shareSummary` / `shareChart` |
 | 9985 | BACKUP | `exportData` / `exportCsv` (every file leaves through `sendFile` / `sendText`), `importData` (with `cleanWorkouts`, `cleanExercises`, `cleanPhotos` / `photoBlob`, `mergeImport` and its three-way sheet `impc-sheet`), erase, account sheets, `deleteAccount`, `leaveDevice` |
 | 10388 | push notifications | subscription handling, `pushJob`, the settings rows, the Live reactions switch |
-| 10590 | Hevy import | `hevyParse`/`hevyImport`, `hevyCsv` (the CSV export, its reverse); **then, with no banner of its own:** ending a workout (`sess-end`), the Home and Feed screens (10864) — `drawHome`, `drawDash` and the `dash*` / `plan*` helpers, `drawFeedDot`, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the install card (`drawA2hs`, `needsA2hs`), the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (11385: `snapTake`, `snapList`) |
+| 10590 | Hevy import | `hevyParse`/`hevyImport`, `hevyCsv` (the CSV export, its reverse); **then, with no banner of its own:** ending a workout (`sess-end`), the Home and Feed screens (10864) — `drawHome`, `drawDash` and the `dash*` / `plan*` helpers, the Home layout (`HOME_CARDS`, `cleanHome`, `tileData`, `dashTiles`, `dashQa`, `applyHome`, and its sheet `drawHomeSheet`), `drawFeedDot`, `workoutCard`, `postOk`, `prN`, `drawWeekBar`, `drawReportBar`, the install card (`drawA2hs`, `needsA2hs`), the backup reminder (`drawBackupBar`, `bkAge`), the previous-versions snapshots (11385: `snapTake`, `snapList`) |
 | 11595 | likes, comments, the bell | reactions, the offline queue (`rq*`), comments (11823), `openPush` (11993), notifications (12036), **and then** the profile screen and its charts (12192: `drawProfile`, `chartBody` with its shared scale `chartScale` / `chartH` / `xTick` and the end values `chartEnds` / `yEnds`, `bucketShell`), `weekStreak`, `miniMonth` |
 | 12778 | STATISTICS | `statsFor`, `weekBoard`, set count (`drawStatSets`: opens on the current week as far as it has got, `ssOff` 0), `drawTargets`, `drawPrio` (the Priorities screen `s-prio`, beside Weekly targets in the Set count menu), `stallList`, the radar, body map, injuries (`injActive`), readiness, the empty state of every statistics screen (`statEmpty`); the monthly report helpers and the weekly recap (13635: `drawWeekRecap`, `wrGo`, `drawRecapBar`), `drawStatMonth`; the calendar; `openWorkout` (14129), avatars and `muscleArt`, medals, `drawDetail` (a finished workout, own or a friend's) and its edit mode, where tapping a set number shows last time (`detailPv`); **then, under the same banner:** session menus (14872), the dock, edge-swipe back, swipe-to-delete, the rest timer (15279: `startRest`, `tickRest`), the music buttons, `drawRestCfg` |
 | 15460 | THEME | skins and light/dark |
@@ -163,7 +163,7 @@ calendar marks, the merge), `weights` (one number a day, the join of two devices
 added load in the records), `changelog` (what is unread, when the toast shows), `send` (a file leaves through the share sheet or a
 download; the backup clock moves only once it has gone), `sides` (an exercise that changes kind changes every routine item),
 `sides2` (side balance), `left` (the time left in a workout), `feeddot` (the dot after the Feed tab), `pills` (the lifetime pills
-and the fun comparison), `perside` (per side volume, the history migration). Thirty-three files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
+and the fun comparison), `perside` (per side volume, the history migration), `homecfg` (the Home layout: what `cleanHome` lets through, which layout a day uses, moving and hiding cards, the tile numbers). Thirty-four files, plus `lib.js`, the helper they share (`slice`, `suite`). Not covered, because it needs a DOM: every `draw*`, navigation,
 gestures, the auth gate, the service worker.
 
 ## Verifying in a browser
@@ -200,7 +200,7 @@ store), `session` (written directly as `tracker-session`), `skin`, `mode`, `xsty
 version this device ran, so the "Version updated" toast shows once per version), `chg` (the last version whose change list was opened; the list shows what is newer than it, so skipped toasts are not lost), `reopen` (the tab a pull-to-refresh
 asked for), `uid` (the last account here; also names the owner of snapshots at boot),
 `react-q` (queued likes and comments), `sigs-<user_id>` (what has already gone up),
-`feed-<user_id>` (the cached feed, below), `feedseen-<user_id>` (the keys of the feed as the Feed last showed it; drives the dot after the Feed tab), `feedf` (the Feed filter), `bk-cfg` / `bk-last` /
+`feed-<user_id>` (the cached feed, below), `feedseen-<user_id>` (the keys of the feed as the Feed last showed it; drives the dot after the Feed tab), `feedf` (the Feed filter), `home` (the Home layout, below; kept on the device like `skin`, never synced), `bk-cfg` / `bk-last` /
 `bk-base` / `bk-snooze` (backup reminder), `wr-seen` (the recap card, keyed by the week's
 Monday), `report-seen`, `notes-seen`, `notes-hid`. IndexedDB `tracker-snaps` holds the
 previous versions (store `s`, key `at`, fields `u` owner, `w`/`x`/`r` counts, `data` JSON); IndexedDB `tracker-photos` holds the
@@ -358,6 +358,14 @@ recap card (`drawRecapBar`, from 20:00 Warsaw time on Sundays; `WR_SHOWCASE`, no
 month's report card, then `drawDash`: Today (`dashToday`), the week bar (`drawWeekBar`: workouts, sets against the
 summed set targets, week streak; reads `targets.Total`), Plan (`dashPlan`), Sets this week (`dashSets`: the muscles
 with a set goal, priorities (`targets[m].star`, a star after the name, `prioStar`) first and then the most sets this week first; every priority shows, else three rows, and a See more for the rest, `dashSetsOpen`; the stars are picked on `s-prio`, and Statistics keeps its own order by sets), the month (`dashCal`) and the four routines that waited longest (`dashRoutines`).
+**The Home layout** (`homeCfg`, key `tracker-home`, never synced, cleaned by `cleanHome`): the sliders icon in Home's header opens `home-sheet`.
+Nine cards (`HOME_CARDS`: today, qa, week, tiles, plan, sets, month, rts, weight) each have an element id (`dash-today`, `dash-qa`, `wk-bar`,
+`dash-tiles`, `dash-plan`, `dash-sets`, `dash-cal`, `dash-rts`, `dash-wt`); `applyHome` (run by every `drawDash`) puts them in the order of the
+layout in use, between the banners above and `dash-end`, and hides the switched-off ones with the class `homeoff` (not `hidden`: `wk-bar` uses
+that itself). `homeCfg.t` is the training-day layout, `homeCfg.r` the rest-day one, used only when `split` is on and `homeIsRest` (a plan, nothing planned
+today, no workout running); a layout is `{ o: order, h: hidden ids }`. Tiles and quick actions start switched off (`HOME_OFF`), so Home
+looks as before until asked. A tile is `{ k, x? (exercise id), m? (muscle) }` drawn by `tileData` (null when there is nothing to show, so a deleted
+exercise just disappears); a quick action is a key of `QA_KINDS` run by `homeQuick`. Caps: 8 tiles, 6 quick actions. `tests/homecfg.js` covers it.
 All of those hang off element ids (`live-bars`, `wk-bar`, `report-bar`…) that moved from Feed to Home unchanged. **The Feed tab's dot**
 (`drawFeedDot`, class `feednew`): `tracker-feedseen-<user_id>` holds the `by|id` keys of the feed as the Feed last showed it; a friend's
 post whose key is not in it lights the dot, opening the Feed (with the post in it) writes the list, and an edit keeps its key. The first
