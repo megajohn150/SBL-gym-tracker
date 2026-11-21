@@ -1632,6 +1632,22 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
 .stlegend{display:flex;gap:16px;justify-content:center;padding:.2rem 0 .9rem;font-size:.7rem;color:var(--fg-3)}
 .stlegend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
 .radar{display:block;margin:0 auto;max-width:330px;width:100%}
+.ssgrid{display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ssn), 20px);gap:2px 0;align-items:center;padding:.9rem var(--pad) 0}
+.ssg-h{display:block;padding:3px 0;text-align:center;font:inherit;color:var(--fg-3);border-radius:calc(var(--radius) / 2)}
+.ssg-h b{display:block;font-size:.72rem;font-weight:700;color:var(--fg-2)}
+.ssg-h i{display:block;font-style:normal;font-size:.5rem;letter-spacing:.06em;text-transform:uppercase;min-height:.8em}
+.ssg-h.now b{color:var(--fg)}
+.ssg-h.sel,.ssg-c.sel{background:var(--surface)}
+.ssg-m{min-width:0;padding:5px 4px 5px 0;font-size:.8rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ssg-m small{margin-left:4px;font-size:.65rem;font-weight:600;color:var(--fg-3)}
+.ssg-m .prstar{vertical-align:-1px}
+.ssg-c{display:grid;place-items:center;height:30px}
+.ssg-c u{display:grid;place-items:center;width:18px;height:20px;border-radius:calc(var(--radius) / 4);border:1.5px solid transparent;text-decoration:none;font-size:.6rem;font-weight:700;color:var(--bg)}
+.ssg-c u.hit{background:var(--green)}
+.ssg-c u.miss{background:var(--red)}
+.ssg-c u.pend{border-color:var(--fg-3);border-style:dashed;color:var(--fg-2)}
+.ssg-c u.none{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.ssg-note{padding:.5rem var(--pad) 0}
 .stweek{display:flex;align-items:center;gap:10px;padding:1rem var(--pad) .3rem}
 .stweek .lab{flex:1;text-align:center;font-size:.9rem;font-weight:700}
 .stweek button{color:var(--fg-2);font-size:1.1rem;padding:4px 10px}
@@ -3072,7 +3088,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Stats</div>
     <ul class="gdl">
       <li><b>Empty screens.</b> Until you have a workout, the statistics screens say so and offer Start a workout.</li>
-      <li><b>Set count per muscle group:</b> this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached; a starred muscle is one of your priorities, picked in &#8942; &rsaquo; <b>Priorities</b>. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
+      <li><b>Set count per muscle group:</b> on top, a grid of the last 12 weeks (fewer while your history is shorter): a row for every muscle that has a weekly set goal, a cell per week with its sets, this week last; green where the goal was reached, red where a finished week fell short, outlined for this week, which is still open, and a dot for weeks before your first workout. A tap on a week's date opens that week in the picker below. Then this week as far as it has got (the arrows go to earlier weeks), sets and days per muscle against your goals; a goal is marked once reached; a starred muscle is one of your priorities, picked in &#8942; &rsaquo; <b>Priorities</b>. &#8942; &rsaquo; <b>Weekly targets</b>: sets and days for each muscle (shoulders per head), plus Total workouts a week (1 to 7). The week bar reads these. <button class="gdgo" data-push="stat-sets" aria-label="Open Set count">&rsaquo;</button></li>
       <li><b>Muscle distribution, Chart:</b> radar of this period against the one before (7 days to a year) with workouts, duration, volume, sets. <button class="gdgo" data-push="stat-chart" aria-label="Open Muscle distribution chart">&rsaquo;</button></li>
       <li><b>Muscle distribution, Body:</b> a body map coloured green to red by sets, week by week with the arrows; the strip shows which days you trained. <button class="gdgo" data-push="stat-body" aria-label="Open Muscle distribution body map">&rsaquo;</button></li>
       <li><b>Injuries:</b> name it and mark the muscles; the map shows them in red and those exercises get a warning in a workout. <b>Healed</b> keeps the injury on the list with its date but stops the warning and the red; Reopen brings it back. <button class="gdgo" data-push="stat-injuries" aria-label="Open Injuries">&rsaquo;</button></li>
@@ -3884,13 +3900,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4575';
+  var APP_VERSION = '3.4576';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4576', 'Set count starts with a grid of the last 12 weeks: for every muscle with a goal, green where it was reached and red where it was missed; tap a week to open it below'],
     ['3.4575', 'Dividers on Home have a space of their own (Space around dividers in Customize Home), so they still divide with tight spacing'],
     ['3.4574', 'Home spacing is yours to pick: Tight (as it always was), Snug, Normal or Roomy, in Customize Home'],
     ['3.4573', 'Home cards no longer carry lines of their own, so the order you pick always looks even; add a divider above any card in Customize Home'],
@@ -13419,6 +13436,54 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   });
 
   /* --- set count: this week, as far as it has got, and the weeks before it --- */
+  var SS_WEEKS = 12;  // the weeks the grid above the picker holds, this one last
+  // For every muscle with a weekly set goal, its sets in each of the last n weeks (oldest first, this week last), in the
+  // order of the table below, the shoulder standing for its heads. `first` is the date of the first workout, or null: the
+  // weeks before its week are marked, a goal cannot have been missed before there was anything to do.
+  function setsTrend(n, now, first) {
+    var mon = monday(now), weeks = [], rs = [], rows = [], names = [], i;
+    var fm = first ? monday(first).getTime() : 0;
+    for (i = n - 1; i >= 0; i--) {
+      var from = addDays(mon, -7 * i);
+      weeks.push({ from: from, off: i, before: from.getTime() < fm });
+      rs.push(statsFor(from, addDays(from, 7)));
+    }
+    Object.keys(MUSCLE_CELL).forEach(function (m) {
+      if (m === 'Shoulders') names = names.concat(HEADS); else names.push(m);
+    });
+    names.forEach(function (m) {
+      var goal = Number((store.targets[m] || {}).sets) || 0;
+      if (!goal) return;                              // nothing to reach, nothing to miss
+      rows.push({ name: m, goal: goal, vals: rs.map(function (r) { return Number(r.by[m] != null ? r.by[m] : r.heads[m]) || 0; }) });
+    });
+    return { weeks: weeks, rows: rows };
+  }
+  // one cell: hit (goal reached), miss (a finished week short of it), pend (this week, still open), none (before you began)
+  function ssState(v, goal, week) {
+    if (week.before) return 'none';
+    if (v >= goal) return 'hit';
+    return week.off === 0 ? 'pend' : 'miss';
+  }
+  // the grid above the week picker: a column per week, a row per muscle with a goal; a tap on a week's head puts the
+  // picker below on that week, which is marked. The number stays in the cell, so colour is not the only thing it says.
+  function ssGridHtml(g) {
+    var sel = ssOff, prevMonth = -1;
+    var head = g.weeks.map(function (w) {
+      var mo = w.from.getMonth(), tag = mo === prevMonth ? '&nbsp;' : MONTHS[mo];
+      prevMonth = mo;
+      return '<button class="ssg-h' + (w.off === sel ? ' sel' : '') + (w.off === 0 ? ' now' : '') + '" data-ssgo="' + w.off +
+        '" aria-label="Week of ' + esc(dmy(w.from)) + '"><b>' + w.from.getDate() + '</b><i>' + tag + '</i></button>';
+    }).join('');
+    var rows = g.rows.map(function (r) {
+      return '<span class="ssg-m">' + esc(r.name) + prioStar(r.name) + '<small>/' + r.goal + '</small></span>' +
+        r.vals.map(function (v, i) {
+          var st = ssState(v, r.goal, g.weeks[i]);
+          return '<span class="ssg-c' + (g.weeks[i].off === sel ? ' sel' : '') + '"><u class="' + st + '">' + (st === 'none' ? '' : v) + '</u></span>';
+        }).join('');
+    }).join('');
+    return rows ? '<div class="ssgrid" style="--ssn:' + g.weeks.length + '"><span></span>' + head + rows + '</div>' +
+      '<p class="hint ssg-note">Weekly set goals, week by week: green reached, red missed, outlined for this week, which is still open. Tap a week to see it below.</p>' : '';
+  }
   var ssOff = 0;     // how many weeks back the set count is looking; 0 is this week
   function drawStatSets() {
     if (statEmpty('stsets-body')) return;
@@ -13431,7 +13496,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     end = addDays(end, -7 * ssOff);
     var start = addDays(end, -7);
     var r = statsFor(start, end);
-    $('stsets-body').innerHTML =
+    // a trend needs two weeks to be one, and no more of them than there are since the first workout
+    var cols = Math.min(SS_WEEKS, max + 1), grid = cols > 1 ? setsTrend(cols, new Date(), new Date(first)) : null;
+    $('stsets-body').innerHTML = (grid ? ssGridHtml(grid) : '') +
       '<div class="stweek"><button data-ssnav="1" aria-label="Earlier week"' + (ssOff >= max ? ' disabled' : '') +
         '>&lsaquo;</button><span class="lab">' + dmy(start) + ' \u2013 ' + dmy(addDays(end, -1)) +
         '</span><button data-ssnav="-1" aria-label="Later week"' + (ssOff ? '' : ' disabled') + '>&rsaquo;</button></div>' +
@@ -13441,6 +13508,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   $('stsets-body').addEventListener('click', function (e) {
     var c = e.target.closest('[data-w]');
     if (c) { openWorkout(c.dataset.w); return; }
+    var go = e.target.closest('[data-ssgo]');
+    if (go) { ssOff = Number(go.dataset.ssgo) || 0; drawStatSets(); return; }
     var nav = e.target.closest('[data-ssnav]');
     if (!nav || nav.disabled) return;
     ssOff = Math.max(0, ssOff + Number(nav.dataset.ssnav));
