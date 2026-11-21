@@ -88,6 +88,11 @@ store.plan[today] = '';
 cfg.split = false;
 t.is('split off: the training layout even on a rest day', f.homeLay() === cfg.t, true);
 
+// the space between cards
+t.is('the gap starts tight, as Home always was', f.cleanHome(null).gap, 'xs');
+t.is('and keeps a known choice', ['xs', 's', 'm', 'l'].map((g) => f.cleanHome({ gap: g }).gap), ['xs', 's', 'm', 'l']);
+t.is('anything else is tight', [f.cleanHome({ gap: 'huge' }).gap, f.cleanHome({ gap: 5 }).gap, f.cleanHome({ gap: '1rem; x' }).gap], ['xs', 'xs', 'xs']);
+
 // the person's own lines
 t.is('a first launch has no line anywhere', f.cleanHome(null).t.d, []);
 t.is('lines: known cards only, once each', f.cleanLayout({ d: ['plan', 'plan', 'nope', 'sets', 5] }).d, ['plan', 'sets']);
