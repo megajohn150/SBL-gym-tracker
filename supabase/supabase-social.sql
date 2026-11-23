@@ -440,11 +440,14 @@ returns void
 language plpgsql security definer set search_path = public, extensions as $$
 declare nick text;
 begin
-  if kind not in ('like', 'flex', 'say', 'look', 'leave') then return; end if;
+  if kind not in ('like', 'flex', 'say', 'look', 'leave', 'here', 'away') then return; end if;
   if target is null or target = auth.uid() or not public.friends_with(target) then return; end if;
-  if not exists (select 1 from public.live_session where user_id = target) then return; end if;
+  -- 'here' / 'away' travel the other way: the trainer tells a watcher they have the workout screen open,
+  -- so it is the caller who must be training. 'i' is the sender, so the watcher knows whose it is.
+  if not exists (select 1 from public.live_session
+                 where user_id = case when kind in ('here', 'away') then auth.uid() else target end) then return; end if;
   select username into nick from public.profiles where user_id = auth.uid();
-  perform realtime.send(jsonb_build_object('k', kind, 'n', coalesce(nick, ''), 't', left(coalesce(msg, ''), 20)),
+  perform realtime.send(jsonb_build_object('k', kind, 'n', coalesce(nick, ''), 'i', auth.uid(), 't', left(coalesce(msg, ''), 20)),
                         'ping', 'u:' || target::text, true);
 end $$;
 revoke execute on function public.live_peek(uuid, text, text) from public, anon;

@@ -435,6 +435,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .eyewatch{position:fixed;right:0.5rem;bottom:calc(env(safe-area-inset-bottom) + 4.25rem);z-index:60;pointer-events:none;font-size:2rem;line-height:1;display:flex;gap:0.5rem;align-items:flex-end}
 /* the eyes belong to the workout screen itself: any menu or sheet laid over it (volume, records, history, metadata) covers them */
 body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
+.eyewatch.eyeown{right:auto;left:0.5rem}
 .eyewatch > span{display:block;animation:eyesit 2.4s ease-in-out infinite alternate;will-change:transform}
 .eyewatch > span b{display:block;text-align:center;font-weight:400;margin-bottom:0.25rem}
 @keyframes eyesit{from{transform:translate3d(-0.375rem,2px,0)}to{transform:translate3d(0.375rem,-0.1875rem,0)}}
@@ -3844,6 +3845,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <h3>Live reactions</h3>
     <p class="confirm-text">While you train, a friend can open your workout and send you a like, a flex or a
       short word, which pops up on your screen, and a pair of eyes shows you who is watching.
+      They in turn see eyes on the left while you have your workout open.
       Switch it off and none of that reaches you; your friends see their buttons greyed out.</p>
     <button class="btn btn-primary" id="lr-ok">Got it</button>
   </div>
@@ -3932,7 +3934,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4584';
+  var APP_VERSION = '3.4585';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -4818,11 +4820,34 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var f = document.querySelector('.screen.on .sfoot');
     if (f) el.style.bottom = (window.innerHeight - f.getBoundingClientRect().top + 8) + 'px';
   }
-  function watchOn(nick) { watchers[nick || '?'] = Date.now() + 40000; watchSync(); }
-  function watchOff(nick) { delete watchers[nick || '?']; watchSync(); }
+  // The other way round: the trainer tells each watcher (by id, which the look ping carries) while the workout
+  // screen is open and the app in front; a watcher shows the trainer's own eyes, on the left, until an away
+  // or 40 s without a here (the trainer repeats it for every look).
+  var watchIds = {}, hereSent = false, ownerHere = {}, ownEl = null;
+  function hereNow() { return !!session && current() === 's-session' && !document.hidden; }
+  function watchOn(nick, id) {
+    nick = nick || '?';
+    watchers[nick] = Date.now() + 40000;
+    if (id) { watchIds[nick] = id; if (hereNow()) peek(id, 'here'); }
+    watchSync();
+  }
+  function watchOff(nick) { nick = nick || '?'; delete watchers[nick]; delete watchIds[nick]; watchSync(); }
+  function ownerSeen(id, on) {
+    if (!id) return;
+    if (on) ownerHere[id] = Date.now() + 40000; else delete ownerHere[id];
+    watchSync();
+  }
+  document.addEventListener('visibilitychange', function () { watchSync(); });
   function watchSync() {
     var now = Date.now(), any = false;
-    Object.keys(watchers).forEach(function (n) { if (watchers[n] < now) delete watchers[n]; else any = true; });
+    Object.keys(watchers).forEach(function (n) { if (watchers[n] < now) { delete watchers[n]; delete watchIds[n]; } else any = true; });
+    var here = hereNow();
+    if (here !== hereSent) {
+      hereSent = here;
+      Object.keys(watchIds).forEach(function (n) {
+        if (watchers[n]) peek(watchIds[n], here ? 'here' : 'away'); else delete watchIds[n];   // watchers is emptied wholesale when reactions go off
+      });
+    }
     // The trainer sees whoever is watching. A watcher sees the same picture of themselves, so
     // they can tell their eyes and reactions are out there.
     var list = [], lv = current() === 's-livew' && liveView && liveSess[liveView.id];
@@ -4846,8 +4871,19 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       aboveFoot(watchEl);
     }
     if (watchEl) aboveFoot(watchEl);     // render calls this before the screen is on, so the footer is measured on every pass
-    if (any && !watchT) watchT = setInterval(watchSync, 2000);
-    else if (!any && watchT) { clearInterval(watchT); watchT = null; }
+    // the trainer's eyes, only on a friend's workout that takes reactions at all
+    var oh = !!(lv && lv.react !== false && ownerHere[liveView.id] > now);
+    if (ownEl && !oh) { ownEl.parentNode.removeChild(ownEl); ownEl = null; }
+    if (oh && !ownEl) {
+      ownEl = document.createElement('div');
+      ownEl.className = 'eyewatch eyeown';
+      ownEl.innerHTML = '<span><b>&#128064;</b><span style="display:block">' +
+        avatarTag(38, '', social.people[liveView.id] || {}) + '</span></span>';
+      document.body.appendChild(ownEl);
+    }
+    if (ownEl) aboveFoot(ownEl);
+    if ((any || oh) && !watchT) watchT = setInterval(watchSync, 2000);
+    else if (!any && !oh && watchT) { clearInterval(watchT); watchT = null; }
   }
 
   // The watcher's side: the server checks the friendship and that a workout is running, then pings its owner.
@@ -5032,8 +5068,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       likePop(p.n, '<span class="saytxt">' + esc(String(p.t || '').slice(0, 20)) + '</span>', true);
       return;
     }
-    if (pk === 'look') { watchOn(p.n); return; }
+    if (pk === 'look') { watchOn(p.n, p.i); return; }
     if (pk === 'leave') { watchOff(p.n); return; }
+    if (pk === 'here' || pk === 'away') { ownerSeen(p.i, pk === 'here'); return; }
     liveHit(pk || 'react');
   }
 
