@@ -3934,7 +3934,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4585';
+  var APP_VERSION = '3.4586';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -6859,6 +6859,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         '</button>';
     };
 
+    // a name that matches no exercise can be made right here, and a picker then adds it where it was going
+    var qRaw = $('ex-search').value.trim().slice(0, $('ex-name').maxLength > 0 ? $('ex-name').maxLength : 60);
+    var mk = qRaw && !exDel && !store.exercises.some(function (x) { return x.name.toLowerCase() === qRaw.toLowerCase(); })
+      ? '<button class="row" data-excreate><span class="lab"><span class="nmrow"><span class="nm">Create \u201c' +
+        esc(qRaw) + '\u201d</span></span></span><span class="chev">+</span></button>' : '';
+
     if (recent) {
       var at = {};
       store.workouts.forEach(function (w) {
@@ -6866,16 +6872,16 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       });
       hits = hits.filter(function (x) { return at[x.id]; })
         .sort(function (a, b) { return at[a.id] < at[b.id] ? 1 : -1; });
-      list.innerHTML = hits.length ? hits.map(function (x) { return row(x, true); }).join('')
-        : '<div class="exgroup">' + (q ? 'No matches' : 'Nothing used yet') + '</div>';
+      list.innerHTML = (hits.length ? hits.map(function (x) { return row(x, true); }).join('')
+        : '<div class="exgroup">' + (q ? 'No matches' : 'Nothing used yet') + '</div>') + mk;
       return;
     }
 
-    list.innerHTML = !hits.length
+    list.innerHTML = (!hits.length
       ? '<div class="exgroup">No matches</div>'
       : order.filter(function (m) { return groups[m]; }).map(function (m) {
           return '<div class="exgroup exgart">' + muscleArt(m, 30) + esc(m) + '</div>' + groups[m].map(function (x) { return row(x, false); }).join('');
-        }).join('');
+        }).join('')) + mk;
   }
 
   $('ex-filter').addEventListener('click', function () {
@@ -6910,6 +6916,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   $('ex-search').addEventListener('input', function () { drawExercises(); });
 
   $('ex-list').addEventListener('click', function (e) {
+    if (e.target.closest('[data-excreate]')) {
+      var nm = $('ex-search').value.trim();
+      resetExForm();
+      push('exercise-form');
+      $('ex-name').value = nm.slice(0, $('ex-name').maxLength > 0 ? $('ex-name').maxLength : 60);
+      $('ex-name').dispatchEvent(new Event('input'));    // the code and the bodyweight guess follow the name
+      return;
+    }
     var row = e.target.closest('[data-ex]');
     if (!row) return;
     if (exDel) {
