@@ -25,8 +25,8 @@ t.is('a tap fills from the same set last time', s.fillFrom(ex, 0).weight, '70');
 t.is('or, with no last time, from the set above', s.fillFrom(ex, 1), full);
 const side = { unilateral: true, prev: [], sets: [Object.assign({}, full, { label: 'R1' }), { label: 'L1', weight: '60', reps: '8', rir: '' }, { label: 'R2', weight: '', reps: '', rir: '' }] };
 t.is('one side fills from the same side, not from the row above', s.fillFrom(side, 2).label, 'R1');
-t.is('a hold copies the set above even when last time had something else',
-  [s.setAbove(ex, 1), s.setAbove(ex, 0), s.setAbove(side, 2).label], [full, null, 'R1']);
+t.is('a hold copies the row directly above, even from the other side',
+  [s.setAbove(ex, 1), s.setAbove(ex, 0), s.setAbove(side, 2).label], [full, null, 'L1']);
 t.is('the step since last time: up, down, none, and F is zero in reserve',
   [s.delta('82.5', '80'), s.delta('8', '10'), s.delta('', '10'), s.delta('F', '2', true)],
   ['<i class="delta up">+2.5</i>', '<i class="delta down">-2</i>', '', '<i class="delta down">-2</i>']);
