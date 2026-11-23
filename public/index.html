@@ -3061,7 +3061,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
       <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Do later</b> (sends it to the end of the workout); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
       <li><b>The row under the name.</b> The clock, sets done out of planned, volume, records, and how long is left (~35 min). The estimate is the pace of your own sets so far, held up by how long this routine usually takes at the start; a long break in the middle is left out. When every set is ticked it says Done, and the clock stops.</li>
-      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, End workout (saves it from wherever you are), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running, with the exercise you are on after its name as a short code and the sets ticked out of the planned ones (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
+      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, End workout (saves it from wherever you are), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running, with the exercise you are on after its name as a short code and all its sets ticked out of the total, both sides counted for a one-sided exercise (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring (the last tick of a workout ends a running one and starts none); it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
       <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept; a workout with no reps anywhere asks first, and Save anyway keeps it with its exercises, for a session where the numbers were not tracked. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
     </ul>
@@ -3939,13 +3939,14 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4592';
+  var APP_VERSION = '3.4593';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
   // one), so versions without a line are normal. The "Version updated" toast opens the lines newer
   // than the version this device ran before; the version number in Settings opens its own line.
   var CHANGELOG = [
+    ['3.4593', 'The workout bar at the bottom shows where you are, quietly after the name: the exercise\'s short code and its sets ticked out of all of them (both sides count for a one-sided exercise)'],
     ['3.4591', 'The version number in Settings always opens the last 10 changes, with the current version in bold'],
     ['3.4580', 'Interface size in Settings: Normal or Slightly smaller, which scales the whole app so you see more at once'],
     ['3.4578', 'Changing a weekly set goal no longer drops the muscle\'s priority star'],
@@ -15845,16 +15846,13 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   /* --- the session you left running --- */
-  // Where the workout is, for the dock: the short code of the exercise it stands at and its rounds ticked out of those
-  // planned (a one-sided pair of rows is one round). Nothing on the closing card, or on an exercise that is skipped.
+  // Where the workout is, for the dock: the short code of the exercise it stands at and its sets ticked out of all of
+  // them. A one-sided exercise counts every row, both sides (two a side is 4), unlike the header's rounds. Nothing on
+  // the closing card, or on an exercise that is skipped.
   function dockProgress(s) {
     var e = s && s.exercises[s.idx];
     if (!e || e.skipped || !e.sets.length) return null;
-    var n = e.sets.length, uni = !!e.unilateral, done = 0, i;
-    for (i = 0; i < n; i += uni ? 2 : 1) {
-      if (e.sets[i].done && (!uni || i + 1 >= n || e.sets[i + 1].done)) done++;
-    }
-    return { code: e.code || initials(e.name), done: done, total: uni ? Math.ceil(n / 2) : n };
+    return { code: e.code || initials(e.name), done: e.sets.filter(function (st) { return !!st.done; }).length, total: e.sets.length };
   }
   function drawDock() {
     var live = !!session && current() !== 's-session';

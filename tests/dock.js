@@ -1,4 +1,4 @@
-/* The dock card says where the workout stands: the exercise's short code and its rounds ticked. node tests/dock.js */
+/* The dock card says where the workout stands: the exercise's short code and its sets ticked. node tests/dock.js */
 const { slice, suite } = require('./lib');
 const t = suite('dock');
 
@@ -12,9 +12,9 @@ t.is('nothing ticked yet', f({ idx: 0, exercises: [ex({ sets: sets(0, 0, 0) })] 
 t.is('all ticked', f({ idx: 0, exercises: [ex({ sets: sets(1, 1, 1) })] }), { code: 'PD', done: 3, total: 3 });
 t.is('it is the exercise the workout stands at', f({ idx: 1, exercises: [ex(), ex({ name: 'Row', code: 'RW', sets: sets(1, 1, 1, 0) })] }), { code: 'RW', done: 3, total: 4 });
 t.is('without a code, the initials of the name', f({ idx: 0, exercises: [ex({ code: '', name: 'Incline Bench Press' })] }).code, 'IB');
-t.is('a one-sided pair is one round: both sides ticked', f({ idx: 0, exercises: [ex({ unilateral: true, sets: sets(1, 1, 1, 0, 0, 0) })] }), { code: 'PD', done: 1, total: 3 });
-t.is('one side of a round is not the round', f({ idx: 0, exercises: [ex({ unilateral: true, sets: sets(1, 0, 0, 0) })] }), { code: 'PD', done: 0, total: 2 });
-t.is('two rounds, both sides', f({ idx: 0, exercises: [ex({ unilateral: true, sets: sets(1, 1, 1, 1) })] }), { code: 'PD', done: 2, total: 2 });
+t.is('a one-sided exercise counts every row, both sides: two a side is four', f({ idx: 0, exercises: [ex({ unilateral: true, sets: sets(1, 1, 0, 0) })] }), { code: 'PD', done: 2, total: 4 });
+t.is('one side of a round counts on its own', f({ idx: 0, exercises: [ex({ unilateral: true, sets: sets(1, 0, 0, 0) })] }), { code: 'PD', done: 1, total: 4 });
+t.is('all of them ticked', f({ idx: 0, exercises: [ex({ unilateral: true, sets: sets(1, 1, 1, 1) })] }), { code: 'PD', done: 4, total: 4 });
 t.is('on the closing card there is nothing to say', f({ idx: 1, exercises: [ex()] }), null);
 t.is('an empty workout has nothing either', f({ idx: 0, exercises: [] }), null);
 t.is('nor has an exercise that is skipped', f({ idx: 0, exercises: [ex({ skipped: true })] }), null);

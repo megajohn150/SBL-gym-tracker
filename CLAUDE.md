@@ -418,7 +418,7 @@ that exercise. The watcher's eyes (`.eyewatch`) are hidden by CSS (`:has`) while
 pair is one round; a gap over max(10 min, 4 × the median) is a chat and is left out), holds it up with the routine's usual seconds per
 round (`sessPrior`, counted as three gaps) and takes off the time since the last tick; `fmtLeft` writes it, and it says Done when every
 set is ticked. `tests/left.js` covers it. A finished-workout card on Home and the dock card go dark through `.done` while the clock
-is auto-paused. The dock card also says where the workout stands, quietly after the name: `dockProgress` gives the current exercise's short code and its rounds ticked out of those planned (`dock-ex`, `tests/dock.js`). The last tick of a workout stops the running rest and starts none. The exercise menu (`ex-pop`) also holds Side
+is auto-paused. The dock card also says where the workout stands, quietly after the name: `dockProgress` gives the current exercise's short code and its sets ticked out of all of them, every row counted, both sides of a one-sided exercise, unlike the header's rounds (`dock-ex`, `tests/dock.js`). The last tick of a workout stops the running rest and starts none. The exercise menu (`ex-pop`) also holds Side
 balance (one-sided only) and Do later (`xp-later`: the exercise goes to the end of the line-up), and the top menu holds End workout
 (`menu-end`, the same road as `sess-end`); with no reps logged anywhere `sess-end` asks, and its second button, Save anyway,
 calls `finishSession(seconds, true)`, which keeps the exercises without sets. Swapping an exercise (`swapSessionExercise`) changes only
