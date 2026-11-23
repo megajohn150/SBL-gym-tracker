@@ -1151,10 +1151,14 @@ body.in-session .dock{padding-bottom:calc(env(safe-area-inset-bottom) + 0.625rem
 .dock .resume{flex:1;min-width:0;text-align:left}
 .dock .resume .lab{display:block;font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-3);font-weight:700}
 .dock .resume .nm{
-  display:block;margin-top:2px;font-family:var(--display);font-weight:var(--namew);
+  display:flex;align-items:center;min-width:0;margin-top:2px;font-family:var(--display);font-weight:var(--namew);
   text-transform:var(--namecase);letter-spacing:var(--nametrack);font-size:.95rem;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+.dkn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* where the workout is: the exercise's short code and its sets ticked, quieter than the name it follows */
+.dkx{flex:none;display:flex;align-items:center;font-family:var(--font);font-size:.72rem;font-weight:600;letter-spacing:.02em;text-transform:none;color:var(--fg-3)}
+.dksep{width:1px;height:.9em;margin:0 .55rem;background:currentColor;opacity:.45}
+.dock .bar-card.done .dkx{color:var(--accent-ink);opacity:.65}
 
 /* swipe a set away */
 .swipe{position:relative;overflow:hidden}
@@ -3057,7 +3061,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       <li><b>Notes.</b> The note box under the cue is for this exercise today. Next time it shows as "Last time"; the plus button writes a new one. A red warning square appears when the exercise trains a muscle you listed as injured.</li>
       <li><b>Exercise menu (&#8942; by the name).</b> Edit exercise; Edit exercise metadata (sets and rep range, saved to your routine too); Swap (same muscle; a toast then offers to swap it in the routine too); <b>Do later</b> (sends it to the end of the workout); <b>Skip</b> (greyed out, left out of every number and record, arrows jump over it, Unskip undoes it); Remove from workout.</li>
       <li><b>The row under the name.</b> The clock, sets done out of planned, volume, records, and how long is left (~35 min). The estimate is the pace of your own sets so far, held up by how long this routine usually takes at the start; a long break in the middle is left out. When every set is ticked it says Done, and the clock stops.</li>
-      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, End workout (saves it from wherever you are), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
+      <li><b>Top menu (&#8942;).</b> Add exercise, Reorder exercises, End workout (saves it from wherever you are), Discard workout. The back arrow only leaves the screen: a bar at the bottom of the app shows the workout running, with the exercise you are on after its name as a short code and the sets ticked out of the planned ones (tap to return, x to discard). Dragging in from the left edge also goes back.</li>
       <li><b>Timer (footer).</b> Starts a manual rest countdown with a ring (the last tick of a workout ends a running one and starts none); it keeps counting if you leave and can push you when it ends. If you turned on Music, Spotify / SoundCloud buttons sit beside it.</li>
       <li><b>Finishing.</b> After the last exercise: reorder this workout only, add one more, name it, add a session note, End workout (it warns if sets are not ticked). Only sets with reps are kept; a workout with no reps anywhere asks first, and Save anyway keeps it with its exercises, for a session where the numbers were not tracked. The summary shows records, lets you fix the start time and duration, and Share image makes a picture of it.</li>
     </ul>
@@ -3319,7 +3323,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   <div class="bar-card" id="dock-card">
     <button class="resume" id="sess-resume">
       <span class="lab">Workout in progress</span>
-      <span class="nm" id="dock-name">&mdash;</span>
+      <span class="nm"><span class="dkn" id="dock-name">&mdash;</span><span class="dkx" id="dock-ex" hidden><i class="dksep"></i><span id="dock-ex-t"></span></span></span>
     </button>
     <span class="time" id="dock-time">0:00:00</span>
     <button class="x" id="sess-discard" aria-label="Discard workout">&times;</button>
@@ -3935,7 +3939,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4591';
+  var APP_VERSION = '3.4592';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -15841,6 +15845,17 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   /* --- the session you left running --- */
+  // Where the workout is, for the dock: the short code of the exercise it stands at and its rounds ticked out of those
+  // planned (a one-sided pair of rows is one round). Nothing on the closing card, or on an exercise that is skipped.
+  function dockProgress(s) {
+    var e = s && s.exercises[s.idx];
+    if (!e || e.skipped || !e.sets.length) return null;
+    var n = e.sets.length, uni = !!e.unilateral, done = 0, i;
+    for (i = 0; i < n; i += uni ? 2 : 1) {
+      if (e.sets[i].done && (!uni || i + 1 >= n || e.sets[i + 1].done)) done++;
+    }
+    return { code: e.code || initials(e.name), done: done, total: uni ? Math.ceil(n / 2) : n };
+  }
   function drawDock() {
     var live = !!session && current() !== 's-session';
     $('dock-card').hidden = !live;
@@ -15848,6 +15863,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     dockShow();
     if (live) {
       $('dock-name').textContent = session.name;
+      var dp = dockProgress(session);
+      $('dock-ex').hidden = !dp;
+      if (dp) $('dock-ex-t').textContent = dp.code + ' ' + dp.done + '/' + dp.total;
       paintClocks();
     }
   }
