@@ -8,10 +8,10 @@ const stats = slice('  function monday(d) {', '  function byGroup(by)');
 const cells = slice('  var MUSCLE_CELL = {', '  // Measured centres');
 const store = { exercises: [{ id: 'a', name: 'Bench' }, { id: 's', name: 'Raise', head: 'Rear delt' }], workouts: [] };
 const byId = (id) => store.exercises.filter((x) => x.id === id)[0] || null;
-const api = new Function('store', 'byId', 'pad2', code + cells + stats +
+const api = new Function('store', 'byId', 'pad2', 'setOf', code + cells + stats +
   '; return { num: num, logged: logged, fmtDuration: fmtDuration, fmtKg: fmtKg, fmtVolume: fmtVolume, countSets: countSets,' +
   ' workoutTotals: workoutTotals, muscleSplit: muscleSplit, epley: epley, recompute: recomputeRecords, bestsFor: bestsFor,' +
-  ' livePrs: livePrs, statsFor: statsFor, weekBoard: weekBoard };')(store, byId, (n) => (n < 10 ? '0' + n : String(n)));
+  ' livePrs: livePrs, statsFor: statsFor, weekBoard: weekBoard };')(store, byId, (n) => (n < 10 ? '0' + n : String(n)), () => '');
 
 const set = (weight, reps, rir, label) => ({ label: label || '01', weight: String(weight), reps: String(reps), rir: rir == null ? '' : String(rir) });
 const W = (id, day, sets, extra) => ({ id, date: new Date(2026, 0, day, 18).toISOString(), seconds: 3600,
@@ -85,8 +85,8 @@ t.is('the split is in whole percent, biggest first', api.muscleSplit({ exercises
   { muscle: 'Chest', sets: [set(1, 1), set(1, 1), set(1, 1)] }, { muscle: 'Biceps', sets: [set(1, 1)] }] }),
   [{ muscle: 'Chest', pct: 75 }, { muscle: 'Biceps', pct: 25 }]);
 /* a report's records list: all of it in the workout summary, three exercises and a button in the recap */
-const prBlock = new Function('esc', 'fmtKg', slice('  function prBlock(prs', '  /* --- the weekly recap') + '; return prBlock;')(
-  (s) => String(s), api.fmtKg);
+const prBlock = new Function('esc', 'fmtKg', 'prAttr', slice('  function prBlock(prs', '  /* --- the weekly recap') + '; return prBlock;')(
+  (s) => String(s), api.fmtKg, () => ' class="pr"');
 const five = { A: { Weight: 100 }, B: { Weight: 90 }, C: { Weight: 80, Volume: 500 }, D: { Weight: 70 }, E: { Weight: 60 } };
 const rowsIn = (html) => (html.match(/class="prrow"/g) || []).length;
 const sum = prBlock(five), cap = prBlock(five, 3, false, 'data-x'), open = prBlock(five, 3, true, 'data-x');

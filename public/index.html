@@ -3077,7 +3077,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     <div class="dsec">Exercises list and page</div>
     <ul class="gdl">
       <li>Search by name or muscle. When picking for a routine or workout, switch between Recently used and By muscle. A name nobody has gets a <b>Create</b> row under the list: it opens the new exercise form with that name, and a picker then adds it where you were going. <button class="gdgo" data-push="exercises" aria-label="Open Exercises">&rsaquo;</button></li>
-      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Duplicate exercise</b> (a copy under it, named with a number, with no history and no photo); <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts; tap a friend on it to compare that lift with them. For a one-sided exercise, <b>Side balance</b> (also in the exercise menu during a workout) says which side is stronger and by about how much, from your last sessions with both sides, and which one to start with: the weaker.</li>
+      <li>An exercise's page: records (Heaviest, Est. 1RM, Best set) with the day each was set above it (tap the date to see how many days ago; tap the underlined Best set to see which set it was, say 100 kg \u00d7 10, here and in the chart, medals, reports and Compare), a chart of them over time with PR cups (tap a point for the workout), and every time you did it. &#8942;: Edit; <b>Duplicate exercise</b> (a copy under it, named with a number, with no history and no photo); <b>Add photo</b> (or Change photo; the picture of the exercise shows above the records, in its own proportions up to a limit; it is shrunk and kept on this phone only: not synced, but it goes into the JSON backup file, and it stays when you sign out; Remove photo, deleting the exercise, Erase everything and deleting the account take it away); <b>Reset records</b> (older sessions stay in the history but stop counting; choose where the count restarts; Undo reset brings it back); Friends leaderboard ranks the heaviest lifts; tap a friend on it to compare that lift with them. For a one-sided exercise, <b>Side balance</b> (also in the exercise menu during a workout) says which side is stronger and by about how much, from your last sessions with both sides, and which one to start with: the weaker.</li>
       <li>Delete an exercise from its edit screen; it leaves your routines too, past workouts keep it, and Undo is offered.</li>
     </ul>
 
@@ -3939,7 +3939,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4593';
+  var APP_VERSION = '3.4594';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -4516,7 +4516,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // The leaderboards need every friend's bests at once, so they ride on the
   // profile row: [heaviest, est. 1RM, best set] per exercise name.
   function myRecords() {
-    var out = {}, cuts = cutMap();
+    var out = {}, best = {}, cuts = cutMap();
     store.workouts.forEach(function (w) {
       w.exercises.forEach(function (e) {
         if (e.skipped || !afterCut(w, cuts[exKey(e)] || 0)) return;
@@ -4526,13 +4526,17 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           if (!logged(st)) return;
           r[0] = Math.max(r[0], num(st.weight));
           r[1] = Math.max(r[1], recOrm(st));
-          r[2] = Math.max(r[2], recVol(st));
+          if (recVol(st) > r[2]) { r[2] = recVol(st); best[k] = st; }
         });
       });
     });
     Object.keys(out).forEach(function (k) {
       if (!out[k][0]) delete out[k];                 // bodyweight work has no weight to rank
-      else out[k] = out[k].map(function (v) { return Math.round(v * 10) / 10; });
+      else {
+        out[k] = out[k].map(function (v) { return Math.round(v * 10) / 10; });
+        // the set behind the Best set: weight, reps and what kind of set it was
+        if (best[k]) out[k].push(Math.round(num(best[k].weight) * 100) / 100, Math.floor(num(best[k].reps)), (bwOf(best[k]) > 0 ? 1 : 0) + (best[k].ps ? 2 : 0));
+      }
     });
     return out;
   }
@@ -5816,19 +5820,19 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   }
 
   // a is yours, b is theirs; the % is how far you are from them, as on the screenshots
-  function cmpBars(label, a, b, fmt, p) {
+  function cmpBars(label, a, b, fmt, p, tipA, tipB) {
     var top = Math.max(a, b), d = '';
     if (b > 0 && a !== b) {
       var pc = Math.round(Math.abs(a - b) / b * 100);
       d = '<i class="' + (a > b ? 'up' : 'down') + '">' + (a > b ? '↑ ' : '↓ ') + pc + '%</i>';
     }
-    function line(v, who, cls) {
+    function line(v, who, cls, tip) {
       return '<div class="cmpline ' + cls + '">' + avatarTag(28, '', who) +
         '<span class="cmptrack"><i style="width:' + (top ? Math.max(2, Math.round(v / top * 100)) : 2) +
-        '%"></i></span><b>' + fmt(v) + '</b></div>';
+        '%"></i></span><b' + (tip ? ' class="ptipbtn" data-tip="' + esc(tip) + '"' : '') + '>' + fmt(v) + '</b></div>';
     }
-    return '<div class="cmpm"><h4>' + label + d + '</h4>' + line(a, store.profile, 'me') +
-      line(b, p, 'them') + '</div>';
+    return '<div class="cmpm"><h4>' + label + d + '</h4>' + line(a, store.profile, 'me', tipA) +
+      line(b, p, 'them', tipB) + '</div>';
   }
 
   // exercises you both have a weight logged for, matched by name
@@ -5939,7 +5943,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       '<div class="dsec">Comparison</div>' +
       cmpBars('One rep max', a[1], b[1], kgTxt, c.p) +
       cmpBars('Heaviest weight', a[0], b[0], kgTxt, c.p) +
-      cmpBars('Best set (volume)', a[2], b[2], kgTxt, c.p) +
+      cmpBars('Best set (volume)', a[2], b[2], kgTxt, c.p, recSet(a), recSet(b)) +
       '<div class="dsec">Friends’ leaderboard</div>' +
       keep.map(function (r, i) {
         return (i && r.rank - keep[i - 1].rank > 1 ? '<div class="lbdots">&bull;&bull;&bull;</div>' : '') +
@@ -7231,7 +7235,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       '<div class="wstats3" style="margin:0 var(--pad)">' +
       '<div>' + recDate(best.weight, best.wd) + '<b>' + (best.weight ? fmtVolume(best.weight) : '&ndash;') + '</b><i>Heaviest</i></div>' +
       '<div>' + recDate(best.orm, best.od) + '<b>' + (best.orm ? Math.round(best.orm) + ' kg' : '&ndash;') + '</b><i>Est. 1RM</i></div>' +
-      '<div>' + recDate(best.vol, best.vd) + '<b>' + (best.vol ? fmtVolume(best.vol) : '&ndash;') + '</b><i>Best set</i></div>' +
+      '<div>' + recDate(best.vol, best.vd) + '<b' + (best.vol ? ' class="ptipbtn" data-tip="' + esc(best.vs) + '"' : '') + '>' + (best.vol ? fmtVolume(best.vol) : '&ndash;') + '</b><i>Best set</i></div>' +
       '</div>';
     var lbBtn = sb && me ? '<div style="padding:1.2rem var(--pad) 0"><button class="dashbtn" data-xlb="' +
       esc(nameKey(x.name)) + '" style="width:100%">Friends leaderboard</button></div>' : '';
@@ -9861,6 +9865,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     });
   }
   function bwHead(ex) { return ex.bodyweight ? '<span class="bwh"><i>BW</i><i>+ Weight</i></span>' : ex.perSide ? 'Per side' : 'Weight'; }
+  // what a Best set was, in words: the weight times the reps (a bodyweight set shows the load added to the body).
+  // A friend's numbers come through here too, so they are made numbers first.
+  function setTxt(w, r, bw, ps) {
+    w = Math.min(Math.round(Number(w) * 100) / 100 || 0, 1e5); r = Math.min(Math.floor(Number(r)) || 0, 1e5);
+    return (bw ? '+' : '') + fmtVolume(w) + ' \u00d7 ' + r + (ps ? ' \u00b7 per side' : '');
+  }
+  function setOf(st) { return setTxt(st.weight, st.reps, bwOf(st) > 0, st.ps); }
+  // the set behind a published Best set: [heaviest, 1RM, best set, weight, reps, flags (1 added load, 2 per side)]
+  function recSet(r) { return r && Number(r[3]) > 0 ? setTxt(r[3], r[4], Number(r[5]) & 1, Number(r[5]) & 2) : ''; }
   // the weight cell of a set; a bodyweight one gets the body's weight in front of it. Yours is a button
   // that opens today's weigh-in (so it can be changed, or given for the first time), a friend's only a number.
   function bwPair(ex, st, inner, mine) {
@@ -9953,7 +9966,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           var o = recOrm(st), v = recVol(st);
           if (kg > best.weight || (kg === best.weight && w.date < best.wd)) { best.weight = kg; best.wd = w.date; }
           if (o > best.orm || (o === best.orm && w.date < best.od)) { best.orm = o; best.od = w.date; }
-          if (v > best.vol || (v === best.vol && w.date < best.vd)) { best.vol = v; best.vd = w.date; }
+          if (v > best.vol || (v === best.vol && w.date < best.vd)) { best.vol = v; best.vd = w.date; best.vs = setOf(st); }
           if (kg === 0 && bwOf(st) > 0 && reps > best.rep0) best.rep0 = reps;
         });
       });
@@ -12903,7 +12916,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           if (!logged(st)) return;
           var kg = num(st.weight), reps = num(st.reps);
           var v = metric === 'orm' ? recOrm(st) : metric === 'vol' ? recVol(st) : kg;
-          if (v > b.v) b.v = v;
+          if (v > b.v) { b.v = v; if (metric === 'vol') b.vs = setOf(st); }
           // the bucket is marked when the record in this very metric fell in it
           if (st.prs && st.prs.indexOf(PR_CAT[metric]) >= 0) {
             b.pr = true;
@@ -13017,7 +13030,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function xChartBody(buckets, style, xp, metric) {
     return chartBody(buckets, style, xp, function (b) {
       var when = b.prAt ? dayLab(new Date(b.prAt)) : b.lab;
-      return String(xLabel(b.v, metric).join(' ')).trim() + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
+      return String(xLabel(b.v, metric).join(' ')).trim() + (metric === 'vol' && b.vs ? ' (' + b.vs + ')' : '') + '  \u00b7  ' + when + (b.pr ? '  \u00b7  PR' : '');
     }, function (v) { return xLabel(v, metric).join(' ').trim(); });
   }
 
@@ -13337,6 +13350,9 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   barTips($('p-pills'));
   barTips($('user-body'));
   barTips($('xh-body'));
+  barTips($('cmpx-body'));
+  barTips($('summary-body'));
+  barTips($('wrecap-body'));
   barTips($('stmonth-body'));
   barTips($('wt-chart'));
   barTips($('dash-tiles'));
@@ -14290,12 +14306,18 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
         var kg = num(st.weight), reps = num(st.reps);
         st.prs.forEach(function (c) {
           var v = c === 'Weight' ? kg : c === '1RM' ? Math.round(recOrm(st) * 100) / 100 : prVol(st);
-          if (!(c in o) || v > o[c]) o[c] = v;
+          if (!(c in o) || v > o[c]) {
+            o[c] = v;
+            // the set behind a Volume record rides along unseen by Object.keys, which counts the records
+            if (c === 'Volume') { if (!('vs' in o)) Object.defineProperty(o, 'vs', { value: '', writable: true }); o.vs = setOf(st); }
+          }
         });
       });
     });
     return out;
   }
+  // the opening of a record's span: Volume gets the set behind it as a tap-for-details
+  function prAttr(o, c) { return c === 'Volume' && o.vs ? ' class="pr ptipbtn" data-tip="' + esc(o.vs) + '"' : ' class="pr"'; }
 
   function monthPRs(from, to) {
     var out = {};
@@ -14331,7 +14353,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' +
             Object.keys(prs[k]).map(function (c) {
               var v = prs[k][c];
-              return '<span class="pr">' + '<svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
+              return '<span' + prAttr(prs[k], c) + '>' + '<svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
       'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
       '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
       '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>' +
@@ -14627,7 +14649,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           return '<div class="prrow"><span class="nm">' + esc(k) + '</span>' +
             Object.keys(prs[k]).map(function (c) {
               var v = prs[k][c];
-              return '<span class="pr">' +
+              return '<span' + prAttr(prs[k], c) + '>' +
               '<svg width="12" height="12" viewBox="0 0 24 24"><path fill="currentColor" ' +
               'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
               '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
@@ -14962,7 +14984,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   // [category, value, what it was before] for each record a set broke
   function setRec(st, name) {
     var kg = num(st.weight), val = { Weight: kg, '1RM': recOrm(st), Volume: prVol(st) };
-    return { x: name, r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
+    return { x: name, s: setOf(st), r: st.prs.map(function (c) { return [c, val[c], st.was ? st.was[c] : null]; }) };
   }
 
   function medal(st, name) {
@@ -14986,7 +15008,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     (function next() {
       if (i < rec.r.length) {
         var r = rec.r[i++];
-        el.querySelector('.rtl').innerHTML = '<span>' + REC_NAME[r[0]] + ' \u00b7 ' + fmtVolume(r[1]) + '</span>';
+        el.querySelector('.rtl').innerHTML = '<span>' + REC_NAME[r[0]] + ' \u00b7 ' + fmtVolume(r[1]) + (r[0] === 'Volume' ? ' (' + esc(rec.s) + ')' : '') + '</span>';
         recT = setTimeout(next, i === 1 ? 1900 : 1400);   // the first one also waits out the opening
         return;
       }
@@ -15035,7 +15057,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
       var rec = JSON.parse(rb.dataset.rec);
       $('rec-ex').textContent = rec.x;
       $('rec-list').innerHTML = rec.r.map(function (r) {
-        return '<div class="recrow">' + rb.innerHTML + '<span class="recn">' + REC_NAME[r[0]] + '</span>' +
+        return '<div class="recrow">' + rb.innerHTML + '<span class="recn">' + REC_NAME[r[0]] + (r[0] === 'Volume' && rec.s ? ' <small>' + esc(rec.s) + '</small>' : '') + '</span>' +
           '<span class="recv">' + fmtVolume(r[1]) + '</span>' +
           (r[2] == null ? '' : '<span class="recd">\u2191 ' + fmtVolume(r[1] - r[2]) + '</span>') + '</div>';
       }).join('');

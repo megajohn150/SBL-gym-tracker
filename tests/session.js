@@ -27,6 +27,14 @@ const side = { unilateral: true, prev: [], sets: [Object.assign({}, full, { labe
 t.is('one side fills from the same side, not from the row above', s.fillFrom(side, 2).label, 'R1');
 t.is('a hold copies the row directly above, even from the other side',
   [s.setAbove(ex, 1), s.setAbove(ex, 0), s.setAbove(side, 2).label], [full, null, 'L1']);
+const fmtV = (kg) => Math.round(kg * 10) / 10 + ' kg';
+const sw = new Function('fmtVolume', 'bwOf', slice('  // what a Best set was, in words', '  // the weight cell of a set') + '; return { setTxt: setTxt, recSet: recSet };')(fmtV, () => 0);
+t.is('a best set in words: weight times reps, the load added on a bodyweight set, per side', [
+  sw.setTxt('100', '10', false, false), sw.setTxt('20', '8', true, false), sw.setTxt('30', '12', false, '1'), sw.setTxt('x', 'y', false, false)],
+  ['100 kg \u00d7 10', '+20 kg \u00d7 8', '30 kg \u00d7 12 \u00b7 per side', '0 kg \u00d7 0']);
+t.is('a friend\'s published set: flags 1 and 2, and nothing for an old client', [
+  sw.recSet([80, 90, 800, 80, 10, 0]), sw.recSet([80, 90, 800, 20, 8, 3]), sw.recSet([80, 90, 800]), sw.recSet(null)],
+  ['80 kg \u00d7 10', '+20 kg \u00d7 8 \u00b7 per side', '', '']);
 t.is('the step since last time: up, down, none, and F is zero in reserve',
   [s.delta('82.5', '80'), s.delta('8', '10'), s.delta('', '10'), s.delta('F', '2', true)],
   ['<i class="delta up">+2.5</i>', '<i class="delta down">-2</i>', '', '<i class="delta down">-2</i>']);
@@ -60,7 +68,7 @@ const shown = {};
 const fmtKg = (kg) => kg + ' kg';
 const logged = (st) => num(st.reps) > 0;
 const esc = (s) => String(s).replace(/</g, '&lt;');
-const recs = new Function('num', slice('  function epley(w, r)', '  function exKey') + slice('  function setRec(', '  function medal(') + '; return setRec;')(num);
+const recs = new Function('num', 'setOf', 'fmtVolume', slice('  function epley(w, r)', '  function exKey') + slice('  function setRec(', '  function medal(') + '; return setRec;')(num, () => '', () => '');
 const REC = { Weight: 'Heaviest', Volume: 'Best set', '1RM': 'Est. 1RM' };
 const fmtVolume = (kg) => Math.round(kg * 10) / 10 + ' kg';
 const totals = new Function('$', 'num', 'logged', 'fmtKg', 'session', 'esc', 'muscleArt', 'setRec', 'REC_NAME', 'fmtVolume', 'drawSessLeft',

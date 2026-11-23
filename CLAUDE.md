@@ -221,7 +221,7 @@ targets  = { <muscle or head>: { sets?, days?, star? }, Total: { days } }   // T
 plan     = [ routineId | '', x7 ]                  // Monday first; '' = rest day; absent until a day is set
 injuries = [{ id, name, muscles: [...], date, healed? }]   // healed: an ISO date; a healed one stays listed but no longer warns or shows red
 profile  = { handle, name, bio, pic, unameAt?, noReact?, hide? }   // hide: { sets?, vol?, time?, stamp? } = true for each lifetime pill (or the stamp) switched off
-profile.stats = { workouts, streak, records, stamps50, sets?, vol?, secs?, nostamp? }   // published; sets / vol (kg) / secs are the lifetime pills and are absent when switched off, nostamp hides the stamp; records: { <lowercased exercise name>: [heaviest, est. 1RM, best set] }
+profile.stats = { workouts, streak, records, stamps50, sets?, vol?, secs?, nostamp? }   // published; sets / vol (kg) / secs are the lifetime pills and are absent when switched off, nostamp hides the stamp; records: { <lowercased exercise name>: [heaviest, est. 1RM, best set, weight, reps, flags] }   // the last three are the set behind the best set (flags: 1 added load on a bodyweight set, 2 per side); an old client sends three, `recSet` returns '' then
 live_session.data = { name, startedAt, idx, react, pausedAt?, stats: { cnt, all, vol, prs }, exercises: [{ name, code, muscle, unilateral, cue, reps, prev, sets }] }
 ```
 

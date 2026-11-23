@@ -30,8 +30,8 @@ const api = fn(store_, num, (st) => num(st.reps) > 0, epley, (st) => num(st.reps
 
 const r = api.myRecords();
 t.is('one key per exercise, by its current name', Object.keys(r), ['bench press (barbell)', 'squat']);
-t.is('heaviest, est. 1RM, best set (RIR counts as reps in the tank)', r['bench press (barbell)'], [80, 93.3, 600]);
-t.is('a reset drops what came before it', r['squat'], [100, 116.7, 500]);
+t.is('heaviest, est. 1RM, best set (RIR counts as reps in the tank)', r['bench press (barbell)'], [80, 93.3, 600, 60, 10, 0]);
+t.is('a reset drops what came before it', r['squat'], [100, 116.7, 500, 100, 5, 0]);
 
 const rows = new Function('store', 'myRecords', 'recOf', 'lbFr', board + '; return board;')(
   store_, () => ({ x: [100, 0, 0] }), (p, k) => p.stats.records[k], {

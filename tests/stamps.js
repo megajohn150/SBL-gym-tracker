@@ -25,9 +25,9 @@ const store = { workouts: [
   { date: '2026-03-20T10:00:00Z', exercises: [{ name: 'Squat', sets: [{ weight: '100', reps: '5', prs: ['Volume'] }] }] },
   { date: '2026-04-02T10:00:00Z', exercises: [{ name: 'Bench', sets: [{ weight: '90', reps: '3', prs: ['Weight'] }] }] }
 ] };
-const pr = new Function('store', 'num', 'epley', 'effReps',
+const pr = new Function('store', 'num', 'epley', 'effReps', 'setOf',
   bwCode() + prCode + '; return { prTotal: prTotal };')(
-  store, num, epley, (st) => num(st.reps));
+  store, num, epley, (st) => num(st.reps), () => '');
 t.is('one PR per exercise and kind: Bench Weight+1RM, Squat Volume', pr.prTotal(new Date('2026-03-01'), new Date('2026-04-01')), 3);
 t.is('a month with no records counts zero', pr.prTotal(new Date('2026-05-01'), new Date('2026-06-01')), 0);
 t.is('the span is half open: the first of the next month is outside', pr.prTotal(new Date('2026-04-02T10:00:00Z'), new Date('2026-04-02T10:00:00Z')), 0);
