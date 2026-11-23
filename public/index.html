@@ -3934,7 +3934,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4589';
+  var APP_VERSION = '3.4590';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -10183,7 +10183,12 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
           g.fillStyle = b.pr ? c('--accent') : c('--fg');
           g.beginPath(); g.arc(cx, ty, 9, 0, Math.PI * 2); g.fill();
         }
-        if (b.pr && ty !== null) txt('PR', cx, ty - 22, 24, 700, c('--accent'), 'center');
+        if (b.pr && ty !== null) {
+          // the trophy, 34 px, sitting just above the point
+          g.save(); g.translate(cx - 17, ty - 62); g.scale(34 / 24, 34 / 24);
+          g.fillStyle = c('--accent'); g.fill(new Path2D(CUP_D));
+          g.restore();
+        }
         if (tick) txt(tick, cx, y1 + 48, 24, 400, c('--fg-3'), 'center');
       });
     });
@@ -12787,10 +12792,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var pMetric = 'reps', pPeriod = '3m', pFilter = '';
   var xMetric = 'weight', xPeriod = '3m';
   var xStyle = load('xstyle') || 'line';          // line or bars
-  var CUP_SM = '<svg width="11" height="11" viewBox="0 0 24 24"><path fill="currentColor" ' +
-    'd="M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
+  // the trophy's outline, shared by the small page icon and the shared chart image
+  var CUP_D = 'M6 3h12v1.2h3.1c.5 0 .9.4.9.9v1.6c0 2.6-1.9 4.7-4.4 5.1A6 6 0 0 1 13 14.8V18h2.6c.5 0 ' +
     '.9.4.9.9v1.1H7.5v-1.1c0-.5.4-.9.9-.9H11v-3.2a6 6 0 0 1-4.6-2.9C3.9 11.4 2 9.3 2 6.7V5.1c0-.5.4-.9.9-.9H6V3zm0 ' +
-    '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z"/></svg>';
+    '3.3H4.1v.4c0 1.3.8 2.4 1.9 2.9V6.3zm12 3.3c1.1-.5 1.9-1.6 1.9-2.9v-.4H18v3.3z';
+  var CUP_SM = '<svg width="11" height="11" viewBox="0 0 24 24"><path fill="currentColor" d="' + CUP_D + '"/></svg>';
   var PR_CAT = { weight: 'Weight', orm: '1RM', vol: 'Volume' };
 
   // short spans are read day by day, long ones month by month
