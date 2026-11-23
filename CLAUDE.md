@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 The working guide for any model that touches this repository, checked against every line of
-the code at version 3.4409; what changed up to 3.4582 is brought up to date below. Read it whole
+the code at version 3.4409; what changed up to 3.4595 is brought up to date below. Read it whole
 before the first edit. The code beats this file.
 
 ## How to work here, in six lines
@@ -320,7 +320,8 @@ the bests come from `profiles.stats.records` (`lbFr`, loaded by `loadCmpFriends`
 ranks you and every friend who has that exercise by heaviest weight. A friend's own finished
 workout (`drawDetail` with `detailRO`) underlines a lift you share (`sharedWith`) and opens its
 Compare screen (`openCmpFromDetail`). A friend appears in these views only after their app
-has pushed a profile with `records`, so an old client is simply absent.
+has pushed a profile with `records`, so an old client is simply absent. The full board's friend rows (`lbcard` with `data-lbu`, drawn by
+`drawLb`) open that lift's comparison with them (`openCmpEx`, on a `cmp` made from `lbFr` when the one in hand is another friend's).
 
 **The week board.** The "Friends leaderboard" button in the footer of your own Friends list opens
 `s-wkb`: you and every friend since Monday, ranked by workouts, with sets and volume under each
@@ -345,6 +346,10 @@ running, then broadcasts `{ k, n: nick, t: text }` straight to the owner's chann
 stored. The owner sees eyes (`watchSync`) and bubbles (`likePop`). `profile.noReact` (Settings →
 Workout → Live reactions) switches all of it off and greys the watcher's buttons through
 `live_session.data.react`.
+The trainer tells a watcher back: `watchOn` keeps the watcher's id (the `look` ping carries it as `i`) and, while the trainer has the
+session screen open with the app in front (`hereNow`), `watchSync` sends them `here` / `away` through the same `live_peek` (the server
+then checks that the *caller* is training, and stamps `i` on every ping). The watcher's `ownerSeen` keeps it for 40 s and `watchSync`
+draws the trainer's eyes on the left of `s-livew` (`.eyeown`); a trainer with Live reactions off never learns who watches, so never sends.
 
 **Home and Feed.** Four tabs: Home (`s-dash`, the one the app opens on), Feed (`s-home`), Workout, Profile.
 `drawHome()` is still the one entry that redraws both (about thirty callers), and it ends in `drawDash()`.
@@ -396,7 +401,16 @@ canvas with the scale of `chartScale` / `chartH` / `xTick`. Only the exercise ch
 end values (first and last logged value, in gutters beside the plot, level with their points);
 `chartBody` adds them, and the gutters, only when it is handed a formatter. The recap's Records list shows
 three exercises and a See more button (`prBlock(prs, 3, wrMorePRs, …)`, state `wrMorePRs`); the workout
-summary calls `prBlock` without a cap and shows them all.
+summary calls `prBlock` without a cap and shows them all. A record on a shared chart is marked with the trophy, drawn from `CUP_D`, the
+outline `CUP_SM` also uses.
+
+**Which set a Best set was.** A Best set is a number of kilos, so `setOf(st)` / `setTxt` say it in words (`100 kg × 10`, `+20 kg × 8` for the
+load added to a bodyweight body, `· per side`). It is a tap on the number (class `ptipbtn`, the bubble `barTips` opens): the exercise page's
+Best set (`bestsFor` keeps it as `vs`), a bucket of the exercise chart on the Best set metric (`b.vs`), the medal sheet and the record
+toast (`setRec.s`), the Volume records of the summary, the recap and the month report (`workoutPRs` hides the text on the record map as the
+non-enumerable `vs`, so `Object.keys` still counts records; `prAttr`), and both sides of the Compare bars. A friend's set comes from
+`profiles.stats.records`, whose entries are `[heaviest, est. 1RM, best set, weight, reps, flags]` (`myRecords`; flags: 1 added load, 2 per
+side); `recSet` turns those into text and returns '' for an old client's three numbers.
 
 **Shared routines.** The owner sets `shared: true` on a routine; a follower stores a `follow`
 block (`by`, `rid`, `user`, `map`, `side`, `born`, `dead`) on their own copy. `syncFollowed`
@@ -457,6 +471,12 @@ the number entered. The column head says Per side (`bwHead`), the exercise histo
 the rows get a ring and the footer swaps to Cancel and Delete (N). `removeExercises` / `restoreExercises` are
 the functions the single delete in the exercise form and its Undo use too.
 
+**Starting an exercise from the search.** A name typed in the exercise list that no exercise has gets a Create row (`data-excreate`, built
+in `drawExercises`): it opens the exercise form with the name, and `saveExercise` then adds it where the picker was going (`pickFor`),
+exactly as the + New exercise button does. **Holding a set's number** in a workout (`#sess-sets`, 450 ms, silenced by a move of more
+than 10 px) copies weight, plates, reps and RIR from the closest set above that has anything in it, whichever side (`setAbove`, unlike
+`fillFrom`, which keeps a one-sided exercise to its own side); the tap that ends the hold must not tick the set (`noHeld`).
+
 **Last time in a finished workout.** In your own finished workout (not a friend's, not in edit mode) a set
 number is underlined when that set had a last time, and tapping it swaps the numbers for it, with a P in the
 margin (`detailPv`, in memory only). `lastSetsFor(key, before)` gives what the session saw at the time.
@@ -477,6 +497,7 @@ and answers each ping kind in `liveRun`:
 | `data:<rev>` | your own log, from another device | `cloudPull()` if `rev` is newer |
 | `look` / `leave` | a friend opened or left your running workout (`live_peek`) | eyes on or off (`watchOn`, `watchOff`); nothing is fetched |
 | `like` / `flex` / `say` | a friend reacted to your running workout | `likePop`; nothing is fetched |
+| `here` / `away` | the trainer you are watching has the workout screen open, or not | `ownerSeen`: their eyes on the left of `s-livew`; nothing is fetched |
 
 A reaction pings everyone who can *see* the post, not only its owner. The `rev` in `data:`
 is what stops a device pulling back its own write. Every ping that makes friends re-query
@@ -591,7 +612,7 @@ How to work with it:
   paste-by-hand block, generated from it; regenerate it only if the user still wants a paste.
 - `list_migrations` holds only the migrations made through the connector
   (`weekly_recap_push`, `weekly_recap_push_at_20_warsaw`, `push_subs_prefs`, `monthly_report_push`, `delete_my_account`,
-  `trigger_functions_off_the_api`); everything older was pasted by hand,
+  `trigger_functions_off_the_api`, `live_peek_trainer_presence`); everything older was pasted by hand,
   so do not replay  `supabase/supabase-social.sql` onto it — read the live state with `list_tables` /
   `execute_sql` and write a small incremental migration.
 - pg_cron jobs: `drain-push` (every 10 s, sends parked `rest`/`stale` pushes) and
@@ -623,7 +644,7 @@ How to work with it:
 
 A friend's `posts.data` and `library.data` are JSON their own client wrote, and RLS only checks
 who wrote it. Never put a field from them into markup or a loop raw. `esc()` text, `prN(w)` for
-`records`, `cleanSets` (1–12) for set counts, `cleanStep` for weight steps, `postOk` for a whole
+`records` (its set text goes through `recSet` / `setTxt`, which make numbers of it), `cleanSets` (1–12) for set counts, `cleanStep` for weight steps, `postOk` for a whole
 post (a post that cannot be drawn is left out of the feed, one bad post must not stop Home).
 `applyFollow`/`copyRoutine` clean on the way in and `fixCues` (run by every `saveStore`) cleans
 what is already stored. `data-w="…"` takes `esc(w.id)`: post ids are text chosen by the poster.
@@ -739,8 +760,8 @@ update `graphify-out/`; this file and a grep are the map.
   tidying that no user needs to read). The list is at the top of `public/index.html`, under
   APP_VERSION; key the line by the version that commit will become, i.e. the current `APP_VERSION`
   plus one patch (the hook bumps it). Plain English, one short line. The "Version updated" toast
-  opens every line newer than `tracker-chg` (`chg-sheet`, `chgStart`), and opening it moves `tracker-chg` on; the version number in Settings opens the
-  current version's own line, if it has one. `tests/static.js` checks the order, `tests/changelog.js` the unread rules.
+  opens every line newer than `tracker-chg` (`chg-sheet`, `chgStart`), and opening it moves `tracker-chg` on; the version number in Settings always opens
+  the last ten lines up to this version (`chgLast`), the current version's in bold. `tests/static.js` checks the order, `tests/changelog.js` the unread rules.
 - Comments explain *why*, in prose, and sit above the code they justify. Em dashes are real
   characters in comments; `\u` escapes belong only in JS string literals.
 - Spend the least usage that still fully does the job: short replies after a small change,
