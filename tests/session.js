@@ -5,7 +5,7 @@ const t = suite('session');
 const num = (v) => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
 const pad2 = (n) => (n < 10 ? '0' + n : String(n));
 const s = new Function('num', 'pad2', slice('  function blankSet(label)', '  function sessionSeconds()') +
-  '; return { fillFrom: fillFrom, setFull: setFull, exDone: exDone, delta: delta, relabel: relabel, buildSets: buildSets };')(num, pad2);
+  '; return { setAbove: setAbove, fillFrom: fillFrom, setFull: setFull, exDone: exDone, delta: delta, relabel: relabel, buildSets: buildSets };')(num, pad2);
 
 t.is('a standard exercise numbers its sets', s.buildSets(3, false).map((x) => x.label), ['01', '02', '03']);
 t.is('a unilateral one is a row per side, starting where the routine says',
@@ -25,6 +25,8 @@ t.is('a tap fills from the same set last time', s.fillFrom(ex, 0).weight, '70');
 t.is('or, with no last time, from the set above', s.fillFrom(ex, 1), full);
 const side = { unilateral: true, prev: [], sets: [Object.assign({}, full, { label: 'R1' }), { label: 'L1', weight: '60', reps: '8', rir: '' }, { label: 'R2', weight: '', reps: '', rir: '' }] };
 t.is('one side fills from the same side, not from the row above', s.fillFrom(side, 2).label, 'R1');
+t.is('a hold copies the set above even when last time had something else',
+  [s.setAbove(ex, 1), s.setAbove(ex, 0), s.setAbove(side, 2).label], [full, null, 'R1']);
 t.is('the step since last time: up, down, none, and F is zero in reserve',
   [s.delta('82.5', '80'), s.delta('8', '10'), s.delta('', '10'), s.delta('F', '2', true)],
   ['<i class="delta up">+2.5</i>', '<i class="delta down">-2</i>', '', '<i class="delta down">-2</i>']);

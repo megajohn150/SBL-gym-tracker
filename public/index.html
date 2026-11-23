@@ -570,7 +570,7 @@ body:has(.sheet:not([hidden]),.pop:not([hidden])) .eyewatch{display:none}
   font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);font-weight:700;
 }
 .setrow{padding:0.3125rem var(--pad)}
-.setno{font-size:.66rem;font-weight:700;letter-spacing:.06em;color:var(--fg-3);line-height:1.2;text-align:left}
+.setno{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;font-size:.66rem;font-weight:700;letter-spacing:.06em;color:var(--fg-3);line-height:1.2;text-align:left}
 .setno.hasprev b{text-decoration:underline;text-underline-offset:2px}
 .setno b{display:block;font-size:.95rem;color:var(--fg)}
 .cell{
@@ -3934,7 +3934,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4586';
+  var APP_VERSION = '3.4587';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -8761,6 +8761,11 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   function fillFrom(ex, i) {
     var p = (ex.prev && ex.prev[i]) || null;
     if (p && (p.weight || p.reps || p.rir)) return p;
+    return setAbove(ex, i);
+  }
+
+  // the closest set above this one in the workout with anything in it (the same side, for a one-sided exercise)
+  function setAbove(ex, i) {
     var side = ex.unilateral ? String(ex.sets[i].label).charAt(0) : null, k, st;
     for (k = i - 1; k >= 0; k--) {
       st = ex.sets[k];
@@ -9570,6 +9575,36 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     closePad();
   });
 
+  // Holding a set's number copies the set above it into this one, weight, reps and RIR; unannounced on purpose.
+  // The tap that ends the hold must not also tick the set.
+  var noT = null, noHeld = false, noAt = null;
+  $('sess-sets').addEventListener('pointerdown', function (e) {
+    var b = e.target.closest('[data-fill]');
+    noHeld = false;
+    clearTimeout(noT);
+    if (!b) return;
+    noAt = [e.clientX, e.clientY];
+    noT = setTimeout(function () {
+      var ex3 = session && session.exercises[session.idx], j2 = Number(b.dataset.fill), up = ex3 && ex3.sets[j2] && setAbove(ex3, j2);
+      if (!up) return;
+      noHeld = true;
+      ex3.sets[j2].weight = up.weight;
+      if (up.plate) ex3.sets[j2].plate = up.plate; else delete ex3.sets[j2].plate;
+      ex3.sets[j2].reps = up.reps;
+      ex3.sets[j2].rir = up.rir;
+      padFresh = true;
+      if (navigator.vibrate) navigator.vibrate(8);
+      saveSession();
+      drawSession();
+    }, 450);
+  });
+  $('sess-sets').addEventListener('pointermove', function (e) {
+    if (noAt && Math.abs(e.clientX - noAt[0]) + Math.abs(e.clientY - noAt[1]) > 10) clearTimeout(noT);   // a swipe or a scroll
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+    $('sess-sets').addEventListener(ev, function () { clearTimeout(noT); });
+  });
+
   var tipNow = '';
   function tipDone() { if (tipNow) { save('tip-' + tipNow, 1); tipNow = ''; $('sess-tip').hidden = true; } }
   $('sess-tip-x').addEventListener('click', tipDone);
@@ -9578,6 +9613,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     if (cell) { openPad(cell); return; }
 
     var fill = e.target.closest('[data-fill]');
+    if (fill && noHeld) { noHeld = false; return; }
     if (fill) {
       var ex2 = session.exercises[session.idx], j = Number(fill.dataset.fill);
       // nothing left to fill in, so the tap means the set is behind you
