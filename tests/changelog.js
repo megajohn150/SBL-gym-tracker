@@ -7,7 +7,7 @@ const t = suite('changelog');
 const src = slice('  function chgOf(', '  /* =========================================================\n     STORE');
 function make(app, log) {
   return new Function('APP_VERSION', 'CHANGELOG',
-    src + '; return { chgOf: chgOf, chgNews: chgNews, chgStart: chgStart };')(app, log);
+    src + '; return { chgLast: chgLast, chgOf: chgOf, chgNews: chgNews, chgStart: chgStart };')(app, log);
 }
 const LOG = [['3.4480', 'd'], ['3.4479', 'c'], ['3.4477', 'b'], ['3.4475', 'a']];
 const v = (list) => list.map((c) => c[0]);
@@ -18,6 +18,10 @@ t.is('a line keyed to a later version is not shown yet', v(c.chgNews('3.4470')),
 t.is('nothing is unread once the current version was read', v(c.chgNews('3.4479')), []);
 t.is('a version with no line of its own is simply skipped', v(c.chgOf('3.4478')), []);
 t.is('chgOf finds exactly the current one', v(c.chgOf('3.4479')), ['3.4479']);
+
+t.is('the number in Settings lists up to this version, newest first', v(c.chgLast()), ['3.4479', '3.4477', '3.4475']);
+const many = Array.from({ length: 12 }, (_, i) => ['3.' + (4600 - i), 'x']);
+t.is('and no more than ten', make('3.4600', many).chgLast().length, 10);
 
 // the reported case: several refreshes without opening the toast, then a new version
 c = make('3.4477', LOG);
