@@ -3932,7 +3932,7 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
   var NOTE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="3" width="15.6" height="18" rx="2.6"/><path d="M8 8.4h8M8 12h8M8 15.6h5"/></svg>';
 
   // major . minor + patch; the patch bumps itself on every commit
-  var APP_VERSION = '3.4583';
+  var APP_VERSION = '3.4584';
 
   // What a version changed, newest first, in the words the owner reads. A line is written only when
   // the owner asks for one, under the version that commit will become (the hook bumps APP_VERSION by
@@ -5873,7 +5873,8 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var rk = full
       ? '<u class="m' + (n < 4 ? n : 0) + '">' + n + '</u>'
       : n + '<sup>' + (sfx[(v - 20) % 10] || sfx[v] || sfx[0]) + '</sup>';
-    return '<div class="lbcard"><span class="rk">' + rk + '</span>' + avatarTag(40, '', r.p) +
+    // on the full board a friend's row opens the comparison of this lift with them
+    return '<div class="lbcard"' + (full && r.id ? ' data-lbu="' + esc(r.id) + '"' : '') + '><span class="rk">' + rk + '</span>' + avatarTag(40, '', r.p) +
       '<b>' + (r.you ? 'You' : esc(r.p.username || '')) + '</b><span class="kg">' +
       kgTxt(r.kg, true) + '</span></div>';
   }
@@ -5930,6 +5931,15 @@ button.dshc{font:inherit;font-size:.8rem;font-weight:600}
     var x = e.target.closest('[data-xo]');
     if (x) { openHistory(x.dataset.xo); return; }
     if (e.target.closest('[data-lb]')) openLb(cmp.k);
+  });
+
+  $('lb-body').addEventListener('click', function (e) {
+    var row = e.target.closest('[data-lbu]'), id = row && row.dataset.lbu;
+    if (!id || !lbFr || !lbFr[id]) return;
+    // comparing yourself needs a lift you both have, which the board's own rows guarantee
+    if (!cmp || cmp.id !== id) cmp = { id: id, p: lbFr[id], fr: lbFr, all: false };
+    cmp.fr = lbFr;
+    openCmpEx(lbK);
   });
 
   var frRoutine = null;
